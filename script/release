@@ -1,0 +1,86 @@
+#!/usr/bin/python
+
+import os
+import re
+import subprocess
+
+WORKSPACE = os.path.abspath('../')
+PRIVATE_REPO = WORKSPACE + '/mopub-android'
+PUBLIC_REPO = WORKSPACE + '/mopub-android-sdk'
+PRIVATE_MOPUB_SDK = PRIVATE_REPO + '/mopub-sdk/src/main/java/com/mopub/mobileads'
+
+def try_system(command):
+    popen = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, env=os.environ)
+    stdout, stderr = popen.communicate()    
+    if popen.returncode:
+        print 'error:\n\t' + command + '\nfailed, exiting'
+        print '"' + stderr + '"'
+        exit(1)
+    print stdout
+    return stdout
+
+def try_chdir(path):
+    if os.chdir(path):
+        print 'error: couldn\'t chdir to' + path + ', exiting'
+        exit(1)
+
+if len(os.sys.argv) < 3:
+    print 'usage: release <version> <release_branch>'
+    exit(1)
+
+version = os.sys.argv[1]
+if re.match('^\d+\.\d+\.\d+\.\d+$', version) is None:
+    print 'error: improperly formatted version number, expected #.#.#.#'
+    exit(1)
+version_tag = 'v' + version
+
+release_branch = os.sys.argv[2]
+print 'checking out release branch "' + release_branch + '" in ' + os.getcwd()
+try_system('git checkout ' + release_branch)
+
+# Update version numbers in the private repo (MoPub.java, changelog)
+print 'updating version number in MoPub.java'
+with open(PRIVATE_MOPUB_SDK + '/MoPub.java', 'r+w') as f:
+    output = re.sub(
+            r'SDK_VERSION = "(.*?)"',
+            r'SDK_VERSION = "' + version + r'"',
+            f.read())
+    f.seek(0)
+    f.write(output)
+
+# Commit to the private repo with the version number
+try_system('git commit -am "Release: version ' + version + '"')
+
+# Tag private repo with version number
+
+try_system('git tag -f -a "' + version_tag + '" -m "Version: ' + version + '"')
+
+# Push the private repo
+try_system('git pull origin ' + release_branch)
+try_system('git push origin ' + release_branch)
+try_system('git push --force origin ' + version_tag)
+
+# cd over to public repository
+try_chdir(PUBLIC_REPO)
+try_system('git checkout master')
+try_system('git pull')
+
+sha_of_last_release = try_system('git rev-parse head')
+
+# Pull release branch to local public (git remote update => git merge private/<release_branch>)
+try_system('git remote update')
+try_system('git merge private/' + release_branch)
+
+# Reset soft to original SHA
+try_system('git reset --soft ' + sha_of_last_release)
+
+# Clear out unwanted libraries
+try_system('git rm -rf ' + PUBLIC_REPO + '/libs')
+
+# Commit with new message
+try_system('git commit -am "Release: version ' + version + '"')
+# Tag public repo with version number
+try_system('git tag -f -a "' + version_tag + '" -m "Version: ' + version + '"')
+
+# Prompt for push to public
+print 'ready for \'git push --tags origin master\' (make sure to run make_bundles after you are done!)'

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <item type="id" name="placeholder_view_id" />
+    <item type="id" name="modal_container_layout_id" />
+    <item type="id" name="ad_container_layout_id" />
+</resources>

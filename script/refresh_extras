@@ -1,0 +1,77 @@
+#!/usr/bin/python
+import shutil
+import os
+
+# todo this is fragile because we don't know our cwd
+
+DEMO_ROOT = 'mopub-sample/src/main/java/com/mopub/mobileads/'
+ROBOTIUM_ROOT = 'robotium-sample/src/main/java/com/mopub/mobileads/'
+
+if len(os.sys.argv) < 2:
+	print 'usage: refresh_extras <filename>'
+	exit(1)
+
+custom_events = ['MillennialBanner', 'MillennialInterstitial', 'ChartboostInterstitial', 'GreystripeBanner', 'GreystripeInterstitial', 'InMobiBanner', 'InMobiInterstitial', 'GoogleAdMobBanner', 'GoogleAdMobInterstitial']
+duplicated_custom_events = ['MillennialBanner', 'MillennialInterstitial', 'ChartboostInterstitial', 'GoogleAdMobBanner', 'GoogleAdMobInterstitial']
+
+parameter = os.sys.argv[1]
+
+filename = parameter + '.java'
+
+def three_arg_usage():
+	print 'usage: refresh_extras <filename> <simpleadsdemo|robotium>'
+	exit(1)
+
+if parameter in duplicated_custom_events:
+	# if it's a duplicated custom event, we expect 3 parameters!!
+	if len(os.sys.argv) < 3:
+		three_arg_usage()
+
+	source_path_type = os.sys.argv[2]
+	if source_path_type == 'simpleadsdemo':
+	    print 'copying ' + DEMO_ROOT + filename + ' to ' + ROBOTIUM_ROOT + filename
+	    shutil.copyfile(DEMO_ROOT + filename, ROBOTIUM_ROOT + filename)
+	elif source_path_type == 'robotium':
+	    print 'copying ' + ROBOTIUM_ROOT + filename + ' to ' + DEMO_ROOT + filename
+	    shutil.copyfile(ROBOTIUM_ROOT + filename, DEMO_ROOT + filename)
+	else:
+		three_arg_usage()
+
+	if os.system('git diff --exit-code'):
+		print 'comitting in current repo'
+		if os.system('git commit -am "updating ' + filename + '"'):
+			print 'error: unable to commit in current repo'
+			exit(1)
+	else:
+		print 'no changes in current repo, not committing'
+
+source_path = DEMO_ROOT + filename
+
+if parameter in custom_events:
+	destination_path = 'extras/src/com/mopub/mobileads/' + filename
+else:
+	print 'error: no matching custom event for filename'
+	exit(1)
+
+temp_path = '/tmp/' + filename
+shutil.copyfile(source_path, temp_path)
+shutil.rmtree('/tmp/mopub_jars', ignore_errors=True)
+os.mkdir('/tmp/mopub_jars')
+os.system('cp libs/*.jar /tmp/mopub_jars/.')
+
+if os.system('git co master'):
+	print 'error: unable to checkout master'
+	exit(1)
+
+shutil.copyfile(temp_path, destination_path)
+os.system('cp /tmp/mopub_jars/* libs/.')
+
+if os.system('git add -A .'):
+	print 'error: unable to add files'
+	exit(1)
+
+if os.system('git commit -am "updating ' + filename + '"'):
+	print 'error: unable to commit in master'
+	exit(1)
+
+os.system('script/merge_master_into_everything')

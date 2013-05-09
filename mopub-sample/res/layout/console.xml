@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+
+<RelativeLayout
+	android:id="@+id/toplayout"
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="wrap_content">
+
+	<Button
+		android:id="@+id/searchbutton"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_alignParentRight="true"
+		android:layout_marginLeft="10dp"
+		android:layout_marginTop="20dp"
+		android:text="Load Ad" />
+
+	<EditText
+		android:id="@+id/searchtext"
+		android:hint="Keyword, try 'coffee'"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:layout_toLeftOf="@id/searchbutton"
+		android:layout_alignTop="@id/searchbutton" />
+</RelativeLayout>
+
+<RelativeLayout
+	android:id="@+id/toplayout"
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+
+	<com.mopub.mobileads.MoPubView
+		android:id="@+id/bannerview"
+		android:layout_alignParentBottom="true"
+		android:background="@drawable/spacer"
+		android:layout_marginTop="10dp"
+		android:layout_width="fill_parent"
+		android:layout_height="50dp" />
+
+	<TextView
+		android:id="@+id/consoletext"
+		android:scrollbars = "vertical"
+		android:maxLines = "1000"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+		android:layout_above="@id/bannerview"
+		android:textSize = "10sp"
+		android:typeface="monospace"
+		android:background="#000000"
+		android:text="MoPub Ad Loading Console\n========================\n" />
+
+</RelativeLayout>
+
+</LinearLayout>

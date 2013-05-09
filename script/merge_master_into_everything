@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -e
+
+git co master
+git pull
+
+git co chartboost
+git merge master --no-edit
+
+git co millennial
+git merge master --no-edit
+
+git co admob
+git merge master --no-edit
+
+git co master

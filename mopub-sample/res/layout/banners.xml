@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+
+<RelativeLayout
+	android:id="@+id/toplayout"
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="wrap_content">
+
+	<Button
+		android:id="@+id/searchbutton"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_alignParentRight="true"
+		android:layout_marginLeft="10dp"
+		android:layout_marginTop="20dp"
+		android:text="Load Ads" />
+
+	<EditText
+		android:id="@+id/searchtext"
+		android:hint="Keyword, try 'coffee'"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:layout_toLeftOf="@id/searchbutton"
+		android:layout_alignTop="@id/searchbutton" />
+
+</RelativeLayout>
+
+<com.mopub.mobileads.MoPubView
+	android:id="@+id/mrectview"
+	android:layout_height="250dp"
+	android:layout_width="300dp"
+	android:background="@drawable/spacer"
+	android:layout_gravity="center_horizontal"/>
+
+<com.mopub.mobileads.MoPubView
+	android:id="@+id/bannerview"
+	android:background="@drawable/spacer"
+	android:layout_width="fill_parent"
+	android:layout_height="50dp"
+	android:layout_marginTop="10dp"/>
+
+</LinearLayout>
