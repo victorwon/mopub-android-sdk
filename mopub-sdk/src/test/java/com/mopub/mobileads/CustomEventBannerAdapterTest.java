@@ -26,7 +26,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
 
-// todo how do we test class_name given that we are using TestCustomEventBannerFactory
 
 @RunWith(SdkTestRunner.class)
 public class CustomEventBannerAdapterTest {
@@ -190,7 +189,6 @@ public class CustomEventBannerAdapterTest {
         );
     }
 
-    // todo this test can't fail yet (the checks for mMoPubView != null are extraneous after isInvalidated() checks)
     @Test
     public void invalidate_shouldCauseBannerListenerMethodsToDoNothing() throws Exception {
         subject.init(moPubView, CLASS_NAME, JSON_PARAMS);

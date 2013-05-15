@@ -112,7 +112,6 @@ public class AdView extends WebView {
     };
     private AdUrlGenerator mUrlGenerator;
 
-    // todo test
     public AdView(Context context, MoPubView view) {
         /* Important: don't allow any WebView subclass to be instantiated using
          * an Activity context, as it will leak on Froyo devices and earlier.
@@ -179,12 +178,11 @@ public class AdView extends WebView {
         mHandler.post(r);
     }
 
-    public MoPubView getmMoPubView() {
+    public MoPubView getMoPubView() {
         return mMoPubView;
     }
 
     private class AdWebViewClient extends WebViewClient {
-        // todo test
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             AdView adView = (AdView) view;
@@ -234,13 +232,12 @@ public class AdView extends WebView {
 
             url = urlWithClickTrackingRedirect(adView, url);
             Log.d("MoPub", "Ad clicked. Click URL: " + url);
-            getmMoPubView().adClicked();
+            getMoPubView().adClicked();
 
             showBrowserForUrl(url);
             return true;
         }
 
-        // todo test
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
             // If the URL being loaded shares the redirectUrl prefix, open it in the browser.
@@ -264,21 +261,18 @@ public class AdView extends WebView {
     }
 
     public void loadAd() {
-        // todo test
         if (mAdUnitId == null) {
             Log.d("MoPub", "Can't load an ad in this ad view because the ad unit ID is null. " + 
                     "Did you forget to call setAdUnitId()?");
             return;
         }
 
-        // todo test
         if (!isNetworkAvailable()) {
             Log.d("MoPub", "Can't load an ad because there is no network connectivity.");
             scheduleRefreshTimerIfEnabled();
             return;
         }
 
-        // todo test
         if (mLocation == null) mLocation = getLastKnownLocation();
 
         // tested (remove me when the rest of this is tested)
@@ -308,8 +302,8 @@ public class AdView extends WebView {
      * - Location awareness is disabled in the parent MoPubView
      */
     private Location getLastKnownLocation() {
-        LocationAwareness locationAwareness = getmMoPubView().getLocationAwareness();
-        int locationPrecision = getmMoPubView().getLocationPrecision();
+        LocationAwareness locationAwareness = getMoPubView().getLocationAwareness();
+        int locationPrecision = getMoPubView().getLocationPrecision();
         Location result = null;
         
         if (locationAwareness == LocationAwareness.LOCATION_AWARENESS_DISABLED) {
@@ -375,9 +369,9 @@ public class AdView extends WebView {
     /*
      * Overrides the WebView's loadUrl() in order to expose HTTP response headers.
      */
-    // todo test
     @Override
     public void loadUrl(String url) {
+        if (url == null) return;
         Log.d("MoPub", "Loading url: " + url);
         if (url.startsWith("javascript:")) {
             super.loadUrl(url);
@@ -429,12 +423,11 @@ public class AdView extends WebView {
         }
     }
 
-    // todo test
     void adDidFail(MoPubErrorCode errorCode) {
         Log.i("MoPub", "Ad failed to load.");
         mIsLoading = false;
         scheduleRefreshTimerIfEnabled();
-        getmMoPubView().adFailed(errorCode);
+        getMoPubView().adFailed(errorCode);
     }
 
     @Deprecated
@@ -461,7 +454,6 @@ public class AdView extends WebView {
     /*
      * Clean up the internal state of the AdView.
      */
-    // todo test
     protected void cleanup() {
         if (mIsDestroyed) {
             return;
@@ -482,7 +474,7 @@ public class AdView extends WebView {
         
         mResponseString = null;
         
-        getmMoPubView().removeView(this);
+        getMoPubView().removeView(this);
         mMoPubView = null;
         
         // Flag as destroyed. LoadUrlTask checks this before proceeding in its onPostExecute().
@@ -490,7 +482,6 @@ public class AdView extends WebView {
     }
 
     @Override
-    // todo test
     public void reload() {
         Log.d("MoPub", "Reload ad: " + mUrl);
         loadUrl(mUrl);
@@ -510,14 +501,12 @@ public class AdView extends WebView {
         }
     }
 
-    // todo test
     protected void loadResponseString(String responseString) {
         loadDataWithBaseURL("http://" + getServerHostname() + "/", responseString, "text/html",
                 "utf-8", null);
     }
 
     protected void trackImpression() {
-        // todo test threading
         new Thread(new Runnable() {
             public void run () {
                 if (mImpressionUrl == null) return;
@@ -537,7 +526,6 @@ public class AdView extends WebView {
     }
 
     protected void registerClick() {
-        // todo test threading
         new Thread(new Runnable() {
             public void run () {
                 if (mClickthroughUrl == null) return;
@@ -556,7 +544,6 @@ public class AdView extends WebView {
         }).start();
     }
 
-    // todo test
     protected void adAppeared() {
         this.loadUrl("javascript:webviewDidAppear();");
     }
@@ -581,7 +568,6 @@ public class AdView extends WebView {
         mRefreshTimeMilliseconds = refreshTimeMilliseconds;
     }
 
-    // todo test
     protected String getServerHostname() {
         return mTesting ? MoPubView.HOST_FOR_TESTING : MoPubView.HOST;
     }
@@ -612,7 +598,6 @@ public class AdView extends WebView {
         mAdUnitId = adUnitId;
     }
 
-    // todo test
     public void setTimeout(int milliseconds) {
         if (mAdFetcher != null) {
             mAdFetcher.setTimeout(milliseconds);
@@ -651,7 +636,6 @@ public class AdView extends WebView {
         mIsLoading = isLoading;
     }
 
-    // todo test
     public void setAutorefreshEnabled(boolean enabled) {
         mAutorefreshEnabled = enabled;
         
@@ -673,20 +657,17 @@ public class AdView extends WebView {
         return mTesting;
     }
 
-    // todo test
     public void forceRefresh() {
         mIsLoading = false;
         loadAd();
     }
 
-    // todo test
     void setLocalExtras(Map<String, Object> localExtras) {
         mLocalExtras = (localExtras != null)
                 ? new HashMap<String,Object>(localExtras)
                 : new HashMap<String,Object>();
     }
 
-    // todo test
     Map<String, Object> getLocalExtras() {
         return (mLocalExtras != null)
                 ? new HashMap<String,Object>(mLocalExtras)
@@ -724,17 +705,16 @@ public class AdView extends WebView {
         mIsLoading = false;
         scheduleRefreshTimerIfEnabled();
         setAdContentView(this, getHtmlAdLayoutParams());
-        getmMoPubView().adLoaded();
+        getMoPubView().adLoaded();
     }
 
-    // todo test
     void setAdContentView(View view) {
         setAdContentView(view, WRAP_AND_CENTER_LAYOUT_PARAMS);
     }
 
     private void setAdContentView(View view, FrameLayout.LayoutParams layoutParams) {
-        getmMoPubView().removeAllViews();
-        getmMoPubView().addView(view, layoutParams);
+        getMoPubView().removeAllViews();
+        getMoPubView().addView(view, layoutParams);
     }
 
     private FrameLayout.LayoutParams getHtmlAdLayoutParams() {
@@ -753,7 +733,7 @@ public class AdView extends WebView {
     }
 
     private void adDidClose() {
-        getmMoPubView().adClosed();
+        getMoPubView().adClosed();
     }
 
     private void handleCustomIntentFromUri(Uri uri) {

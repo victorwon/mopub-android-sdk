@@ -6,6 +6,12 @@
   - Removed obsolete native network adapters
   - Added timeout for third-party networks (10 seconds for banners and 30 seconds for interstitials)
   - Added more data signals (application version, connection type, and location accuracy)
+  
+### Version 1.13.0.1 (May 15, 2013)
+  
+  - Removed extraneous display call in `MillennialInterstitial` custom event.
+  - Fixed potential NPE in `AdView`'s loadUrl().
+  - Deprecated `HTML5AdView` after fixing some compilation issues.
 
 ## Version 1.12 (April 26, 2013)
   - Chartboost custom event now automatically parses server data

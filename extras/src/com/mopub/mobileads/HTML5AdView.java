@@ -15,54 +15,57 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebChromeClient.CustomViewCallback;
 import android.widget.FrameLayout;
 
+import java.lang.Deprecated;
+
+@Deprecated
 public class HTML5AdView extends AdView {
-    
+
     private FrameLayout mCustomViewContainer;
     private View mCustomView;
     private CustomViewCallback mCustomViewCallback;
     private Bitmap mDefaultVideoPoster;
     private View mVideoProgressView;
-    
-    static final FrameLayout.LayoutParams COVER_SCREEN_GRAVITY_CENTER = 
-        new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.FILL_PARENT, 
-                FrameLayout.LayoutParams.FILL_PARENT, 
-                Gravity.CENTER);
-    
+
+    static final FrameLayout.LayoutParams COVER_SCREEN_GRAVITY_CENTER =
+            new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.FILL_PARENT,
+                    FrameLayout.LayoutParams.FILL_PARENT,
+                    Gravity.CENTER);
+
     public HTML5AdView(Context context, MoPubView view) {
         super(context, view);
-        
+
         int sdkVersion = (new Integer(Build.VERSION.SDK)).intValue();
         if (sdkVersion > 7) {
             setWebChromeClient(new HTML5WebChromeClient());
         }
-        
+
         mCustomViewContainer = new FrameLayout(context);
         mCustomViewContainer.setVisibility(GONE);
         mCustomViewContainer.setLayoutParams(COVER_SCREEN_GRAVITY_CENTER);
     }
 
-    private class HTML5WebChromeClient extends WebChromeClient implements OnCompletionListener, 
+    private class HTML5WebChromeClient extends WebChromeClient implements OnCompletionListener,
             OnErrorListener {
 
         @Override
         public void onShowCustomView(View view, CustomViewCallback callback) {
             super.onShowCustomView(view, callback);
-            
+
             HTML5AdView.this.setVisibility(View.GONE);
-            
+
             // If a custom view already exists, don't show another one.
             if (mCustomView != null) {
                 callback.onCustomViewHidden();
                 return;
             }
-            
+
             mCustomViewContainer.addView(view, COVER_SCREEN_GRAVITY_CENTER);
             mCustomView = view;
             mCustomViewCallback = callback;
-            
+
             // Display the custom view in the MoPubView's hierarchy.
-            mMoPubView.addView(mCustomViewContainer);
+            getMoPubView().addView(mCustomViewContainer);
             mCustomViewContainer.setVisibility(View.VISIBLE);
             mCustomViewContainer.bringToFront();
         }
@@ -73,27 +76,27 @@ public class HTML5AdView extends AdView {
 
             // Hide the custom view.
             mCustomView.setVisibility(View.GONE);
-            
+
             // Remove the custom view from its container.
             mCustomViewContainer.removeView(mCustomView);
             mCustomView = null;
             mCustomViewContainer.setVisibility(View.GONE);
             mCustomViewCallback.onCustomViewHidden();
-            
+
             // Stop displaying the custom view container and unhide the ad view.
-            mMoPubView.removeView(mCustomViewContainer);
+            getMoPubView().removeView(mCustomViewContainer);
             HTML5AdView.this.setVisibility(View.VISIBLE);
         }
-        
+
         @Override
-        public Bitmap getDefaultVideoPoster() { 
+        public Bitmap getDefaultVideoPoster() {
             if (mDefaultVideoPoster == null) {
                 mDefaultVideoPoster = BitmapFactory.decodeResource(
                         getResources(), R.drawable.default_video_poster);
             }
             return mDefaultVideoPoster;
         }
-        
+
         @Override
         public View getVideoLoadingProgressView() {
             if (mVideoProgressView == null) {
@@ -102,7 +105,7 @@ public class HTML5AdView extends AdView {
             }
             return mVideoProgressView;
         }
-        
+
         @Override
         public boolean onError(MediaPlayer arg0, int arg1, int arg2) {
             Log.d("MoPub", "Video errored!");

@@ -25,8 +25,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
 
-// todo how do we test class_name given that we are using TestCustomEventInterstitialFactory
-
 @RunWith(SdkTestRunner.class)
 public class CustomEventInterstitialAdapterTest {
     private CustomEventInterstitialAdapter subject;

@@ -28,7 +28,7 @@ public class AdFetcherTest {
     public void setup() {
         adView = mock(AdView.class);
         moPubView = mock(MoPubView.class);
-        stub(adView.getmMoPubView()).toReturn(moPubView);
+        stub(adView.getMoPubView()).toReturn(moPubView);
 
         subject = new AdFetcher(adView, "expected userAgent");
         response = new TestHttpResponseWithHeaders(200, "yahoo!!!");
@@ -63,7 +63,7 @@ public class AdFetcherTest {
     public void fetchAdForUrl_shouldRouteMillennialInterstitialToCustomEventHandling() throws Exception {
         AdView interstitialAdView = mock(AdView.class);
         MoPubInterstitial.MoPubInterstitialView moPubInterstitialView = mock(MoPubInterstitial.MoPubInterstitialView.class);
-        stub(interstitialAdView.getmMoPubView()).toReturn(moPubInterstitialView);
+        stub(interstitialAdView.getMoPubView()).toReturn(moPubInterstitialView);
         subject = new AdFetcher(interstitialAdView, "expected userAgent");
 
         String json = "{\"adWidth\": 320, \"adHeight\": 480, \"adUnitID\": \"44310\"}";

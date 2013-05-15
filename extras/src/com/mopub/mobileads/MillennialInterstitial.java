@@ -152,7 +152,6 @@ class MillennialInterstitial extends CustomEventInterstitial {
         @Override
         public void getAdFailure(MMAd ad) {
             super.getAdFailure(ad);
-            mMillennialInterstitial.display();
             Log.d("MoPub", "Millennial interstitial ad failed to load.");
             mInterstitialListener.onInterstitialFailed(MoPubErrorCode.NETWORK_NO_FILL);
         }
@@ -185,7 +184,6 @@ class MillennialInterstitial extends CustomEventInterstitial {
             mInterstitialListener.onInterstitialDismissed();
         }
 
-        // todo test (un)register
         void register(Context context, IntentFilter intentFilter) {
             mContext = context;
             context.registerReceiver(this, MMBroadcastReceiver.createIntentFilter());

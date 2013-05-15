@@ -39,8 +39,8 @@ public class AdViewTest {
     @Before
     public void setup() {
         moPubView = mock(MoPubView.class);
-        adFetcher = AdFetcherFactory.create(null, null); // todo how do we say in code that this is a singleton mock?
-        httpClient = HttpClientFactory.create(); // todo a real singleton HttpClient
+        adFetcher = AdFetcherFactory.create(null, null);
+        httpClient = HttpClientFactory.create();
         Activity context = new Activity();
         shadowOf(context).grantPermissions(ACCESS_NETWORK_STATE);
         subject = new AdView(context, moPubView);
@@ -51,7 +51,7 @@ public class AdViewTest {
     public void configureUsingHttpResponse_shouldSetFields() throws Exception {
         response.addHeader("X-Launchpage", "redirect url");
         response.addHeader("X-Clickthrough", "clickthrough url");
-        response.addHeader("X-Scrollable", "0"); // todo test this with "1" and with nothing
+        response.addHeader("X-Scrollable", "0");
         response.addHeader("X-Width", "320  ");
         response.addHeader("X-Height", "  50");
         response.addHeader("X-Refreshtime", "70");
@@ -74,7 +74,6 @@ public class AdViewTest {
         assertThat(Robolectric.shadowOf(subject).getOnTouchListener()).isNull();
     }
 
-    // todo Is this really the correct behavior
     @Test
     public void configureUsingHttpResponse_shouldHaveNullTouchListenerWhenScrollableNotSet() throws Exception {
         subject.configureUsingHttpResponse(response);
@@ -190,8 +189,6 @@ public class AdViewTest {
         }
     }
 
-    // todo since we changed the catch block in AdView.trackImpression() to catch Exception
-    // this test for impressionUrl is unnecessary (since we're catching the NullPointerException)
     @Test
     public void trackImpression_shouldDoNothingIfImpressionUrlNotSpecified() throws Exception {
         subject.configureUsingHttpResponse(response);
@@ -230,8 +227,6 @@ public class AdViewTest {
         }
     }
 
-    // todo since we changed the catch block in AdView.registerClick() to catch Exception
-    // this test for clickthroughUrl is unnecessary (since we're catching the NullPointerException)
     @Test
     public void trackImpression_shouldDoNothingIfClickthroughUrlNotSpecified() throws Exception {
         subject.configureUsingHttpResponse(response);
@@ -292,6 +287,12 @@ public class AdViewTest {
 
         assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(1);
         assertThat(fakeHttpLayer.getLastSentHttpRequestInfo()).isNull();
+    }
+
+    @Test
+    public void loadUrl_shouldAcceptNullParameter() throws Exception {
+        subject.loadUrl(null);
+        // pass
     }
 
 }

@@ -105,19 +105,16 @@ public class AdFetcher {
     }
 
     public void fetchAdForUrl(String url) {
-        // todo test
         mCurrentTaskId++;
         Log.i("MoPub", "Fetching ad for task #" + mCurrentTaskId);
 
         if (mCurrentTask != null) {
-            // todo test
             mCurrentTask.cancel(true);
         }
 
         mCurrentTask = new AdFetchTask(this);
 
         if (Build.VERSION.SDK_INT >= VERSION_CODE_ICE_CREAM_SANDWICH) {
-            // todo test
             Class<?> cls = AdFetchTask.class;
             Class<?>[] parameterTypes = {Executor.class, Object[].class};
 
@@ -198,7 +195,6 @@ public class AdFetcher {
             try {
                 result = fetch(urls[0]);
             } catch (Exception exception) {
-                //todo test
                 mException = exception;
             } finally {
                 shutdownHttpClient();
@@ -513,7 +509,7 @@ public class AdFetcher {
             }
 
             adView.setIsLoading(false);
-            MoPubView mpv = adView.getmMoPubView();
+            MoPubView mpv = adView.getMoPubView();
 
             if (mHeader == null) {
                 Log.i("MoPub", "Couldn't call custom method because the server did not specify one.");
@@ -567,7 +563,7 @@ public class AdFetcher {
             }
 
             adView.setIsLoading(false);
-            MoPubView moPubView = adView.getmMoPubView();
+            MoPubView moPubView = adView.getMoPubView();
 
             if (mParamsMap == null) {
                 Log.i("MoPub", "Couldn't invoke custom event because the server did not specify one.");
@@ -598,7 +594,7 @@ public class AdFetcher {
             }
 
             adView.setIsLoading(false);
-            MoPubView mpv = adView.getmMoPubView();
+            MoPubView mpv = adView.getMoPubView();
             mpv.loadNativeSDK(mParamsMap);
         }
 

@@ -15,6 +15,7 @@ def try_system(command):
     if popen.returncode:
         print 'error:\n\t' + command + '\nfailed, exiting'
         print '"' + stderr + '"'
+        print '"' + stdout + '"'
         exit(1)
     print stdout
     return stdout
@@ -65,14 +66,14 @@ try_chdir(PUBLIC_REPO)
 try_system('git checkout master')
 try_system('git pull')
 
-sha_of_last_release = try_system('git rev-parse head')
+# sha_of_last_release = try_system('git rev-parse head')
 
 # Pull release branch to local public (git remote update => git merge private/<release_branch>)
 try_system('git remote update')
-try_system('git merge private/' + release_branch)
+try_system('git merge -s recursive -X theirs --squash --no-commit private/' + release_branch)
 
 # Reset soft to original SHA
-try_system('git reset --soft ' + sha_of_last_release)
+# try_system('git reset --soft ' + sha_of_last_release)
 
 # Clear out unwanted libraries
 try_system('git rm -rf ' + PUBLIC_REPO + '/libs')
