@@ -29,16 +29,16 @@ public abstract class CustomEventBanner {
      * MoPub website that you want to associate with a given custom event request. This data may be
      * used to pass dynamic information, such as publisher IDs, without changes in application code.
      */
-    abstract void loadBanner(Context context,
+    protected abstract void loadBanner(Context context,
             CustomEventBannerListener customEventBannerListener, Map<String, Object> localExtras,
             Map<String, String> serverExtras);
     
     /*
      * Called when a Custom Event is being invalidated or destroyed. Perform any final cleanup here.
      */
-    abstract void onInvalidate();
+    protected abstract void onInvalidate();
     
-    interface CustomEventBannerListener {
+    protected interface CustomEventBannerListener {
         /*
          * Your custom event subclass must call this method when it successfully loads an ad and
          * needs to display the provided View. Failure to do so will disrupt the mediation waterfall

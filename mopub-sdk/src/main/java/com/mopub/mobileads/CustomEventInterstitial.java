@@ -30,7 +30,7 @@ public abstract class CustomEventInterstitial {
      * MoPub website that you want to associate with a given custom event request. This data may be
      * used to pass dynamic information, such as publisher IDs, without changes in application code.
      */
-    abstract void loadInterstitial(Context context,
+    protected abstract void loadInterstitial(Context context,
             CustomEventInterstitialListener customEventInterstitialListener,
             Map<String, Object> localExtras,
             Map<String, String> serverExtras);
@@ -38,14 +38,14 @@ public abstract class CustomEventInterstitial {
     /*
      * Display the interstitial ad.
      */
-    abstract void showInterstitial();
+    protected abstract void showInterstitial();
     
     /*
      * Called when a Custom Event is being invalidated or destroyed. Perform any final cleanup here.
      */
-    abstract void onInvalidate();
+    protected abstract void onInvalidate();
     
-    interface CustomEventInterstitialListener {
+    protected interface CustomEventInterstitialListener {
         /*
          * Your custom event subclass must call this method when it successfully loads an ad.
          * Failure to do so will disrupt the mediation waterfall and cause future ad requests to

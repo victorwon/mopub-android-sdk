@@ -9,9 +9,13 @@
   
 ### Version 1.13.0.1 (May 15, 2013)
   
-  - Removed extraneous display call in `MillennialInterstitial` custom event.
-  - Fixed potential NPE in `AdView`'s loadUrl().
-  - Deprecated `HTML5AdView` after fixing some compilation issues.
+  - Removed extraneous display call in `MillennialInterstitial` custom event
+  - Fixed potential NPE in `AdView`'s loadUrl()
+  - Deprecated `HTML5AdView` after fixing some compilation issues
+  
+### Version 1.13.0.2 (May 17, 2013)
+
+  - Relaxed access modifiers for `CustomEventBanner` and `CustomEventInterstitial`
 
 ## Version 1.12 (April 26, 2013)
   - Chartboost custom event now automatically parses server data

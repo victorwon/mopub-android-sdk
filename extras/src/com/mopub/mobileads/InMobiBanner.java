@@ -1,4 +1,4 @@
-package com.mopub.mobileads;
+package com.mopub.simpleadsdemo;
 
 import java.util.Map;
 
@@ -23,17 +23,17 @@ class InMobiBanner extends CustomEventBanner implements IMAdListener {
      * Abstract methods from CustomEventBanner
      */
     @Override
-    void loadBanner(Context context, CustomEventBannerListener bannerListener,
-            Map<String, Object> localExtras, Map<String, String> serverExtras) {
+    protected void loadBanner(Context context, CustomEventBannerListener bannerListener,
+                              Map<String, Object> localExtras, Map<String, String> serverExtras) {
         mBannerListener = bannerListener;
-        
+
         Activity activity = null;
         if (context instanceof Activity) {
             activity = (Activity) context;
         } else {
             // You may also pass in an Activity Context in the localExtras map and retrieve it here.
         }
-        
+
         if (activity == null) {
             mBannerListener.onBannerFailed(MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR);
             return;
@@ -45,13 +45,13 @@ class InMobiBanner extends CustomEventBanner implements IMAdListener {
          */
         String inMobiAppId = "YOUR_INMOBI_APP_ID";
         mInMobiBanner = new IMAdView(activity, IMAdView.INMOBI_AD_UNIT_320X50, inMobiAppId);
-        
+
         mInMobiBanner.setIMAdListener(this);
         mInMobiBanner.loadNewAd();
     }
 
     @Override
-    void onInvalidate() {
+    protected void onInvalidate() {
         mInMobiBanner.setIMAdListener(null);
     }
 

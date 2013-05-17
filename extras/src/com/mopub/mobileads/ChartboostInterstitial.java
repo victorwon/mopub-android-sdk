@@ -44,8 +44,8 @@ class ChartboostInterstitial extends CustomEventInterstitial {
      * Abstract methods from CustomEventInterstitial
      */
     @Override
-    void loadInterstitial(Context context, CustomEventInterstitialListener interstitialListener,
-                                 Map<String, Object> localExtras, Map<String, String> serverExtras) {
+    protected void loadInterstitial(Context context, CustomEventInterstitialListener interstitialListener,
+                                    Map<String, Object> localExtras, Map<String, String> serverExtras) {
         if (!(context instanceof Activity)) {
             interstitialListener.onInterstitialFailed(MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR);
             return;
@@ -80,13 +80,13 @@ class ChartboostInterstitial extends CustomEventInterstitial {
     }
 
     @Override
-    void showInterstitial() {
+    protected void showInterstitial() {
         Log.d("MoPub", "Showing Chartboost interstitial ad.");
         Chartboost.sharedChartboost().showInterstitial(location);
     }
 
     @Override
-    void onInvalidate() {
+    protected void onInvalidate() {
         getDelegate().unregisterListener(location);
     }
 

@@ -53,8 +53,8 @@ class MillennialInterstitial extends CustomEventInterstitial {
     private MillennialBroadcastReceiver mBroadcastReceiver;
 
     @Override
-    void loadInterstitial(Context context, CustomEventInterstitialListener customEventInterstitialListener,
-                                 Map<String, Object> localExtras, Map<String, String> serverExtras) {
+    protected void loadInterstitial(Context context, CustomEventInterstitialListener customEventInterstitialListener,
+                                    Map<String, Object> localExtras, Map<String, String> serverExtras) {
         mInterstitialListener = customEventInterstitialListener;
 
         if (extrasAreValid(serverExtras)) {
@@ -81,7 +81,7 @@ class MillennialInterstitial extends CustomEventInterstitial {
     }
 
     @Override
-    void showInterstitial() {
+    protected void showInterstitial() {
         if (mMillennialInterstitial.isAdAvailable()) {
             mMillennialInterstitial.display();
         } else {
@@ -90,7 +90,7 @@ class MillennialInterstitial extends CustomEventInterstitial {
     }
 
     @Override
-    void onInvalidate() {
+    protected void onInvalidate() {
         mMillennialInterstitial.setListener(null);
         mBroadcastReceiver.unregister();
     }

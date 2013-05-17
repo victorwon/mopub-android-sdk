@@ -54,8 +54,8 @@ class MillennialBanner extends CustomEventBanner {
     public static final String AD_HEIGHT_KEY = "adHeight";
 
     @Override
-    void loadBanner(Context context, CustomEventBannerListener customEventBannerListener,
-                           Map<String, Object> localExtras, Map<String, String> serverExtras) {
+    protected void loadBanner(Context context, CustomEventBannerListener customEventBannerListener,
+                              Map<String, Object> localExtras, Map<String, String> serverExtras) {
         bannerListener = customEventBannerListener;
 
         if (extrasAreValid(serverExtras)) {
@@ -95,7 +95,7 @@ class MillennialBanner extends CustomEventBanner {
     }
 
     @Override
-    void onInvalidate() {
+    protected void onInvalidate() {
         mMillennialAdView.setListener(null);
     }
 

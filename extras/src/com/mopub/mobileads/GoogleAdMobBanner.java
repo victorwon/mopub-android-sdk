@@ -63,10 +63,10 @@ class GoogleAdMobBanner extends CustomEventBanner implements AdListener {
     private CustomEventBannerListener mBannerListener;
 
     @Override
-    void loadBanner(Context context,
-                           CustomEventBannerListener customEventBannerListener,
-                           Map<String, Object> localExtras,
-                           Map<String, String> serverExtras) {
+    protected void loadBanner(Context context,
+                              CustomEventBannerListener customEventBannerListener,
+                              Map<String, Object> localExtras,
+                              Map<String, String> serverExtras) {
         mBannerListener = customEventBannerListener;
 
         String adUnitId;
@@ -105,7 +105,7 @@ class GoogleAdMobBanner extends CustomEventBanner implements AdListener {
     }
 
     @Override
-    void onInvalidate() {
+    protected void onInvalidate() {
         mAdMobView.setAdListener(null);
         mAdMobView.destroy();
     }

@@ -1,4 +1,4 @@
-package com.mopub.mobileads;
+package com.mopub.simpleadsdemo;
 
 import java.util.Map;
 
@@ -23,10 +23,10 @@ class GreystripeBanner extends CustomEventBanner implements GSAdListener {
      * Abstract methods from CustomEventBanner
      */
     @Override
-    void loadBanner(Context context, CustomEventBannerListener bannerListener,
-            Map<String, Object> localExtras, Map<String, String> serverExtras) {
+    protected void loadBanner(Context context, CustomEventBannerListener bannerListener,
+                              Map<String, Object> localExtras, Map<String, String> serverExtras) {
         mBannerListener = bannerListener;
-        
+
         /*
          * You may also pass this String down in the serverExtras Map by specifying Custom Event Data
          * in MoPub's web interface.
@@ -34,12 +34,12 @@ class GreystripeBanner extends CustomEventBanner implements GSAdListener {
         String greystripeAppId = "YOUR_GREYSTRIPE_APP_ID";
         mGreystripeAd = new GSMobileBannerAdView(context, greystripeAppId);
         mGreystripeAd.addListener(this);
-        
+
         mGreystripeAd.refresh();
     }
 
     @Override
-    void onInvalidate() {
+    protected void onInvalidate() {
         mGreystripeAd.removeListener(this);
     }
 

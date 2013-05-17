@@ -60,10 +60,10 @@ class GoogleAdMobInterstitial extends CustomEventInterstitial implements AdListe
     private CustomEventInterstitialListener mInterstitialListener;
 
     @Override
-    void loadInterstitial(Context context,
-                                 CustomEventInterstitialListener customEventInterstitialListener,
-                                 Map<String, Object> localExtras,
-                                 Map<String, String> serverExtras) {
+    protected void loadInterstitial(Context context,
+                                    CustomEventInterstitialListener customEventInterstitialListener,
+                                    Map<String, Object> localExtras,
+                                    Map<String, String> serverExtras) {
         mInterstitialListener = customEventInterstitialListener;
 
         if (!(context instanceof Activity)) {
@@ -89,7 +89,7 @@ class GoogleAdMobInterstitial extends CustomEventInterstitial implements AdListe
     }
 
     @Override
-    void showInterstitial() {
+    protected void showInterstitial() {
         if (mInterstitialAd.isReady()) {
             mInterstitialAd.show();
         } else {
@@ -98,7 +98,7 @@ class GoogleAdMobInterstitial extends CustomEventInterstitial implements AdListe
     }
 
     @Override
-    void onInvalidate() {
+    protected void onInvalidate() {
         if (mInterstitialAd != null) {
             mInterstitialAd.setAdListener(null);
         }

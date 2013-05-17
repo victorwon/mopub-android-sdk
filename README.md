@@ -10,11 +10,11 @@ Help is available on the [wiki](https://github.com/mopub/mopub-android-sdk/wiki/
 
 The MoPub SDK is distributed as source code that you can include in your application.  MoPub provides two prepackaged archives of source code:
 
-- **[MoPub Android Full SDK.zip](https://s3.amazonaws.com/mopub-android-sdk/mopub-android-full-sdk.zip)**
+- **[MoPub Android Full SDK.zip](http://bit.ly/YUdU9v)**
 
   Includes everything you need to serve HTML and MRAID MoPub advertisiments *and* built-in support for two major third party ad networks - [Google AdMob](http://www.google.com/ads/admob/) and [Millennial Media](http://www.millennialmedia.com/) - including the required third party binaries.
 
-- **[MoPub Android Base SDK.zip](https://s3.amazonaws.com/mopub-android-sdk/mopub-android-base-sdk.zip)**
+- **[MoPub Android Base SDK.zip](http://bit.ly/YUdWhH)**
 
   Includes everything you need to serve HTML and MRAID MoPub advertisements.  No third party ad networks are included.
 

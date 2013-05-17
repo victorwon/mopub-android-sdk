@@ -1,4 +1,4 @@
-package com.mopub.mobileads;
+package com.mopub.simpleadsdemo;
 
 import java.util.Map;
 
@@ -23,17 +23,17 @@ class InMobiInterstitial extends CustomEventInterstitial implements IMAdIntersti
      * Abstract methods from CustomEventInterstitial
      */
     @Override
-    void loadInterstitial(Context context, CustomEventInterstitialListener interstitialListener,
-            Map<String, Object> localExtras, Map<String, String> serverExtras) {
+    protected void loadInterstitial(Context context, CustomEventInterstitialListener interstitialListener,
+                                    Map<String, Object> localExtras, Map<String, String> serverExtras) {
         mInterstitialListener = interstitialListener;
-        
+
         Activity activity = null;
         if (context instanceof Activity) {
             activity = (Activity) context;
         } else {
             // You may also pass in an Activity Context in the localExtras map and retrieve it here.
         }
-        
+
         if (activity == null) {
             mInterstitialListener.onInterstitialFailed(MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR);
             return;
@@ -45,19 +45,19 @@ class InMobiInterstitial extends CustomEventInterstitial implements IMAdIntersti
          */
         String inMobiAppId = "YOUR_INMOBI_APP_ID";
         mInMobiInterstitial = new IMAdInterstitial(activity, inMobiAppId);
-        
+
         mInMobiInterstitial.setIMAdInterstitialListener(this);
         mInMobiInterstitial.loadNewAd();
     }
-    
+
     @Override
-    void showInterstitial() {
+    protected void showInterstitial() {
         Log.d("MoPub", "Showing InMobi interstitial ad.");
         mInMobiInterstitial.show();
     }
 
     @Override
-    void onInvalidate() {
+    protected void onInvalidate() {
         mInMobiInterstitial.setIMAdInterstitialListener(null);
     }
 
@@ -69,7 +69,7 @@ class InMobiInterstitial extends CustomEventInterstitial implements IMAdIntersti
         Log.d("MoPub", "InMobi interstitial ad loaded successfully.");
         mInterstitialListener.onInterstitialLoaded();
     }
-    
+
     @Override
     public void onAdRequestFailed(IMAdInterstitial adInterstitial, ErrorCode errorCode) {
         Log.d("MoPub", "InMobi interstitial ad failed to load.");
@@ -80,7 +80,7 @@ class InMobiInterstitial extends CustomEventInterstitial implements IMAdIntersti
     public void onShowAdScreen(IMAdInterstitial adInterstitial) {
         mInterstitialListener.onInterstitialShown();
     }
-    
+
     @Override
     public void onLeaveApplication(IMAdInterstitial adInterstitial) {
         /*

@@ -1,4 +1,4 @@
-package com.mopub.mobileads;
+package com.mopub.simpleadsdemo;
 
 import java.util.Map;
 
@@ -18,13 +18,13 @@ import com.mopub.mobileads.MoPubErrorCode;
 class GreystripeInterstitial extends CustomEventInterstitial implements GSAdListener {
     private CustomEventInterstitialListener mInterstitialListener;
     private GSFullscreenAd mGreystripeAd;
-    
+
     /*
      * Abstract methods from CustomEventInterstitial
      */
     @Override
-    void loadInterstitial(Context context, CustomEventInterstitialListener interstitialListener,
-            Map<String, Object> localExtras, Map<String, String> serverExtras) {
+    protected void loadInterstitial(Context context, CustomEventInterstitialListener interstitialListener,
+                                    Map<String, Object> localExtras, Map<String, String> serverExtras) {
         mInterstitialListener = interstitialListener;
 
         /*
@@ -32,27 +32,27 @@ class GreystripeInterstitial extends CustomEventInterstitial implements GSAdList
          * in MoPub's web interface.
          */
         String greystripeAppId = "YOUR_GREYSTRIPE_APP_ID";
-        
+
         mGreystripeAd = new GSFullscreenAd(context, greystripeAppId);
         mGreystripeAd.addListener(this);
-        
+
         mGreystripeAd.fetch();
     }
 
     @Override
-    void showInterstitial() {
+    protected void showInterstitial() {
         if (!mGreystripeAd.isAdReady()) {
             mInterstitialListener.onInterstitialFailed(MoPubErrorCode.NETWORK_INVALID_STATE);
             return;
         }
-        
+
         Log.d("MoPub", "Showing Greystripe interstitial ad.");
         mGreystripeAd.display();
         mInterstitialListener.onInterstitialShown();
     }
-    
+
     @Override
-    void onInvalidate() {
+    protected void onInvalidate() {
         mGreystripeAd.removeListener(this);
     }
 
