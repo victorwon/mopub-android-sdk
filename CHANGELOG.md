@@ -7,8 +7,11 @@
   - Added timeout for third-party networks (10 seconds for banners and 30 seconds for interstitials)
   - Added more data signals (application version, connection type, and location accuracy)
   
+### Version 1.13.1 (May 21, 2013)
+  - Updated Millennial support to Millennial Media SDK version 5.0.1
+
 ### Version 1.13.0.1 (May 15, 2013)
-  
+
   - Removed extraneous display call in `MillennialInterstitial` custom event
   - Fixed potential NPE in `AdView`'s loadUrl()
   - Deprecated `HTML5AdView` after fixing some compilation issues

@@ -33,6 +33,7 @@
 package com.mopub.mobileads;
 
 import android.content.Context;
+import android.content.IntentFilter;
 import android.location.Location;
 import android.util.Log;
 import com.millennialmedia.android.*;
@@ -52,6 +53,7 @@ class MillennialBanner extends CustomEventBanner {
     public static final String APID_KEY = "adUnitID";
     public static final String AD_WIDTH_KEY = "adWidth";
     public static final String AD_HEIGHT_KEY = "adHeight";
+    private MillennialBroadcastReceiver mBroadcastReceiver;
 
     @Override
     protected void loadBanner(Context context, CustomEventBannerListener customEventBannerListener,
@@ -70,6 +72,9 @@ class MillennialBanner extends CustomEventBanner {
         MMSDK.initialize(context);
         MMSDK.setBroadcastEvents(true);
 
+        mBroadcastReceiver = new MillennialBroadcastReceiver();
+        mBroadcastReceiver.register(context, MMBroadcastReceiver.createIntentFilter());
+
         mMillennialAdView = new MMAdView(context);
         mMillennialAdView.setApid(apid);
         mMillennialAdView.setWidth(adWidth);
@@ -80,7 +85,7 @@ class MillennialBanner extends CustomEventBanner {
 
         mMillennialAdView.setMMRequest(new MMRequest());
         mMillennialAdView.setId(MMSDK.getDefaultAdId());
-        mMillennialAdView.getAd(new MillennialRequestListener());
+        mMillennialAdView.getAd();
     }
 
     private boolean extrasAreValid(Map<String, String> serverExtras) {
@@ -97,29 +102,47 @@ class MillennialBanner extends CustomEventBanner {
     @Override
     protected void onInvalidate() {
         mMillennialAdView.setListener(null);
+        mBroadcastReceiver.unregister();
     }
 
-    class MillennialRequestListener implements RequestListener {
-        @Override
-        public void MMAdOverlayLaunched(MMAd mmAd) {
-            Log.d("MoPub", "Millennial banner ad clicked.");
-            bannerListener.onBannerClicked();
-        }
+    class MillennialBroadcastReceiver extends MMBroadcastReceiver {
+        private Context mContext;
 
         @Override
-        public void MMAdRequestIsCaching(MMAd mmAd) {
-        }
-
-        @Override
-        public void requestCompleted(MMAd mmAd) {
+        public void getAdSuccess(MMAd ad) {
+            super.getAdSuccess(ad);
             Log.d("MoPub", "Millennial banner ad loaded successfully. Showing ad...");
             bannerListener.onBannerLoaded(mMillennialAdView);
         }
 
         @Override
-        public void requestFailed(MMAd mmAd, MMException e) {
+        public void getAdFailure(MMAd ad) {
+            super.getAdFailure(ad);
             Log.d("MoPub", "Millennial banner ad failed to load.");
             bannerListener.onBannerFailed(MoPubErrorCode.NETWORK_NO_FILL);
+        }
+
+        @Override
+        public void intentStarted(MMAd ad, String intent) {
+            super.intentStarted(ad, intent);
+            Log.d("MoPub", "Millennial banner ad clicked.");
+            bannerListener.onBannerClicked();
+        }
+
+
+        void register(Context context, IntentFilter intentFilter) {
+            mContext = context;
+            context.registerReceiver(this, MMBroadcastReceiver.createIntentFilter());
+        }
+
+        void unregister() {
+            try {
+                mContext.unregisterReceiver(this);
+            } catch (Exception exception) {
+                Log.d("MoPub", "Unable to unregister MMBroadcastReceiver", exception);
+            } finally {
+                mContext = null;
+            }
         }
     }
 }

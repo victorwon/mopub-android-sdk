@@ -33,7 +33,6 @@
 package com.mopub.mobileads;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.IntentFilter;
 import android.location.Location;
 import android.util.Log;
@@ -42,7 +41,7 @@ import com.millennialmedia.android.*;
 import java.util.Map;
 
 /**
- * Compatible with version 5.0.0 of the Millennial Media SDK.
+ * Compatible with version 5.0.1 of the Millennial Media SDK.
  */
 
 class MillennialInterstitial extends CustomEventInterstitial {
@@ -70,12 +69,11 @@ class MillennialInterstitial extends CustomEventInterstitial {
         mBroadcastReceiver = new MillennialBroadcastReceiver();
         mBroadcastReceiver.register(context, MMBroadcastReceiver.createIntentFilter());
 
-        MMRequest request = new MMRequest();
         Location location = (Location) localExtras.get("location");
         if (location != null) MMRequest.setUserLocation(location);
 
         mMillennialInterstitial = new MMInterstitial(context);
-        mMillennialInterstitial.setMMRequest(request);
+        mMillennialInterstitial.setMMRequest(new MMRequest());
         mMillennialInterstitial.setApid(mApid);
         mMillennialInterstitial.fetch();
     }
@@ -101,41 +99,6 @@ class MillennialInterstitial extends CustomEventInterstitial {
 
     class MillennialBroadcastReceiver extends MMBroadcastReceiver {
         private Context mContext;
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-
-            if (action.equals(ACTION_GETAD_FAILED)) {
-                getAdFailure(null);
-                return;
-            } else if (action.equals(ACTION_FETCH_SUCCEEDED)) {
-                fetchFinishedCaching(null);
-                return;
-            } else if (action.equals(ACTION_GETAD_FAILED)) {
-                getAdFailure(null);
-                return;
-            } else if (action.equals(ACTION_FETCH_FAILED)) {
-                fetchFailure(null);
-                return;
-            } else if (action.equals(ACTION_DISPLAY_STARTED)) {
-                displayStarted(null);
-                return;
-            } else if (action.equals(ACTION_OVERLAY_CLOSED)) {
-                overlayClosed(null);
-                return;
-            } else if (action.equals(ACTION_INTENT_STARTED)) {
-                String info = intent.getStringExtra("intentType");
-                intentStarted(null, info);
-                return;
-            }
-
-            try {
-                super.onReceive(context, intent);
-            } catch (Exception exception) {
-                Log.d("MoPub", "Unspecified MMBroadcastReceiver failure.");
-            }
-        }
 
         @Override
         public void fetchFinishedCaching(MMAd ad) {
