@@ -13,16 +13,17 @@ if len(os.sys.argv) < 2:
 
 custom_events = ['MillennialBanner', 'MillennialInterstitial', 'ChartboostInterstitial', 'GreystripeBanner', 'GreystripeInterstitial', 'InMobiBanner', 'InMobiInterstitial', 'GoogleAdMobBanner', 'GoogleAdMobInterstitial']
 duplicated_custom_events = ['MillennialBanner', 'MillennialInterstitial', 'ChartboostInterstitial', 'GoogleAdMobBanner', 'GoogleAdMobInterstitial']
+jars_to_copy = ['MillennialBanner', 'MillennialInterstitial', 'GoogleAdMobBanner', 'GoogleAdMobInterstitial']
 
-parameter = os.sys.argv[1]
+filestem = os.sys.argv[1]
 
-filename = parameter + '.java'
+filename = filestem + '.java'
 
 def three_arg_usage():
 	print 'usage: refresh_extras <filename> <simpleadsdemo|robotium>'
 	exit(1)
 
-if parameter in duplicated_custom_events:
+if filestem in duplicated_custom_events:
 	# if it's a duplicated custom event, we expect 3 parameters!!
 	if len(os.sys.argv) < 3:
 		three_arg_usage()
@@ -47,7 +48,7 @@ if parameter in duplicated_custom_events:
 
 source_path = DEMO_ROOT + filename
 
-if parameter in custom_events:
+if filestem in custom_events:
 	destination_path = 'extras/src/com/mopub/mobileads/' + filename
 else:
 	print 'error: no matching custom event for filename'
@@ -64,7 +65,8 @@ if os.system('git co master'):
 	exit(1)
 
 shutil.copyfile(temp_path, destination_path)
-os.system('cp /tmp/mopub_jars/* libs/.')
+if filestem in jars_to_copy:
+	os.system('cp /tmp/mopub_jars/* libs/.')
 
 if os.system('git add -A .'):
 	print 'error: unable to add files'

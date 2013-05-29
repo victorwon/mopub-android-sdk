@@ -1,14 +1,11 @@
 package com.mopub.mobileads.test.support;
 
-import com.mopub.mobileads.factories.AdFetcherFactory;
-import com.mopub.mobileads.factories.CustomEventBannerFactory;
-import com.mopub.mobileads.factories.CustomEventInterstitialFactory;
-import com.mopub.mobileads.factories.HttpClientFactory;
+import com.mopub.mobileads.factories.*;
 import com.mopub.mobileads.util.DateAndTime;
-import org.robolectric.DefaultTestLifecycle;
-import org.robolectric.RobolectricTestRunner;
 import org.junit.runners.model.InitializationError;
 import org.mockito.MockitoAnnotations;
+import org.robolectric.DefaultTestLifecycle;
+import org.robolectric.RobolectricTestRunner;
 import org.robolectric.TestLifecycle;
 
 public class SdkTestRunner extends RobolectricTestRunner {
@@ -30,6 +27,10 @@ public class SdkTestRunner extends RobolectricTestRunner {
             DateAndTime.setInstance(new TestDateAndTime());
             CustomEventBannerFactory.setInstance(new TestCustomEventBannerFactory());
             CustomEventInterstitialFactory.setInstance(new TestCustomEventInterstitialFactory());
+            CustomEventBannerAdapterFactory.setInstance(new TestCustomEventBannerAdapterFactory());
+            MraidViewFactory.setInstance(new TestMraidViewFactory());
+            MoPubViewFactory.setInstance(new TestMoPubViewFactory());
+            CustomEventInterstitialAdapterFactory.setInstance(new TestCustomEventInterstitialAdapterFactory());
 
             MockitoAnnotations.initMocks(test);
         }

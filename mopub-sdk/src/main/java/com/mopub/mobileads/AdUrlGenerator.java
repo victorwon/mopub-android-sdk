@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.location.Location;
 import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.telephony.TelephonyManager;
 import com.mopub.mobileads.util.DateAndTime;
 
@@ -23,6 +24,7 @@ public class AdUrlGenerator extends BaseUrlGenerator {
     public static final String DEVICE_ORIENTATION_LANDSCAPE = "l";
     public static final String DEVICE_ORIENTATION_SQUARE = "s";
     public static final String DEVICE_ORIENTATION_UNKNOWN = "u";
+    public static final int UNKNOWN_NETWORK_TYPE = 0x00000008; // Equivalent to TYPE_DUMMY introduced in API level 14. Will generate the "unknown" code
     private Context mContext;
     private TelephonyManager mTelephonyManager;
     private ConnectivityManager mConnectivityManager;
@@ -231,9 +233,10 @@ public class AdUrlGenerator extends BaseUrlGenerator {
 
     private int getActiveNetworkType() {
         if (mContext.checkCallingOrSelfPermission(ACCESS_NETWORK_STATE) == PERMISSION_GRANTED) {
-            return mConnectivityManager.getActiveNetworkInfo().getType();
+            NetworkInfo activeNetworkInfo = mConnectivityManager.getActiveNetworkInfo();
+            return activeNetworkInfo != null ? activeNetworkInfo.getType() : UNKNOWN_NETWORK_TYPE;
         }
-        return ConnectivityManager.TYPE_DUMMY; // Will generate the "unknown" code
+        return UNKNOWN_NETWORK_TYPE;
     }
 
     private static String addKeyword(String keywords, String addition) {

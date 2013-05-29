@@ -13,7 +13,11 @@ import static com.mopub.mobileads.MoPubErrorCode.ADAPTER_NOT_FOUND;
 import static com.mopub.mobileads.MoPubErrorCode.NETWORK_TIMEOUT;
 import static com.mopub.mobileads.MoPubErrorCode.UNSPECIFIED;
 
-class CustomEventInterstitialAdapter extends BaseInterstitialAdapter implements CustomEventInterstitialListener {
+public class CustomEventInterstitialAdapter implements CustomEventInterstitialListener {
+    public static final int TIMEOUT_DELAY = 30000;
+
+    private boolean mInvalidated;
+    private CustomEventInterstitialAdapterListener mCustomEventInterstitialAdapterListener;
     private CustomEventInterstitial mCustomEventInterstitial;
     private Context mContext;
     private Map<String, Object> mLocalExtras;
@@ -21,11 +25,11 @@ class CustomEventInterstitialAdapter extends BaseInterstitialAdapter implements 
     private final Handler mHandler;
     private final Runnable mTimeout;
 
-    CustomEventInterstitialAdapter() {
+    public CustomEventInterstitialAdapter(MoPubInterstitial moPubInterstitial, String className, String jsonParams) {
         mHandler = new Handler();
         mServerExtras = new HashMap<String, String>();
         mLocalExtras = new HashMap<String, Object>();
-
+        mContext = moPubInterstitial.getActivity();
         mTimeout = new Runnable() {
             @Override
             public void run() {
@@ -34,25 +38,13 @@ class CustomEventInterstitialAdapter extends BaseInterstitialAdapter implements 
                 invalidate();
             }
         };
-    }
 
-    @Override
-    void init(MoPubInterstitial moPubInterstitial, String className) {
-        init(moPubInterstitial, className, null);
-    }
-    
-    void init(MoPubInterstitial moPubInterstitial, String className, String jsonParams) {
-        super.init(moPubInterstitial, jsonParams);
-        
-        mContext = moPubInterstitial.getActivity();
-        
         Log.d("MoPub", "Attempting to invoke custom event: " + className);
-        
         try {
             mCustomEventInterstitial = CustomEventInterstitialFactory.create(className);
         } catch (Exception exception) {
             Log.d("MoPub", "Couldn't locate or instantiate custom event: " + className + ".");
-            if (mAdapterListener != null) mAdapterListener.onNativeInterstitialFailed(this, ADAPTER_NOT_FOUND);
+            if (mCustomEventInterstitialAdapterListener != null) mCustomEventInterstitialAdapterListener.onCustomEventInterstitialFailed(ADAPTER_NOT_FOUND);
         }
         
         // Attempt to load the JSON extras into mServerExtras.
@@ -62,11 +54,10 @@ class CustomEventInterstitialAdapter extends BaseInterstitialAdapter implements 
             Log.d("MoPub", "Failed to create Map from JSON: " + jsonParams);
         }
         
-        mLocalExtras = mInterstitial.getLocalExtras();
-        if (mInterstitial.getLocation() != null) mLocalExtras.put("location", mInterstitial.getLocation());
+        mLocalExtras = moPubInterstitial.getLocalExtras();
+        if (moPubInterstitial.getLocation() != null) mLocalExtras.put("location", moPubInterstitial.getLocation());
     }
     
-    @Override
     void loadInterstitial() {
         if (isInvalidated() || mCustomEventInterstitial == null) return;
 
@@ -74,25 +65,40 @@ class CustomEventInterstitialAdapter extends BaseInterstitialAdapter implements 
         mCustomEventInterstitial.loadInterstitial(mContext, this, mLocalExtras, mServerExtras);
     }
     
-    @Override
     void showInterstitial() {
         if (isInvalidated() || mCustomEventInterstitial == null) return;
         
         mCustomEventInterstitial.showInterstitial();
     }
 
-    @Override
     void invalidate() {
         if (mCustomEventInterstitial != null) mCustomEventInterstitial.onInvalidate();
         mCustomEventInterstitial = null;
         mContext = null;
         mServerExtras = null;
         mLocalExtras = null;
-        super.invalidate();
+        mCustomEventInterstitialAdapterListener = null;
+        mInvalidated = true;
+    }
+
+    boolean isInvalidated() {
+        return mInvalidated;
+    }
+
+    void setAdapterListener(CustomEventInterstitialAdapterListener listener) {
+        mCustomEventInterstitialAdapterListener = listener;
     }
 
     private void cancelTimeout() {
         mHandler.removeCallbacks(mTimeout);
+    }
+
+    interface CustomEventInterstitialAdapterListener {
+        void onCustomEventInterstitialLoaded();
+        void onCustomEventInterstitialFailed(MoPubErrorCode errorCode);
+        void onCustomEventInterstitialShown();
+        void onCustomEventInterstitialClicked();
+        void onCustomEventInterstitialDismissed();
     }
 
     /*
@@ -101,38 +107,38 @@ class CustomEventInterstitialAdapter extends BaseInterstitialAdapter implements 
     @Override
     public void onInterstitialLoaded() {
         if (isInvalidated()) return;
-        
-        if (mAdapterListener != null) {
+
+        if (mCustomEventInterstitialAdapterListener != null) {
             cancelTimeout();
-            mAdapterListener.onNativeInterstitialLoaded(this);
+            mCustomEventInterstitialAdapterListener.onCustomEventInterstitialLoaded();
         }
     }
 
     @Override
     public void onInterstitialFailed(MoPubErrorCode errorCode) {
         if (isInvalidated()) return;
-        
-        if (mAdapterListener != null) {
+
+        if (mCustomEventInterstitialAdapterListener != null) {
             if (errorCode == null) {
                 errorCode = UNSPECIFIED;
             }
             cancelTimeout();
-            mAdapterListener.onNativeInterstitialFailed(this, errorCode);
+            mCustomEventInterstitialAdapterListener.onCustomEventInterstitialFailed(errorCode);
         }
     }
-    
+
     @Override
     public void onInterstitialShown() {
         if (isInvalidated()) return;
-        
-        if (mAdapterListener != null) mAdapterListener.onNativeInterstitialShown(this);
+
+        if (mCustomEventInterstitialAdapterListener != null) mCustomEventInterstitialAdapterListener.onCustomEventInterstitialShown();
     }
 
     @Override
     public void onInterstitialClicked() {
         if (isInvalidated()) return;
-        
-        if (mAdapterListener != null) mAdapterListener.onNativeInterstitialClicked(this);
+
+        if (mCustomEventInterstitialAdapterListener != null) mCustomEventInterstitialAdapterListener.onCustomEventInterstitialClicked();
     }
 
     @Override
@@ -143,7 +149,7 @@ class CustomEventInterstitialAdapter extends BaseInterstitialAdapter implements 
     @Override
     public void onInterstitialDismissed() {
         if (isInvalidated()) return;
-        
-        if (mAdapterListener != null) mAdapterListener.onNativeInterstitialDismissed(this);
+
+        if (mCustomEventInterstitialAdapterListener != null) mCustomEventInterstitialAdapterListener.onCustomEventInterstitialDismissed();
     }
 }

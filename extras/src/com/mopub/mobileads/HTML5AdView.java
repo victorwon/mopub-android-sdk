@@ -1,29 +1,32 @@
 package com.mopub.mobileads;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
 import android.os.Build;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebChromeClient.CustomViewCallback;
-import android.widget.FrameLayout;
+import android.widget.*;
+import com.mopub.mobileads.util.Dips;
 
-import java.lang.Deprecated;
+import static android.util.TypedValue.COMPLEX_UNIT_SP;
+import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
+import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+import static com.mopub.mobileads.resource.Drawables.DEFAULT_VIDEO_POSTER;
 
 @Deprecated
-public class HTML5AdView extends AdView {
+public class HTML5AdView extends AdViewController {
 
     private FrameLayout mCustomViewContainer;
     private View mCustomView;
     private CustomViewCallback mCustomViewCallback;
-    private Bitmap mDefaultVideoPoster;
     private View mVideoProgressView;
 
     static final FrameLayout.LayoutParams COVER_SCREEN_GRAVITY_CENTER =
@@ -37,7 +40,7 @@ public class HTML5AdView extends AdView {
 
         int sdkVersion = (new Integer(Build.VERSION.SDK)).intValue();
         if (sdkVersion > 7) {
-            setWebChromeClient(new HTML5WebChromeClient());
+            getAdWebView().setWebChromeClient(new HTML5WebChromeClient());
         }
 
         mCustomViewContainer = new FrameLayout(context);
@@ -48,11 +51,12 @@ public class HTML5AdView extends AdView {
     private class HTML5WebChromeClient extends WebChromeClient implements OnCompletionListener,
             OnErrorListener {
 
+        @TargetApi(7) // equivalent to Build.VERSION_CODES.ECLAIR_MR1
         @Override
         public void onShowCustomView(View view, CustomViewCallback callback) {
             super.onShowCustomView(view, callback);
 
-            HTML5AdView.this.setVisibility(View.GONE);
+            getAdWebView().setVisibility(GONE);
 
             // If a custom view already exists, don't show another one.
             if (mCustomView != null) {
@@ -66,7 +70,7 @@ public class HTML5AdView extends AdView {
 
             // Display the custom view in the MoPubView's hierarchy.
             getMoPubView().addView(mCustomViewContainer);
-            mCustomViewContainer.setVisibility(View.VISIBLE);
+            mCustomViewContainer.setVisibility(VISIBLE);
             mCustomViewContainer.bringToFront();
         }
 
@@ -75,33 +79,28 @@ public class HTML5AdView extends AdView {
             if (mCustomView == null) return;
 
             // Hide the custom view.
-            mCustomView.setVisibility(View.GONE);
+            mCustomView.setVisibility(GONE);
 
             // Remove the custom view from its container.
             mCustomViewContainer.removeView(mCustomView);
             mCustomView = null;
-            mCustomViewContainer.setVisibility(View.GONE);
+            mCustomViewContainer.setVisibility(GONE);
             mCustomViewCallback.onCustomViewHidden();
 
             // Stop displaying the custom view container and unhide the ad view.
             getMoPubView().removeView(mCustomViewContainer);
-            HTML5AdView.this.setVisibility(View.VISIBLE);
+            getAdWebView().setVisibility(VISIBLE);
         }
 
         @Override
         public Bitmap getDefaultVideoPoster() {
-            if (mDefaultVideoPoster == null) {
-                mDefaultVideoPoster = BitmapFactory.decodeResource(
-                        getResources(), R.drawable.default_video_poster);
-            }
-            return mDefaultVideoPoster;
+            return DEFAULT_VIDEO_POSTER.decodeImage(getContext()).getBitmap();
         }
 
         @Override
         public View getVideoLoadingProgressView() {
             if (mVideoProgressView == null) {
-                LayoutInflater inflater = LayoutInflater.from(getContext());
-                mVideoProgressView = inflater.inflate(R.layout.video_loading_progress, null);
+                mVideoProgressView = createVideoProgressView();
             }
             return mVideoProgressView;
         }
@@ -117,6 +116,34 @@ public class HTML5AdView extends AdView {
             mp.stop();
             mCustomViewCallback.onCustomViewHidden();
             Log.d("MoPub", "Video completed!");
+        }
+
+        private View createVideoProgressView() {
+            LinearLayout mVideoProgressView = new LinearLayout(getContext());
+            mVideoProgressView.setOrientation(LinearLayout.VERTICAL);
+
+            RelativeLayout.LayoutParams videoLayoutParams = new RelativeLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+            videoLayoutParams.addRule(RelativeLayout.CENTER_IN_PARENT);
+            mVideoProgressView.setLayoutParams(videoLayoutParams);
+
+            ProgressBar progressBar = new ProgressBar(getContext(), null, android.R.attr.progressBarStyleLarge);
+            LinearLayout.LayoutParams progressBarLayoutParams = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+            progressBarLayoutParams.gravity = Gravity.CENTER;
+            progressBar.setLayoutParams(progressBarLayoutParams);
+            mVideoProgressView.addView(progressBar);
+
+            TextView textView = new TextView(getContext());
+            LinearLayout.LayoutParams textViewLayoutParams = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+            textViewLayoutParams.gravity = Gravity.CENTER;
+
+            textView.setText("Loading...");
+            textView.setTextSize(COMPLEX_UNIT_SP, 14f);
+            textView.setTextColor(getContext().getResources().getColor(android.R.color.white));
+            textView.setPadding(0, Dips.asIntPixels(5f, getContext()), 0, 0);
+
+            textView.setLayoutParams(textViewLayoutParams);
+            mVideoProgressView.addView(textView);
+            return mVideoProgressView;
         }
     }
 }

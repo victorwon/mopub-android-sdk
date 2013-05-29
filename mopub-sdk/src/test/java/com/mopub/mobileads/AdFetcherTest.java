@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.mopub.mobileads.AdFetcher.*;
+import static com.mopub.mobileads.AdTypeTranslator.MRAID_BANNER;
+import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
@@ -20,17 +22,17 @@ import static org.mockito.Mockito.verify;
 @RunWith(SdkTestRunner.class)
 public class AdFetcherTest {
     private AdFetcher subject;
-    private AdView adView;
+    private AdViewController adViewController;
     private MoPubView moPubView;
     private HttpResponse response;
 
     @Before
     public void setup() {
-        adView = mock(AdView.class);
+        adViewController = mock(AdViewController.class);
         moPubView = mock(MoPubView.class);
-        stub(adView.getMoPubView()).toReturn(moPubView);
+        stub(adViewController.getMoPubView()).toReturn(moPubView);
 
-        subject = new AdFetcher(adView, "expected userAgent");
+        subject = new AdFetcher(adViewController, "expected userAgent");
         response = new TestHttpResponseWithHeaders(200, "yahoo!!!");
     }
 
@@ -40,7 +42,7 @@ public class AdFetcherTest {
 
         subject.fetchAdForUrl("url");
 
-        verify(adView).configureUsingHttpResponse(eq(response));
+        verify(adViewController).configureUsingHttpResponse(eq(response));
     }
 
     @Test
@@ -61,10 +63,10 @@ public class AdFetcherTest {
 
     @Test
     public void fetchAdForUrl_shouldRouteMillennialInterstitialToCustomEventHandling() throws Exception {
-        AdView interstitialAdView = mock(AdView.class);
+        AdViewController interstitialAdViewController = mock(AdViewController.class);
         MoPubInterstitial.MoPubInterstitialView moPubInterstitialView = mock(MoPubInterstitial.MoPubInterstitialView.class);
-        stub(interstitialAdView.getMoPubView()).toReturn(moPubInterstitialView);
-        subject = new AdFetcher(interstitialAdView, "expected userAgent");
+        stub(interstitialAdViewController.getMoPubView()).toReturn(moPubInterstitialView);
+        subject = new AdFetcher(interstitialAdViewController, "expected userAgent");
 
         String json = "{\"adWidth\": 320, \"adHeight\": 480, \"adUnitID\": \"44310\"}";
         response.addHeader(AD_TYPE_HEADER, "interstitial");
@@ -79,5 +81,18 @@ public class AdFetcherTest {
         paramsMap.put(CUSTOM_EVENT_DATA_HEADER, json);
 
         verify(moPubInterstitialView).loadCustomEvent(eq(paramsMap));
+    }
+
+    @Test
+    public void extractCustomEventMraidAdLoadTask_shouldCreateAnEncodedJsonString() throws Exception {
+        String expectedJson = "{\"Mraid-Html-Data\":\"%3Chtml%3E%3C%2Fhtml%3E\"}";
+        AdFetchTask adFetchTask = new AdFetchTask(subject);
+        String htmlData = "<html></html>";
+        response = new TestHttpResponseWithHeaders(200, htmlData);
+        response.addHeader(AD_TYPE_HEADER, "mraid");
+
+        CustomEventAdLoadTask customEventTask = (CustomEventAdLoadTask) adFetchTask.extractCustomEventMraidAdLoadTask(response, MRAID_BANNER);
+        assertThat(customEventTask.mParamsMap.get(CUSTOM_EVENT_NAME_HEADER)).isEqualTo(MRAID_BANNER);
+        assertThat(customEventTask.mParamsMap.get(CUSTOM_EVENT_DATA_HEADER)).isEqualTo(expectedJson);
     }
 }

@@ -12,7 +12,6 @@ import org.robolectric.Robolectric;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.mopub.mobileads.BaseInterstitialAdapter.BaseInterstitialAdapterListener;
 import static com.mopub.mobileads.CustomEventInterstitial.CustomEventInterstitialListener;
 import static com.mopub.mobileads.MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR;
 import static com.mopub.mobileads.MoPubErrorCode.NETWORK_TIMEOUT;
@@ -30,43 +29,41 @@ public class CustomEventInterstitialAdapterTest {
     private CustomEventInterstitialAdapter subject;
     private MoPubInterstitial moPubInterstitial;
     private CustomEventInterstitial interstitial;
-    private Map<String,Object> expectedLocalExtras;
-    private HashMap<String,String> expectedServerExtras;
+    private Map<String, Object> expectedLocalExtras;
+    private HashMap<String, String> expectedServerExtras;
     private static final String CLASS_NAME = "arbitrary_interstitial_adapter_class_name";
     private static final String JSON_PARAMS = "{\"key\":\"value\",\"a different key\":\"a different value\"}";
-    private BaseInterstitialAdapterListener interstitialAdapterListener;
+    private CustomEventInterstitialAdapter.CustomEventInterstitialAdapterListener interstitialAdapterListener;
 
     @Before
     public void setUp() throws Exception {
-        subject = new CustomEventInterstitialAdapter();
         moPubInterstitial = mock(MoPubInterstitial.class);
+        subject = new CustomEventInterstitialAdapter(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
 
         expectedLocalExtras = new HashMap<String, Object>();
         expectedServerExtras = new HashMap<String, String>();
 
         interstitial = CustomEventInterstitialFactory.create(CLASS_NAME);
 
-        interstitialAdapterListener = mock(BaseInterstitialAdapterListener.class);
+        interstitialAdapterListener = mock(CustomEventInterstitialAdapter.CustomEventInterstitialAdapterListener.class);
         subject.setAdapterListener(interstitialAdapterListener);
     }
 
     @Test
     public void timeout_shouldSignalFailureAndInvalidate() throws Exception {
-        subject.init(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
         subject.loadInterstitial();
-
-        Robolectric.idleMainLooper(BaseInterstitialAdapter.TIMEOUT_DELAY - 1);
-        verify(interstitialAdapterListener, never()).onNativeInterstitialFailed(eq(subject), eq(NETWORK_TIMEOUT));
+        Robolectric.idleMainLooper(CustomEventInterstitialAdapter.TIMEOUT_DELAY - 1);
+        verify(interstitialAdapterListener, never()).onCustomEventInterstitialFailed(eq(NETWORK_TIMEOUT));
         assertThat(subject.isInvalidated()).isFalse();
 
         Robolectric.idleMainLooper(1);
-        verify(interstitialAdapterListener).onNativeInterstitialFailed(eq(subject), eq(NETWORK_TIMEOUT));
+        verify(interstitialAdapterListener).onCustomEventInterstitialFailed(eq(NETWORK_TIMEOUT));
         assertThat(subject.isInvalidated()).isTrue();
     }
 
     @Test
     public void loadInterstitial_shouldHaveEmptyServerExtrasOnInvalidJsonParams() throws Exception {
-        subject.init(moPubInterstitial, CLASS_NAME, "{this is terrible JSON");
+        subject = new CustomEventInterstitialAdapter(moPubInterstitial, CLASS_NAME, "{this is terrible JSON");
         subject.loadInterstitial();
 
         verify(interstitial).loadInterstitial(
@@ -83,7 +80,7 @@ public class CustomEventInterstitialAdapterTest {
         expectedLocation.setLongitude(10.0);
         expectedLocation.setLongitude(20.1);
         stub(moPubInterstitial.getLocation()).toReturn(expectedLocation);
-        subject.init(moPubInterstitial, CLASS_NAME, null);
+        subject = new CustomEventInterstitialAdapter(moPubInterstitial, CLASS_NAME, null);
         subject.loadInterstitial();
 
         expectedLocalExtras.put("location", moPubInterstitial.getLocation());
@@ -98,9 +95,7 @@ public class CustomEventInterstitialAdapterTest {
 
     @Test
     public void loadInterstitial_shouldPropagateJsonParamsInServerExtras() throws Exception {
-        subject.init(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
         subject.loadInterstitial();
-
         expectedServerExtras.put("key", "value");
         expectedServerExtras.put("a different key", "a different value");
 
@@ -116,7 +111,6 @@ public class CustomEventInterstitialAdapterTest {
     public void loadInterstitial_shouldScheduleTimeout_interstitialLoadedAndFailed_shouldCancelTimeout() throws Exception {
         Robolectric.pauseMainLooper();
 
-        subject.init(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
         assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(0);
 
         subject.loadInterstitial();
@@ -134,7 +128,6 @@ public class CustomEventInterstitialAdapterTest {
 
     @Test
     public void showInterstitial_shouldCallCustomEventInterstitialShowInterstitial() throws Exception {
-        subject.init(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
         subject.showInterstitial();
 
         verify(interstitial).showInterstitial();
@@ -142,63 +135,55 @@ public class CustomEventInterstitialAdapterTest {
 
     @Test
     public void onInterstitialLoaded_shouldSignalAdapterListener() throws Exception {
-        subject.init(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
         subject.onInterstitialLoaded();
 
-        verify(interstitialAdapterListener).onNativeInterstitialLoaded(eq(subject));
+        verify(interstitialAdapterListener).onCustomEventInterstitialLoaded();
     }
 
     @Test
     public void onInterstitialFailed_shouldLoadFailUrl() throws Exception {
-        subject.init(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
         subject.onInterstitialFailed(ADAPTER_CONFIGURATION_ERROR);
 
-        verify(interstitialAdapterListener).onNativeInterstitialFailed(eq(subject), eq(ADAPTER_CONFIGURATION_ERROR));
+        verify(interstitialAdapterListener).onCustomEventInterstitialFailed(eq(ADAPTER_CONFIGURATION_ERROR));
     }
 
     @Test
     public void onInterstitialFailed_whenErrorCodeIsNull_shouldPassUnspecifiedError() throws Exception {
-        subject.init(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
         subject.onInterstitialFailed(null);
 
-        verify(interstitialAdapterListener).onNativeInterstitialFailed(eq(subject), eq(UNSPECIFIED));
+        verify(interstitialAdapterListener).onCustomEventInterstitialFailed(eq(UNSPECIFIED));
     }
 
     @Test
     public void onInterstitialShown_shouldSignalAdapterListener() throws Exception {
-        subject.init(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
         subject.onInterstitialShown();
 
-        verify(interstitialAdapterListener).onNativeInterstitialShown(eq(subject));
+        verify(interstitialAdapterListener).onCustomEventInterstitialShown();
     }
 
     @Test
     public void onInterstitialClicked_shouldSignalAdapterListener() throws Exception {
-        subject.init(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
         subject.onInterstitialClicked();
 
-        verify(interstitialAdapterListener).onNativeInterstitialClicked(eq(subject));
+        verify(interstitialAdapterListener).onCustomEventInterstitialClicked();
     }
 
     @Test
     public void onLeaveApplication_shouldSignalAdapterListener() throws Exception {
-        subject.init(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
         subject.onLeaveApplication();
 
-        verify(interstitialAdapterListener).onNativeInterstitialClicked(eq(subject));
+        verify(interstitialAdapterListener).onCustomEventInterstitialClicked();
     }
 
     @Test
     public void onInterstitialDismissed_shouldSignalAdapterListener() throws Exception {
-        subject.init(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
         subject.onInterstitialDismissed();
 
-        verify(interstitialAdapterListener).onNativeInterstitialDismissed(eq(subject));
+        verify(interstitialAdapterListener).onCustomEventInterstitialDismissed();
     }
 
     @Test
     public void invalidate_shouldCauseLoadInterstitialToDoNothing() throws Exception {
-        subject.init(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
         subject.invalidate();
 
         subject.loadInterstitial();
@@ -213,7 +198,6 @@ public class CustomEventInterstitialAdapterTest {
 
     @Test
     public void invalidate_shouldCauseShowInterstitialToDoNothing() throws Exception {
-        subject.init(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
         subject.invalidate();
 
         subject.showInterstitial();
@@ -223,7 +207,6 @@ public class CustomEventInterstitialAdapterTest {
 
     @Test
     public void invalidate_shouldCauseInterstitialListenerMethodsToDoNothing() throws Exception {
-        subject.init(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
         subject.invalidate();
 
         subject.onInterstitialLoaded();
@@ -233,10 +216,10 @@ public class CustomEventInterstitialAdapterTest {
         subject.onLeaveApplication();
         subject.onInterstitialDismissed();
 
-        verify(interstitialAdapterListener, never()).onNativeInterstitialLoaded(any(CustomEventInterstitialAdapter.class));
-        verify(interstitialAdapterListener, never()).onNativeInterstitialFailed(any(CustomEventInterstitialAdapter.class), any(MoPubErrorCode.class));
-        verify(interstitialAdapterListener, never()).onNativeInterstitialShown(any(CustomEventInterstitialAdapter.class));
-        verify(interstitialAdapterListener, never()).onNativeInterstitialClicked(any(CustomEventInterstitialAdapter.class));
-        verify(interstitialAdapterListener, never()).onNativeInterstitialDismissed(any(CustomEventInterstitialAdapter.class));
+        verify(interstitialAdapterListener, never()).onCustomEventInterstitialLoaded();
+        verify(interstitialAdapterListener, never()).onCustomEventInterstitialFailed(any(MoPubErrorCode.class));
+        verify(interstitialAdapterListener, never()).onCustomEventInterstitialShown();
+        verify(interstitialAdapterListener, never()).onCustomEventInterstitialClicked();
+        verify(interstitialAdapterListener, never()).onCustomEventInterstitialDismissed();
     }
 }

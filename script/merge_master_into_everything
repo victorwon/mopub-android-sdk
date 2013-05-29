@@ -14,4 +14,16 @@ git merge master --no-edit
 git co admob
 git merge master --no-edit
 
+git co greystripe
+git merge master --no-edit
+
+git co inmobi
+git merge master --no-edit
+
+git co html5adview
+git merge master --no-edit
+
+git co unity
+git merge master --no-edit
+
 git co master

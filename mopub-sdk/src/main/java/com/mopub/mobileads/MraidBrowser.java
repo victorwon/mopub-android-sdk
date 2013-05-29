@@ -5,20 +5,34 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.webkit.*;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
+
+import static android.view.ViewGroup.LayoutParams.FILL_PARENT;
+import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+import static com.mopub.mobileads.resource.Drawables.*;
 
 public class MraidBrowser extends Activity {
     
     public static final String URL_EXTRA = "extra_url";
-    
+    public static final int INNER_LAYOUT_ID = 1;
+    private WebView mWebView;
+    private ImageButton mBackButton;
+    private ImageButton mForwardButton;
+    private ImageButton mRefreshButton;
+    private ImageButton mCloseButton;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -26,17 +40,16 @@ public class MraidBrowser extends Activity {
         getWindow().requestFeature(Window.FEATURE_PROGRESS);
         getWindow().setFeatureInt(Window.FEATURE_PROGRESS, Window.PROGRESS_VISIBILITY_ON);
         
-        setContentView(R.layout.mraid_browser);
+        setContentView(getMraidBrowserView());
         
         Intent intent = getIntent();
         initializeWebView(intent);
-        initializeButtons(intent);
+        initializeButtons();
         enableCookies();
     }
-    
+
     private void initializeWebView(Intent intent) {
-        WebView webView = (WebView) findViewById(R.id.webView);
-        WebSettings webSettings = webView.getSettings();
+        WebSettings webSettings = mWebView.getSettings();
         
         webSettings.setJavaScriptEnabled(true);
         
@@ -48,63 +61,62 @@ public class MraidBrowser extends Activity {
         webSettings.setBuiltInZoomControls(true);
         webSettings.setUseWideViewPort(true);
         
-        webView.loadUrl(intent.getStringExtra(URL_EXTRA));
-        webView.setWebViewClient(new WebViewClient() {
+        mWebView.loadUrl(intent.getStringExtra(URL_EXTRA));
+        mWebView.setWebViewClient(new WebViewClient() {
             @Override
-            public void onReceivedError(WebView view, int errorCode, String description, 
-                    String failingUrl) {
+            public void onReceivedError(WebView view, int errorCode, String description,
+                                        String failingUrl) {
                 Activity a = (Activity) view.getContext();
                 Toast.makeText(a, "MRAID error: " + description, Toast.LENGTH_SHORT).show();
             }
-            
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url == null) return false;
-                
+
                 Uri uri = Uri.parse(url);
                 String host = uri.getHost();
-                
+
                 if ((url.startsWith("http:") || url.startsWith("https:"))
                         && !"play.google.com".equals(host)
                         && !"market.android.com".equals(host)) {
                     return false;
                 }
-                
+
                 try {
                     startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
                 } catch (ActivityNotFoundException exception) {
                     Log.w("MoPub", "Unable to start activity for " + url + ". " +
                             "Ensure that your phone can handle this intent.");
                 }
-                
+
                 finish();
                 return true;
             }
-            
+
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
-                ImageButton forwardButton = (ImageButton) findViewById(R.id.browserForwardButton);
-                forwardButton.setImageResource(R.drawable.unrightarrow);
+                mForwardButton.setImageDrawable(UNRIGHT_ARROW.decodeImage(MraidBrowser.this));
             }
-            
+
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
 
-                ImageButton backButton = (ImageButton) findViewById(R.id.browserBackButton);
-                int backImageResource = (view.canGoBack()) ? 
-                        R.drawable.leftarrow : R.drawable.unleftarrow;
-                backButton.setImageResource(backImageResource);
+                Drawable backImageDrawable = view.canGoBack()
+                        ? LEFT_ARROW.decodeImage(MraidBrowser.this)
+                        : UNLEFT_ARROW.decodeImage(MraidBrowser.this);
+                mBackButton.setImageDrawable(backImageDrawable);
 
-                ImageButton forwardButton = (ImageButton) findViewById(R.id.browserForwardButton);
-                int fwdImageResource = (view.canGoForward()) ? 
-                        R.drawable.rightarrow : R.drawable.unrightarrow;
-                forwardButton.setImageResource(fwdImageResource);
+                Drawable forwardImageDrawable = view.canGoForward()
+                        ? RIGHT_ARROW.decodeImage(MraidBrowser.this)
+                        : UNRIGHT_ARROW.decodeImage(MraidBrowser.this);
+                mForwardButton.setImageDrawable(forwardImageDrawable);
             }
         });
         
-        webView.setWebChromeClient(new WebChromeClient() {
+        mWebView.setWebChromeClient(new WebChromeClient() {
             public void onProgressChanged(WebView view, int progress) {
                 Activity a = (Activity) view.getContext();
                 a.setTitle("Loading...");
@@ -114,37 +126,30 @@ public class MraidBrowser extends Activity {
         });
     }
     
-    private void initializeButtons(Intent intent) {
-        ImageButton backButton = (ImageButton) findViewById(R.id.browserBackButton);
-        backButton.setBackgroundColor(Color.TRANSPARENT);
-        backButton.setOnClickListener(new OnClickListener() {
+    private void initializeButtons() {
+        mBackButton.setBackgroundColor(Color.TRANSPARENT);
+        mBackButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
-                WebView webView = (WebView) findViewById(R.id.webView);
-                if (webView.canGoBack()) webView.goBack();
+                if (mWebView.canGoBack()) mWebView.goBack();
             }
         });
         
-        ImageButton forwardButton = (ImageButton) findViewById(R.id.browserForwardButton);
-        forwardButton.setBackgroundColor(Color.TRANSPARENT);
-        forwardButton.setOnClickListener(new OnClickListener() {
+        mForwardButton.setBackgroundColor(Color.TRANSPARENT);
+        mForwardButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
-                WebView webView = (WebView) findViewById(R.id.webView);
-                if (webView.canGoForward()) webView.goForward();
+                if (mWebView.canGoForward()) mWebView.goForward();
             }
         });
         
-        ImageButton refreshButton = (ImageButton) findViewById(R.id.browserRefreshButton);
-        refreshButton.setBackgroundColor(Color.TRANSPARENT);
-        refreshButton.setOnClickListener(new OnClickListener() {
+        mRefreshButton.setBackgroundColor(Color.TRANSPARENT);
+        mRefreshButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
-                WebView webView = (WebView) findViewById(R.id.webView);
-                webView.reload();
+                mWebView.reload();
             }
         });
         
-        ImageButton closeButton = (ImageButton) findViewById(R.id.browserCloseButton);
-        closeButton.setBackgroundColor(Color.TRANSPARENT);
-        closeButton.setOnClickListener(new OnClickListener() {
+        mCloseButton.setBackgroundColor(Color.TRANSPARENT);
+        mCloseButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
                 MraidBrowser.this.finish();
             }
@@ -166,5 +171,55 @@ public class MraidBrowser extends Activity {
     protected void onResume() {
         super.onResume();
         CookieSyncManager.getInstance().startSync();
+    }
+
+    private View getMraidBrowserView() {
+        LinearLayout mraidBrowserView = new LinearLayout(this);
+        LinearLayout.LayoutParams browserLayoutParams = new LinearLayout.LayoutParams(FILL_PARENT, FILL_PARENT);
+        mraidBrowserView.setLayoutParams(browserLayoutParams);
+        mraidBrowserView.setOrientation(LinearLayout.VERTICAL);
+
+        RelativeLayout outerLayout = new RelativeLayout(this);
+        LinearLayout.LayoutParams outerLayoutParams = new LinearLayout.LayoutParams(FILL_PARENT, WRAP_CONTENT);
+        outerLayout.setLayoutParams(outerLayoutParams);
+        mraidBrowserView.addView(outerLayout);
+
+        LinearLayout innerLayout = new LinearLayout(this);
+        innerLayout.setId(INNER_LAYOUT_ID);
+        RelativeLayout.LayoutParams innerLayoutParams = new RelativeLayout.LayoutParams(FILL_PARENT, WRAP_CONTENT);
+        innerLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        innerLayout.setLayoutParams(innerLayoutParams);
+        innerLayout.setBackgroundDrawable(BACKGROUND.decodeImage(MraidBrowser.this));
+        outerLayout.addView(innerLayout);
+
+        mBackButton = getButton(LEFT_ARROW.decodeImage(MraidBrowser.this));
+        mForwardButton = getButton(RIGHT_ARROW.decodeImage(MraidBrowser.this));
+        mRefreshButton = getButton(REFRESH.decodeImage(MraidBrowser.this));
+        mCloseButton = getButton(CLOSE.decodeImage(MraidBrowser.this));
+
+        innerLayout.addView(mBackButton);
+        innerLayout.addView(mForwardButton);
+        innerLayout.addView(mRefreshButton);
+        innerLayout.addView(mCloseButton);
+
+        mWebView = new WebView(this);
+        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(FILL_PARENT, FILL_PARENT);
+        layoutParams.addRule(RelativeLayout.ABOVE, INNER_LAYOUT_ID);
+        mWebView.setLayoutParams(layoutParams);
+        outerLayout.addView(mWebView);
+
+        return mraidBrowserView;
+    }
+
+    private ImageButton getButton(Drawable drawable) {
+        ImageButton imageButton = new ImageButton(this);
+
+        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1f);
+        layoutParams.gravity = Gravity.CENTER_VERTICAL;
+        imageButton.setLayoutParams(layoutParams);
+
+        imageButton.setImageDrawable(drawable);
+
+        return imageButton;
     }
 }

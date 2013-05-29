@@ -12,6 +12,7 @@ import android.webkit.JsResult;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import com.mopub.mobileads.resource.MraidJavascript;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -21,7 +22,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,18 +59,18 @@ public class MraidView extends WebView {
         HIDDEN
     }
 
-    enum ExpansionStyle {
+    public enum ExpansionStyle {
         ENABLED,
         DISABLED
     }
 
-    enum NativeCloseButtonStyle {
+    public enum NativeCloseButtonStyle {
         ALWAYS_VISIBLE,
         ALWAYS_HIDDEN,
         AD_CONTROLLED
     }
     
-    enum PlacementType {
+    public enum PlacementType {
         INLINE,
         INTERSTITIAL
     }
@@ -78,8 +80,8 @@ public class MraidView extends WebView {
                 PlacementType.INLINE);
     }
 
-    MraidView(Context context, ExpansionStyle expStyle, NativeCloseButtonStyle buttonStyle,
-            PlacementType placementType) {
+    public MraidView(Context context, ExpansionStyle expStyle, NativeCloseButtonStyle buttonStyle,
+                     PlacementType placementType) {
         super(context);
         mPlacementType = placementType;
         initialize(expStyle, buttonStyle);
@@ -126,6 +128,8 @@ public class MraidView extends WebView {
     }
 
     public void loadHtmlData(String data) {
+        if (data == null) return;
+
         // If the string data lacks the HTML boilerplate, add it.
         if (data.indexOf("<html>") == -1) {
             data = "<html><head></head><body style='margin:0;padding:0;'>" + data + 
@@ -133,9 +137,8 @@ public class MraidView extends WebView {
         }
         
         // Inject the MRAID JavaScript bridge.
-        String mraid = "file://" + copyRawResourceToFilesDir(R.raw.mraid, "mraid.js");
-        data = data.replace("<head>", "<head><script src='" + mraid + "'></script>");
-        
+        data = data.replace("<head>", "<head><script>" + MraidJavascript.JAVASCRIPT_SOURCE + "</script>");
+
         loadDataWithBaseURL(null, data, "text/html", "UTF-8", null);
     }
 
@@ -287,37 +290,7 @@ public class MraidView extends WebView {
             return true;
         }
     }
-    
-    /* 
-     * Copies a file from res/raw to <destinationFilename> in the application file directory.
-     */
-    private String copyRawResourceToFilesDir(int resourceId, String destinationFilename) {
-        InputStream is = getContext().getResources().openRawResource(resourceId);
-        
-        String destinationPath = getContext().getFilesDir().getAbsolutePath() + File.separator + 
-                destinationFilename;
-        File destinationFile = new File(destinationPath);
-        FileOutputStream fos;
-        try {
-            fos = new FileOutputStream(destinationFile);
-        } catch (FileNotFoundException e) {
-            return "";
-        }
-        
-        byte[] b = new byte[8192];
-        try {
-            for (int n; (n = is.read(b)) != -1;) {
-                fos.write(b, 0, n);
-            }
-        } catch (IOException e) {
-            return "";
-        } finally {
-            try { is.close(); fos.close(); } catch (IOException e) { }
-        }
-        
-        return destinationPath;
-    }
-    
+
     private class MraidWebViewClient extends WebViewClient {
         @Override
         public void onReceivedError(WebView view, int errorCode, String description, 

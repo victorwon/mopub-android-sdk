@@ -1,3 +1,10 @@
+## Version 1.14 (May 28, 2013)
+
+  - Provided improved support for Android Unity by moving all project resources (including layouts, javascript, images, and values) into source
+  - Removed reference to TYPE_DUMMY in AdUrlGenerator because it is not available in earlier versions of Android; fixes [GitHub issue #3](https://github.com/mopub/mopub-android-sdk/issues/3)
+  - Fixed NPE in AdUrlGenerator when WiFi is off and Airplane mode is on; fixes [GitHub issue #5](https://github.com/mopub/mopub-android-sdk/issues/5)
+  - `MraidInterstitial`s now properly notify `InterstitialAdListener` when they are shown and dismissed
+
 ## Version 1.13 (May 9, 2013)
   - Moved all Android code and documentation to its own repository: [mopub-android-sdk](https://github.com/mopub/mopub-android-sdk)
   - Updated Millennial support to Millennial Media SDK version 5.0

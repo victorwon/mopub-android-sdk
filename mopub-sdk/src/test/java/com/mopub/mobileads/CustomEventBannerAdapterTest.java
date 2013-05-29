@@ -14,6 +14,7 @@ import org.robolectric.Robolectric;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.mopub.mobileads.AdFetcher.MRAID_HTML_DATA;
 import static com.mopub.mobileads.CustomEventBanner.CustomEventBannerListener;
 import static com.mopub.mobileads.MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR;
 import static com.mopub.mobileads.MoPubErrorCode.NETWORK_TIMEOUT;
@@ -21,11 +22,7 @@ import static com.mopub.mobileads.MoPubErrorCode.UNSPECIFIED;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.stub;
-import static org.mockito.Mockito.verify;
-
+import static org.mockito.Mockito.*;
 
 @RunWith(SdkTestRunner.class)
 public class CustomEventBannerAdapterTest {
@@ -39,8 +36,8 @@ public class CustomEventBannerAdapterTest {
 
     @Before
     public void setUp() throws Exception {
-        subject = new CustomEventBannerAdapter();
         moPubView = mock(MoPubView.class);
+        subject = new CustomEventBannerAdapter(moPubView, CLASS_NAME, JSON_PARAMS);
 
         expectedLocalExtras = new HashMap<String, Object>();
         expectedServerExtras = new HashMap<String, String>();
@@ -50,10 +47,9 @@ public class CustomEventBannerAdapterTest {
 
     @Test
     public void timeout_shouldSignalFailureAndInvalidate() throws Exception {
-        subject.init(moPubView, CLASS_NAME, JSON_PARAMS);
         subject.loadAd();
 
-        Robolectric.idleMainLooper(BaseAdapter.TIMEOUT_DELAY - 1);
+        Robolectric.idleMainLooper(CustomEventBannerAdapter.TIMEOUT_DELAY - 1);
         verify(moPubView, never()).loadFailUrl(eq(NETWORK_TIMEOUT));
         assertThat(subject.isInvalidated()).isFalse();
 
@@ -64,7 +60,7 @@ public class CustomEventBannerAdapterTest {
 
     @Test
     public void loadAd_shouldHaveEmptyServerExtrasOnInvalidJsonParams() throws Exception {
-        subject.init(moPubView, CLASS_NAME, "{this is terrible JSON");
+        subject = new CustomEventBannerAdapter(moPubView, CLASS_NAME, "{this is terrible JSON");
         subject.loadAd();
 
         verify(banner).loadBanner(
@@ -82,7 +78,7 @@ public class CustomEventBannerAdapterTest {
         expectedLocation.setLongitude(20.1);
 
         stub(moPubView.getLocation()).toReturn(expectedLocation);
-        subject.init(moPubView, CLASS_NAME, null);
+        subject = new CustomEventBannerAdapter(moPubView, CLASS_NAME, null);
         subject.loadAd();
 
         expectedLocalExtras.put("location", moPubView.getLocation());
@@ -97,7 +93,6 @@ public class CustomEventBannerAdapterTest {
 
     @Test
     public void loadAd_shouldPropagateJsonParamsInServerExtras() throws Exception {
-        subject.init(moPubView, CLASS_NAME, JSON_PARAMS);
         subject.loadAd();
 
         expectedServerExtras.put("key", "value");
@@ -115,7 +110,6 @@ public class CustomEventBannerAdapterTest {
     public void loadAd_shouldScheduleTimeout_bannerLoadedAndFailed_shouldCancelTimeout() throws Exception {
         Robolectric.pauseMainLooper();
 
-        subject.init(moPubView, CLASS_NAME, JSON_PARAMS);
         assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(0);
 
         subject.loadAd();
@@ -134,7 +128,6 @@ public class CustomEventBannerAdapterTest {
     @Test
     public void onBannerLoaded_shouldSignalMoPubView() throws Exception {
         View view = new View(new Activity());
-        subject.init(moPubView, CLASS_NAME, JSON_PARAMS);
         subject.onBannerLoaded(view);
         
         verify(moPubView).nativeAdLoaded();
@@ -144,7 +137,6 @@ public class CustomEventBannerAdapterTest {
 
     @Test
     public void onBannerFailed_shouldLoadFailUrl() throws Exception {
-        subject.init(moPubView, CLASS_NAME, JSON_PARAMS);
         subject.onBannerFailed(ADAPTER_CONFIGURATION_ERROR);
 
         verify(moPubView).loadFailUrl(eq(ADAPTER_CONFIGURATION_ERROR));
@@ -152,15 +144,38 @@ public class CustomEventBannerAdapterTest {
 
     @Test
     public void onBannerFailed_whenErrorCodeIsNull_shouldPassUnspecifiedError() throws Exception {
-        subject.init(moPubView, CLASS_NAME, JSON_PARAMS);
         subject.onBannerFailed(null);
 
         verify(moPubView).loadFailUrl(eq(UNSPECIFIED));
     }
 
     @Test
+    public void onBannerExpanded_shouldPauseRefreshAndCallAdPresentOverlay() throws Exception {
+        subject.onBannerExpanded();
+
+        verify(moPubView).setAutorefreshEnabled(eq(false));
+        verify(moPubView).adPresentedOverlay();
+    }
+
+    @Test
+    public void onBannerCollapsed_shouldRestoreRefreshSettingAndCallAdClosed() throws Exception {
+        stub(moPubView.getAutorefreshEnabled()).toReturn(true);
+        subject.onBannerExpanded();
+        reset(moPubView);
+        subject.onBannerCollapsed();
+        verify(moPubView).setAutorefreshEnabled(eq(true));
+        verify(moPubView).adClosed();
+
+        stub(moPubView.getAutorefreshEnabled()).toReturn(false);
+        subject.onBannerExpanded();
+        reset(moPubView);
+        subject.onBannerCollapsed();
+        verify(moPubView).setAutorefreshEnabled(eq(false));
+        verify(moPubView).adClosed();
+    }
+
+    @Test
     public void onBannerClicked_shouldRegisterClick() throws Exception {
-        subject.init(moPubView, CLASS_NAME, JSON_PARAMS);
         subject.onBannerClicked();
 
         verify(moPubView).registerClick();
@@ -168,7 +183,6 @@ public class CustomEventBannerAdapterTest {
 
     @Test
     public void onLeaveApplication_shouldRegisterClick() throws Exception {
-        subject.init(moPubView, CLASS_NAME, JSON_PARAMS);
         subject.onLeaveApplication();
 
         verify(moPubView).registerClick();
@@ -176,7 +190,6 @@ public class CustomEventBannerAdapterTest {
 
     @Test
     public void invalidate_shouldCauseLoadAdToDoNothing() throws Exception {
-        subject.init(moPubView, CLASS_NAME, JSON_PARAMS);
         subject.invalidate();
 
         subject.loadAd();
@@ -191,11 +204,12 @@ public class CustomEventBannerAdapterTest {
 
     @Test
     public void invalidate_shouldCauseBannerListenerMethodsToDoNothing() throws Exception {
-        subject.init(moPubView, CLASS_NAME, JSON_PARAMS);
         subject.invalidate();
 
         subject.onBannerLoaded(null);
         subject.onBannerFailed(null);
+        subject.onBannerExpanded();
+        subject.onBannerCollapsed();
         subject.onBannerClicked();
         subject.onLeaveApplication();
 
@@ -203,6 +217,23 @@ public class CustomEventBannerAdapterTest {
         verify(moPubView, never()).setAdContentView(any(View.class));
         verify(moPubView, never()).trackNativeImpression();
         verify(moPubView, never()).loadFailUrl(any(MoPubErrorCode.class));
+        verify(moPubView, never()).setAutorefreshEnabled(any(boolean.class));
+        verify(moPubView, never()).adClosed();
         verify(moPubView, never()).registerClick();
+    }
+
+    @Test
+    public void init_whenPassedHtmlData_shouldPutItInLocalExtras() throws Exception {
+        String expectedHtmlData = "expected html data";
+        expectedServerExtras.put(MRAID_HTML_DATA, expectedHtmlData);
+        subject = new CustomEventBannerAdapter(moPubView, CLASS_NAME, "{\"Mraid-Html-Data\":\"expected html data\"}");
+        subject.loadAd();
+
+        verify(banner).loadBanner(
+                any(Context.class),
+                eq(subject),
+                eq(expectedLocalExtras),
+                eq(expectedServerExtras)
+        );
     }
 }

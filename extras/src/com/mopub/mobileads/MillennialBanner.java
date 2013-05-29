@@ -33,7 +33,6 @@
 package com.mopub.mobileads;
 
 import android.content.Context;
-import android.content.IntentFilter;
 import android.location.Location;
 import android.util.Log;
 import com.millennialmedia.android.*;
@@ -41,15 +40,12 @@ import com.millennialmedia.android.*;
 import java.util.Map;
 
 /**
- * Compatible with version 5.0.0 of the Millennial Media SDK.
+ * Compatible with version 5.0.1 of the Millennial Media SDK.
  */
 
 class MillennialBanner extends CustomEventBanner {
     private MMAdView mMillennialAdView;
-    private CustomEventBannerListener bannerListener;
-    private String apid;
-    private int adWidth;
-    private int adHeight;
+    private CustomEventBannerListener mBannerListener;
     public static final String APID_KEY = "adUnitID";
     public static final String AD_WIDTH_KEY = "adWidth";
     public static final String AD_HEIGHT_KEY = "adHeight";
@@ -58,14 +54,17 @@ class MillennialBanner extends CustomEventBanner {
     @Override
     protected void loadBanner(Context context, CustomEventBannerListener customEventBannerListener,
                               Map<String, Object> localExtras, Map<String, String> serverExtras) {
-        bannerListener = customEventBannerListener;
+        mBannerListener = customEventBannerListener;
 
+        String apid;
+        int width;
+        int height;
         if (extrasAreValid(serverExtras)) {
             apid = serverExtras.get(APID_KEY);
-            adWidth = Integer.parseInt(serverExtras.get(AD_WIDTH_KEY));
-            adHeight = Integer.parseInt(serverExtras.get(AD_HEIGHT_KEY));
+            width = Integer.parseInt(serverExtras.get(AD_WIDTH_KEY));
+            height = Integer.parseInt(serverExtras.get(AD_HEIGHT_KEY));
         } else {
-            bannerListener.onBannerFailed(MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR);
+            mBannerListener.onBannerFailed(MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR);
             return;
         }
 
@@ -73,12 +72,12 @@ class MillennialBanner extends CustomEventBanner {
         MMSDK.setBroadcastEvents(true);
 
         mBroadcastReceiver = new MillennialBroadcastReceiver();
-        mBroadcastReceiver.register(context, MMBroadcastReceiver.createIntentFilter());
+        mBroadcastReceiver.register(context);
 
         mMillennialAdView = new MMAdView(context);
         mMillennialAdView.setApid(apid);
-        mMillennialAdView.setWidth(adWidth);
-        mMillennialAdView.setHeight(adHeight);
+        mMillennialAdView.setWidth(width);
+        mMillennialAdView.setHeight(height);
 
         Location location = (Location) localExtras.get("location");
         if (location != null) MMRequest.setUserLocation(location);
@@ -112,25 +111,24 @@ class MillennialBanner extends CustomEventBanner {
         public void getAdSuccess(MMAd ad) {
             super.getAdSuccess(ad);
             Log.d("MoPub", "Millennial banner ad loaded successfully. Showing ad...");
-            bannerListener.onBannerLoaded(mMillennialAdView);
+            mBannerListener.onBannerLoaded(mMillennialAdView);
         }
 
         @Override
         public void getAdFailure(MMAd ad) {
             super.getAdFailure(ad);
             Log.d("MoPub", "Millennial banner ad failed to load.");
-            bannerListener.onBannerFailed(MoPubErrorCode.NETWORK_NO_FILL);
+            mBannerListener.onBannerFailed(MoPubErrorCode.NETWORK_NO_FILL);
         }
 
         @Override
         public void intentStarted(MMAd ad, String intent) {
             super.intentStarted(ad, intent);
             Log.d("MoPub", "Millennial banner ad clicked.");
-            bannerListener.onBannerClicked();
+            mBannerListener.onBannerClicked();
         }
 
-
-        void register(Context context, IntentFilter intentFilter) {
+        void register(Context context) {
             mContext = context;
             context.registerReceiver(this, MMBroadcastReceiver.createIntentFilter());
         }

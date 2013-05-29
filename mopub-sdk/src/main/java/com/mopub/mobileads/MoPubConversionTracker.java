@@ -64,13 +64,34 @@ public class MoPubConversionTracker {
         mSharedPreferences = mContext.getSharedPreferences(PREFERENCE_NAME, MODE_PRIVATE);
 
         if (!isAlreadyTracked()) {
-            new Thread(mTrackOpen).start();
+            new Thread(new TrackOpen()).start();
         } else {
             Log.d("MoPub", "Conversion already tracked");
         }
     }
 
-    Runnable mTrackOpen = new Runnable() {
+    private boolean isAlreadyTracked() {
+        return mSharedPreferences.getBoolean(mIsTrackedKey, false);
+    }
+
+    private class ConversionUrlGenerator extends BaseUrlGenerator {
+        @Override
+        public String generateUrlString(String serverHostname) {
+            initUrlString(serverHostname, TRACK_HANDLER);
+
+            setApiVersion("6");
+            setPackageId(mPackageName);
+            setUdid(getUdidFromContext(mContext));
+            setAppVersion(getAppVersionFromContext(mContext));
+            return getFinalUrlString();
+        }
+
+        private void setPackageId(String packageName) {
+            addParam("id", packageName);
+        }
+    }
+
+    private class TrackOpen implements Runnable {
         public void run() {
             String url = new ConversionUrlGenerator().generateUrlString(TRACK_HOST);
             Log.d("MoPub", "Conversion track: " + url);
@@ -102,27 +123,6 @@ public class MoPubConversionTracker {
                     .edit()
                     .putBoolean(mIsTrackedKey, true)
                     .commit();
-        }
-    };
-
-    private boolean isAlreadyTracked() {
-        return mSharedPreferences.getBoolean(mIsTrackedKey, false);
-    }
-
-    private class ConversionUrlGenerator extends BaseUrlGenerator {
-        @Override
-        public String generateUrlString(String serverHostname) {
-            initUrlString(serverHostname, TRACK_HANDLER);
-
-            setApiVersion("6");
-            setPackageId(mPackageName);
-            setUdid(getUdidFromContext(mContext));
-            setAppVersion(getAppVersionFromContext(mContext));
-            return getFinalUrlString();
-        }
-
-        private void setPackageId(String packageName) {
-            addParam("id", packageName);
         }
     }
 }

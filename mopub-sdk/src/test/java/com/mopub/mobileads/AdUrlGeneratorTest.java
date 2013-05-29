@@ -204,6 +204,16 @@ public class AdUrlGeneratorTest {
         assertThat(adUrl).isEqualTo(urlBuilder.withNetworkType(MoPubNetworkType.UNKNOWN).build());
     }
 
+    @Test
+    public void generateAdUrl_shouldTolerateNullActiveNetwork() throws Exception {
+        AdUrlBuilder urlBuilder = new AdUrlBuilder(expectedUdidSha);
+        shadowConnectivityManager.setActiveNetworkInfo(null);
+
+        String adUrl = generateMinimumUrlString();
+
+        assertThat(adUrl).isEqualTo(urlBuilder.withNetworkType(MoPubNetworkType.UNKNOWN).build());
+    }
+
     private NetworkInfo createNetworkInfo(int type) {
         return ShadowNetworkInfo.newInstance(null,
                 type,

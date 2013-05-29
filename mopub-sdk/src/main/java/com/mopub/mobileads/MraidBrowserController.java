@@ -15,12 +15,12 @@ class MraidBrowserController extends MraidAbstractController {
     protected void open(String url) {
         Log.d(LOGTAG, "Opening in-app browser: " + url);
         
-        MraidView view = getView();
+        MraidView view = getMraidView();
         if (view.getOnOpenListener() != null) {
             view.getOnOpenListener().onOpen(view);
         }
         
-        Context context = getView().getContext();
+        Context context = getMraidView().getContext();
         Intent i = new Intent(context, MraidBrowser.class);
         i.putExtra(MraidBrowser.URL_EXTRA, url);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

@@ -51,39 +51,39 @@ public abstract class CustomEventInterstitial {
          * Failure to do so will disrupt the mediation waterfall and cause future ad requests to
          * stall.
          */
-        abstract void onInterstitialLoaded();
+        void onInterstitialLoaded();
         
         /*
          * Your custom event subclass must call this method when it fails to load an ad.
          * Failure to do so will disrupt the mediation waterfall and cause future ad requests to
          * stall.
          */
-        abstract void onInterstitialFailed(MoPubErrorCode errorCode);
+        void onInterstitialFailed(MoPubErrorCode errorCode);
         
         /*
          * Your custom event subclass should call this method when the interstitial ad is displayed.
          * This method is optional. However, if you call this method, you should ensure that
          * onInterstitialDismissed is called at a later time.
          */
-        abstract void onInterstitialShown();
+        void onInterstitialShown();
         
         /*
          * Your custom event subclass should call this method when a user taps on an interstitial
          * ad. This method is optional.
          */
-        abstract void onInterstitialClicked();
+        void onInterstitialClicked();
         
         /*
          * This is an alias for onInterstitialClicked().
          * Your custom event subclass should call this method if the ad will cause the user to leave
          * the application (e.g. for the Play Store or browser). This method is optional.
          */
-        abstract void onLeaveApplication();
+        void onLeaveApplication();
         
         /*
          * Your custom event subclass should call this method when the interstitial ad is closed.
          * This method is optional.
          */
-        abstract void onInterstitialDismissed();
+        void onInterstitialDismissed();
     }
 }

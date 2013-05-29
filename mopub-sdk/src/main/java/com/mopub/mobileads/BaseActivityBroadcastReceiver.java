@@ -4,7 +4,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-abstract class MoPubActivityBroadcastReceiver extends BroadcastReceiver {
+import static com.mopub.mobileads.BaseActivity.ACTION_INTERSTITIAL_DISMISS;
+import static com.mopub.mobileads.BaseActivity.ACTION_INTERSTITIAL_SHOW;
+
+abstract class BaseActivityBroadcastReceiver extends BroadcastReceiver {
     abstract void onHtmlInterstitialShown();
     abstract void onHtmlInterstitialDismissed();
     
@@ -12,9 +15,9 @@ abstract class MoPubActivityBroadcastReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
         
-        if (action.equals(MoPubActivity.ACTION_INTERSTITIAL_SHOW)) {
+        if (action.equals(ACTION_INTERSTITIAL_SHOW)) {
             onHtmlInterstitialShown();
-        } else if (action.equals(MoPubActivity.ACTION_INTERSTITIAL_DISMISS)) {
+        } else if (action.equals(ACTION_INTERSTITIAL_DISMISS)) {
             onHtmlInterstitialDismissed();
         }
     }

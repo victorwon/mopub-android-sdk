@@ -1,7 +1,7 @@
 package com.mopub.mobileads.factories;
 
 import com.mopub.mobileads.AdFetcher;
-import com.mopub.mobileads.AdView;
+import com.mopub.mobileads.AdViewController;
 
 public class AdFetcherFactory {
     private static AdFetcherFactory instance = new AdFetcherFactory();
@@ -10,11 +10,11 @@ public class AdFetcherFactory {
         instance = factory;
     }
 
-    public static AdFetcher create(AdView adView, String userAgent) {
-        return instance.internalCreate(adView, userAgent);
+    public static AdFetcher create(AdViewController adViewController, String userAgent) {
+        return instance.internalCreate(adViewController, userAgent);
     }
 
-    public AdFetcher internalCreate(AdView adView, String userAgent) {
-        return new AdFetcher(adView, userAgent);
+    public AdFetcher internalCreate(AdViewController adViewController, String userAgent) {
+        return new AdFetcher(adViewController, userAgent);
     }
 }

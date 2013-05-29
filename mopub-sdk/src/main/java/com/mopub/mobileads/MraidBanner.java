@@ -32,77 +32,99 @@
 
 package com.mopub.mobileads;
 
-import android.view.Gravity;
-import android.widget.FrameLayout;
+import android.content.Context;
+import android.net.Uri;
 import com.mopub.mobileads.MraidView.ViewState;
+import com.mopub.mobileads.factories.MraidViewFactory;
 
-class MraidAdapter extends BaseAdapter {
-    
+import java.util.Map;
+
+import static com.mopub.mobileads.AdFetcher.MRAID_HTML_DATA;
+import static com.mopub.mobileads.MoPubErrorCode.MRAID_LOAD_ERROR;
+
+class MraidBanner extends CustomEventBanner {
     private MraidView mMraidView;
-    private boolean mPreviousAutorefreshSetting;
-    
-    void init(MoPubView view, String jsonParams) {
-        super.init(view, jsonParams);
-        mPreviousAutorefreshSetting = false;
-    }
-    
-    @Override
-    void loadAd() {
-        if (isInvalidated()) return;
+    private CustomEventBannerListener mBannerListener;
 
-        mMraidView = new MraidView(mMoPubView.getContext());
-        mMraidView.loadHtmlData(mJsonParams);
+    @Override
+    protected void loadBanner(Context context,
+                    CustomEventBannerListener customEventBannerListener,
+                    Map<String, Object> localExtras,
+                    Map<String, String> serverExtras) {
+        mBannerListener = customEventBannerListener;
+
+        String htmlData;
+        if (extrasAreValid(serverExtras)) {
+            htmlData = Uri.decode(serverExtras.get(MRAID_HTML_DATA));
+        } else {
+            mBannerListener.onBannerFailed(MRAID_LOAD_ERROR);
+            return;
+        }
+
+        mMraidView = MraidViewFactory.create(context);
+        mMraidView.loadHtmlData(htmlData);
         initMraidListeners();
-        
-        mMoPubView.removeAllViews();
-        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.FILL_PARENT, 
-                FrameLayout.LayoutParams.FILL_PARENT);
-        layoutParams.gravity = Gravity.CENTER;
-        mMoPubView.addView(mMraidView, layoutParams);
     }
 
     @Override
-    void invalidate() {
-        mMoPubView = null;
-        if (mMraidView != null) mMraidView.destroy();
-        super.invalidate();
+    protected void onInvalidate() {
+        if (mMraidView != null) {
+            resetMraidListeners();
+            mMraidView.destroy();
+        }
     }
-    
+
+    void onReady() {
+        mBannerListener.onBannerLoaded(mMraidView);
+    }
+
+    void onFail() {
+        mBannerListener.onBannerFailed(MRAID_LOAD_ERROR);
+    }
+
+    void onExpand() {
+        mBannerListener.onBannerExpanded();
+        mBannerListener.onBannerClicked();
+    }
+
+    void onClose() {
+        mBannerListener.onBannerCollapsed();
+    }
+
+    private boolean extrasAreValid(Map<String, String> serverExtras) {
+        return serverExtras.containsKey(MRAID_HTML_DATA);
+    }
+
     private void initMraidListeners() {
         mMraidView.setOnReadyListener(new MraidView.OnReadyListener() {
             public void onReady(MraidView view) {
-                if (!isInvalidated()) {
-                    mMoPubView.nativeAdLoaded();
-                    mMoPubView.trackNativeImpression();
-                }
-            }
-        });
-        
-        mMraidView.setOnExpandListener(new MraidView.OnExpandListener() {
-            public void onExpand(MraidView view) {
-                if (!isInvalidated()) {
-                    mPreviousAutorefreshSetting = mMoPubView.getAutorefreshEnabled();
-                    mMoPubView.setAutorefreshEnabled(false);
-                    mMoPubView.adPresentedOverlay();
-                    mMoPubView.registerClick();
-                }
-            }
-        });
-        
-        mMraidView.setOnCloseListener(new MraidView.OnCloseListener() {
-            public void onClose(MraidView view, ViewState newViewState) {
-                if (!isInvalidated()) {
-                    mMoPubView.setAutorefreshEnabled(mPreviousAutorefreshSetting);
-                    mMoPubView.adClosed();
-                }
+                MraidBanner.this.onReady();
             }
         });
 
         mMraidView.setOnFailureListener(new MraidView.OnFailureListener() {
-           public void onFailure(MraidView view) {
-               if (!isInvalidated()) mMoPubView.loadFailUrl(MoPubErrorCode.MRAID_LOAD_ERROR);
-           } 
+            public void onFailure(MraidView view) {
+                onFail();
+            }
         });
+
+        mMraidView.setOnExpandListener(new MraidView.OnExpandListener() {
+            public void onExpand(MraidView view) {
+                MraidBanner.this.onExpand();
+            }
+        });
+
+        mMraidView.setOnCloseListener(new MraidView.OnCloseListener() {
+            public void onClose(MraidView view, ViewState newViewState) {
+                MraidBanner.this.onClose();
+            }
+        });
+    }
+
+    private void resetMraidListeners() {
+        mMraidView.setOnReadyListener(null);
+        mMraidView.setOnFailureListener(null);
+        mMraidView.setOnExpandListener(null);
+        mMraidView.setOnCloseListener(null);
     }
 }

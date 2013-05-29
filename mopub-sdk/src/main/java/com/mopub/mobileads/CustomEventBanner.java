@@ -44,26 +44,36 @@ public abstract class CustomEventBanner {
          * needs to display the provided View. Failure to do so will disrupt the mediation waterfall
          * and cause future ad requests to stall.
          */
-        abstract void onBannerLoaded(View bannerView);
+        void onBannerLoaded(View bannerView);
         
         /*
          * Your custom event subclass must call this method when it fails to load an ad.
          * Failure to do so will disrupt the mediation waterfall and cause future ad requests to
          * stall.
          */
-        abstract void onBannerFailed(MoPubErrorCode errorCode);
-        
+        void onBannerFailed(MoPubErrorCode errorCode);
+
+        /*
+         * This method is for internal use only. You may ignore it.
+         */
+        void onBannerExpanded();
+
+        /*
+         * This method is for internal use only. You may ignore it.
+         */
+        void onBannerCollapsed();
+
         /*
          * Your custom event subclass should call this method when a user taps on a banner ad.
          * This method is optional.
          */
-        abstract void onBannerClicked();
-        
+        void onBannerClicked();
+
         /*
          * This is an alias for onBannerClicked().
          * Your custom event subclass should call this method if the ad will cause the user to leave
          * the application (e.g. for the Play Store or browser). This method is optional.
          */
-        abstract void onLeaveApplication();
+        void onLeaveApplication();
     }
 }

@@ -33,7 +33,6 @@
 package com.mopub.mobileads;
 
 import android.content.Context;
-import android.content.IntentFilter;
 import android.location.Location;
 import android.util.Log;
 import com.millennialmedia.android.*;
@@ -46,7 +45,6 @@ import java.util.Map;
 
 class MillennialInterstitial extends CustomEventInterstitial {
     private MMInterstitial mMillennialInterstitial;
-    private String mApid;
     private CustomEventInterstitialListener mInterstitialListener;
     public static final String APID_KEY = "adUnitID";
     private MillennialBroadcastReceiver mBroadcastReceiver;
@@ -56,8 +54,9 @@ class MillennialInterstitial extends CustomEventInterstitial {
                                     Map<String, Object> localExtras, Map<String, String> serverExtras) {
         mInterstitialListener = customEventInterstitialListener;
 
+        String apid;
         if (extrasAreValid(serverExtras)) {
-            mApid = serverExtras.get(APID_KEY);
+            apid = serverExtras.get(APID_KEY);
         } else {
             mInterstitialListener.onInterstitialFailed(MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR);
             return;
@@ -67,14 +66,14 @@ class MillennialInterstitial extends CustomEventInterstitial {
         MMSDK.setBroadcastEvents(true);
 
         mBroadcastReceiver = new MillennialBroadcastReceiver();
-        mBroadcastReceiver.register(context, MMBroadcastReceiver.createIntentFilter());
+        mBroadcastReceiver.register(context);
 
         Location location = (Location) localExtras.get("location");
         if (location != null) MMRequest.setUserLocation(location);
 
         mMillennialInterstitial = new MMInterstitial(context);
         mMillennialInterstitial.setMMRequest(new MMRequest());
-        mMillennialInterstitial.setApid(mApid);
+        mMillennialInterstitial.setApid(apid);
         mMillennialInterstitial.fetch();
     }
 
@@ -147,7 +146,7 @@ class MillennialInterstitial extends CustomEventInterstitial {
             mInterstitialListener.onInterstitialDismissed();
         }
 
-        void register(Context context, IntentFilter intentFilter) {
+        void register(Context context) {
             mContext = context;
             context.registerReceiver(this, MMBroadcastReceiver.createIntentFilter());
         }

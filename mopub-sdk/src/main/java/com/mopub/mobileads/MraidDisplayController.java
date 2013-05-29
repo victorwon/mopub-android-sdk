@@ -27,6 +27,9 @@ import com.mopub.mobileads.MraidView.ViewState;
 
 import java.util.ArrayList;
 
+import static com.mopub.mobileads.resource.Drawables.INTERSTITIAL_CLOSE_BUTTON_NORMAL;
+import static com.mopub.mobileads.resource.Drawables.INTERSTITIAL_CLOSE_BUTTON_PRESSED;
+
 class MraidDisplayController extends MraidAbstractController {
     private static final String LOGTAG = "MraidDisplayController";
     private static final long VIEWABILITY_TIMER_MILLIS = 3000;
@@ -56,7 +59,7 @@ class MraidDisplayController extends MraidAbstractController {
             boolean currentViewable = checkViewable();
             if (mIsViewable != currentViewable) {
                 mIsViewable = currentViewable;
-                getView().fireChangeEventForProperty(
+                getMraidView().fireChangeEventForProperty(
                         MraidViewableProperty.createWithViewable(mIsViewable));
             }
             mHandler.postDelayed(this, VIEWABILITY_TIMER_MILLIS);
@@ -106,19 +109,25 @@ class MraidDisplayController extends MraidAbstractController {
     
     // A view that replaces the MraidView within its parent view when the MraidView is expanded
     // (i.e. moved to the top of the view hierarchy).
-    FrameLayout mPlaceholderView;
-    
+    private FrameLayout mPlaceholderView;
+    private FrameLayout mAdContainerLayout;
+    private RelativeLayout mExpansionLayout;
+
     MraidDisplayController(MraidView view, MraidView.ExpansionStyle expStyle, 
             MraidView.NativeCloseButtonStyle buttonStyle) {
         super(view);
         mExpansionStyle = expStyle;
         mNativeCloseButtonStyle = buttonStyle;
         
-        Context context = getView().getContext();
+        Context context = getMraidView().getContext();
         mOriginalRequestedOrientation = (context instanceof Activity) ? 
                 ((Activity) context).getRequestedOrientation() :
                 ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
-                
+
+        mAdContainerLayout = createAdContainerLayout();
+        mExpansionLayout = createExpansionLayout();
+        mPlaceholderView = createPlaceholderView();
+
         initialize();
     }
     
@@ -126,17 +135,17 @@ class MraidDisplayController extends MraidAbstractController {
         mViewState = ViewState.LOADING;
         initializeScreenMetrics();
         initializeViewabilityTimer();
-        getView().getContext().registerReceiver(mOrientationBroadcastReceiver, 
+        getMraidView().getContext().registerReceiver(mOrientationBroadcastReceiver,
                 new IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED));
     }
     
     private void initializeScreenMetrics() {
-        Context context = getView().getContext();
+        Context context = getMraidView().getContext();
         DisplayMetrics metrics = new DisplayMetrics();
         WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         wm.getDefaultDisplay().getMetrics(metrics);
         mDensity = metrics.density;
-        
+
         int statusBarHeight = 0, titleBarHeight = 0;
         if (context instanceof Activity) {
             Activity activity = (Activity) context;
@@ -160,21 +169,21 @@ class MraidDisplayController extends MraidAbstractController {
     }
     
     private int getDisplayRotation() {
-        WindowManager wm = (WindowManager) getView().getContext()
+        WindowManager wm = (WindowManager) getMraidView().getContext()
                 .getSystemService(Context.WINDOW_SERVICE);
         return wm.getDefaultDisplay().getOrientation();
     }
     
     private void onOrientationChanged(int currentRotation) {
         initializeScreenMetrics();
-        getView().fireChangeEventForProperty(
+        getMraidView().fireChangeEventForProperty(
                 MraidScreenSizeProperty.createWithSize(mScreenWidth, mScreenHeight));
     }
     
     public void destroy() {
         mHandler.removeCallbacks(mCheckViewabilityTask);
         try {
-            getView().getContext().unregisterReceiver(mOrientationBroadcastReceiver);
+            getMraidView().getContext().unregisterReceiver(mOrientationBroadcastReceiver);
         } catch (IllegalArgumentException e) {
             if (e.getMessage().contains("Receiver not registered")) {
                 // Ignore this exception.
@@ -186,10 +195,10 @@ class MraidDisplayController extends MraidAbstractController {
         ArrayList<MraidProperty> properties = new ArrayList<MraidProperty>();
         properties.add(MraidScreenSizeProperty.createWithSize(mScreenWidth, mScreenHeight));
         properties.add(MraidViewableProperty.createWithViewable(mIsViewable));
-        getView().fireChangeEventForProperties(properties);
+        getMraidView().fireChangeEventForProperties(properties);
         
         mViewState = ViewState.DEFAULT;
-        getView().fireChangeEventForProperty(MraidStateProperty.createWithViewState(mViewState));
+        getMraidView().fireChangeEventForProperty(MraidStateProperty.createWithViewState(mViewState));
     }
     
     protected boolean isExpanded() {
@@ -201,32 +210,28 @@ class MraidDisplayController extends MraidAbstractController {
             resetViewToDefaultState();
             setOrientationLockEnabled(false);
             mViewState = ViewState.DEFAULT;
-            getView().fireChangeEventForProperty(MraidStateProperty.createWithViewState(mViewState));
+            getMraidView().fireChangeEventForProperty(MraidStateProperty.createWithViewState(mViewState));
         } else if (mViewState == ViewState.DEFAULT) {
-            getView().setVisibility(View.INVISIBLE);
+            getMraidView().setVisibility(View.INVISIBLE);
             mViewState = ViewState.HIDDEN;
-            getView().fireChangeEventForProperty(MraidStateProperty.createWithViewState(mViewState));
+            getMraidView().fireChangeEventForProperty(MraidStateProperty.createWithViewState(mViewState));
         }
         
-        if (getView().getOnCloseListener() != null) {
-            getView().getOnCloseListener().onClose(getView(), mViewState);
+        if (getMraidView().getOnCloseListener() != null) {
+            getMraidView().getOnCloseListener().onClose(getMraidView(), mViewState);
         }
     }
     
-    private void resetViewToDefaultState() {        
-        FrameLayout adContainerLayout = 
-            (FrameLayout) mRootView.findViewById(R.id.ad_container_layout_id);
-        RelativeLayout expansionLayout = (RelativeLayout) mRootView.findViewById(
-                R.id.modal_container_layout_id);
-        
+    private void resetViewToDefaultState() {
         setNativeCloseButtonEnabled(false);
-        adContainerLayout.removeAllViewsInLayout();
-        mRootView.removeView(expansionLayout);
-        
-        getView().requestLayout();
+        mAdContainerLayout.removeAllViewsInLayout();
+        mExpansionLayout.removeAllViewsInLayout();
+        mRootView.removeView(mExpansionLayout);
+
+        getMraidView().requestLayout();
         
         ViewGroup parent = (ViewGroup) mPlaceholderView.getParent();
-        parent.addView(getView(), mViewIndexInParent);
+        parent.addView(getMraidView(), mViewIndexInParent);
         parent.removeView(mPlaceholderView);
         parent.invalidate();
     }
@@ -236,22 +241,22 @@ class MraidDisplayController extends MraidAbstractController {
         if (mExpansionStyle == MraidView.ExpansionStyle.DISABLED) return;
         
         if (url != null && !URLUtil.isValidUrl(url)) {
-            getView().fireErrorEvent("expand", "URL passed to expand() was invalid.");
+            getMraidView().fireErrorEvent("expand", "URL passed to expand() was invalid.");
             return;
         }
 
         // Obtain the root content view, since that's where we're going to insert the expanded 
         // content. We must do this before swapping the MraidView with its place-holder;
         // otherwise, getRootView() will return the wrong view (or null).
-        mRootView = (FrameLayout) getView().getRootView().findViewById(android.R.id.content);
+        mRootView = (FrameLayout) getMraidView().getRootView().findViewById(android.R.id.content);
 
         useCustomClose(shouldUseCustomClose);
         setOrientationLockEnabled(shouldLockOrientation);
         swapViewWithPlaceholderView();
 
-        View expansionContentView = getView();
+        View expansionContentView = getMraidView();
         if (url != null) {
-            mTwoPartExpansionView = new MraidView(getView().getContext(), ExpansionStyle.DISABLED,
+            mTwoPartExpansionView = new MraidView(getMraidView().getContext(), ExpansionStyle.DISABLED,
                     NativeCloseButtonStyle.AD_CONTROLLED, PlacementType.INLINE);
             mTwoPartExpansionView.setOnCloseListener(new MraidView.OnCloseListener() {
                 public void onClose(MraidView view, ViewState newViewState) {
@@ -262,9 +267,8 @@ class MraidDisplayController extends MraidAbstractController {
             expansionContentView = mTwoPartExpansionView;
         }
 
-        ViewGroup expansionViewContainer = createExpansionViewContainer(expansionContentView, 
-                (int) (width * mDensity), (int) (height * mDensity));
-        mRootView.addView(expansionViewContainer, new RelativeLayout.LayoutParams(
+        expandLayouts(expansionContentView, (int) (width * mDensity), (int) (height * mDensity));
+        mRootView.addView(mExpansionLayout, new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
         
         if (mNativeCloseButtonStyle == MraidView.NativeCloseButtonStyle.ALWAYS_VISIBLE || 
@@ -274,38 +278,32 @@ class MraidDisplayController extends MraidAbstractController {
         }
         
         mViewState = ViewState.EXPANDED;
-        getView().fireChangeEventForProperty(MraidStateProperty.createWithViewState(mViewState));
-        if (getView().getOnExpandListener() != null) getView().getOnExpandListener().onExpand(getView());
+        getMraidView().fireChangeEventForProperty(MraidStateProperty.createWithViewState(mViewState));
+        if (getMraidView().getOnExpandListener() != null) getMraidView().getOnExpandListener().onExpand(getMraidView());
     }
     
     private void swapViewWithPlaceholderView() {
-        ViewGroup parent = (ViewGroup) getView().getParent();
+        ViewGroup parent = (ViewGroup) getMraidView().getParent();
         if (parent == null) return;
-        
-        mPlaceholderView = new FrameLayout(getView().getContext());
         
         int index;
         int count = parent.getChildCount();
         for (index = 0; index < count; index++) {
-            if (parent.getChildAt(index) == getView()) break;
+            if (parent.getChildAt(index) == getMraidView()) break;
         }
         
         mViewIndexInParent = index;
         parent.addView(mPlaceholderView, index, 
-                new ViewGroup.LayoutParams(getView().getWidth(), getView().getHeight()));
-        parent.removeView(getView());
+                new ViewGroup.LayoutParams(getMraidView().getWidth(), getMraidView().getHeight()));
+        parent.removeView(getMraidView());
     }
-    
-    private ViewGroup createExpansionViewContainer(View expansionContentView, int expandWidth, 
-            int expandHeight) {
+
+    private void expandLayouts(View expansionContentView, int expandWidth, int expandHeight) {
         int closeButtonSize = (int) (CLOSE_BUTTON_SIZE_DP * mDensity + 0.5f);
         if (expandWidth < closeButtonSize) expandWidth = closeButtonSize;
         if (expandHeight < closeButtonSize) expandHeight = closeButtonSize;
 
-        RelativeLayout expansionLayout = new RelativeLayout(getView().getContext());
-        expansionLayout.setId(R.id.modal_container_layout_id);
-        
-        View dimmingView = new View(getView().getContext());
+        View dimmingView = new View(getMraidView().getContext());
         dimmingView.setBackgroundColor(Color.TRANSPARENT);
         dimmingView.setOnTouchListener(new OnTouchListener() {
             public boolean onTouch(View v, MotionEvent event) {
@@ -313,24 +311,19 @@ class MraidDisplayController extends MraidAbstractController {
             }
         });
         
-        expansionLayout.addView(dimmingView, new RelativeLayout.LayoutParams(
+        mExpansionLayout.addView(dimmingView, new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
-        
-        FrameLayout adContainerLayout = new FrameLayout(getView().getContext());
-        adContainerLayout.setId(R.id.ad_container_layout_id);
-        
-        adContainerLayout.addView(expansionContentView, new RelativeLayout.LayoutParams(
+
+        mAdContainerLayout.addView(expansionContentView, new RelativeLayout.LayoutParams(
                 RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT));
         
         RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(expandWidth, expandHeight);
         lp.addRule(RelativeLayout.CENTER_IN_PARENT);
-        expansionLayout.addView(adContainerLayout, lp);
-        
-        return expansionLayout;
+        mExpansionLayout.addView(mAdContainerLayout, lp);
     }
-    
+
     private void setOrientationLockEnabled(boolean enabled) {
-        Context context = getView().getContext();
+        Context context = getMraidView().getContext();
         Activity activity = null;
         try {
             activity = (Activity) context;
@@ -346,17 +339,12 @@ class MraidDisplayController extends MraidAbstractController {
     protected void setNativeCloseButtonEnabled(boolean enabled) {
         if (mRootView == null) return;
         
-        FrameLayout adContainerLayout = 
-            (FrameLayout) mRootView.findViewById(R.id.ad_container_layout_id);
-        
         if (enabled) {
             if (mCloseButton == null) {
                 StateListDrawable states = new StateListDrawable();
-                states.addState(new int[] {-android.R.attr.state_pressed},
-                        getView().getResources().getDrawable(R.drawable.close_button_normal));
-                states.addState(new int[] {android.R.attr.state_pressed},
-                        getView().getResources().getDrawable(R.drawable.close_button_pressed));
-                mCloseButton = new ImageButton(getView().getContext());
+                states.addState(new int[] {-android.R.attr.state_pressed}, INTERSTITIAL_CLOSE_BUTTON_NORMAL.decodeImage(mRootView.getContext()));
+                states.addState(new int[] {android.R.attr.state_pressed}, INTERSTITIAL_CLOSE_BUTTON_PRESSED.decodeImage(mRootView.getContext()));
+                mCloseButton = new ImageButton(getMraidView().getContext());
                 mCloseButton.setImageDrawable(states);
                 mCloseButton.setBackgroundDrawable(null);
                 mCloseButton.setOnClickListener(new OnClickListener() {
@@ -369,12 +357,12 @@ class MraidDisplayController extends MraidAbstractController {
             int buttonSize = (int) (CLOSE_BUTTON_SIZE_DP * mDensity + 0.5f);
             FrameLayout.LayoutParams buttonLayout = new FrameLayout.LayoutParams(
                     buttonSize, buttonSize, Gravity.RIGHT);
-            adContainerLayout.addView(mCloseButton, buttonLayout);
+            mAdContainerLayout.addView(mCloseButton, buttonLayout);
         } else {
-            adContainerLayout.removeView(mCloseButton);
+            mAdContainerLayout.removeView(mCloseButton);
         }
         
-        MraidView view = getView();
+        MraidView view = getMraidView();
         if (view.getOnCloseButtonStateChangeListener() != null) {
             view.getOnCloseButtonStateChangeListener().onCloseButtonStateChange(view, enabled);
         }
@@ -383,7 +371,7 @@ class MraidDisplayController extends MraidAbstractController {
     protected void useCustomClose(boolean shouldUseCustomCloseButton) {
         mAdWantsCustomCloseButton = shouldUseCustomCloseButton;
         
-        MraidView view = getView();
+        MraidView view = getMraidView();
         boolean enabled = !shouldUseCustomCloseButton;
         if (view.getOnCloseButtonStateChangeListener() != null) {
             view.getOnCloseButtonStateChangeListener().onCloseButtonStateChange(view, enabled);
@@ -393,5 +381,17 @@ class MraidDisplayController extends MraidAbstractController {
     protected boolean checkViewable() {
         // TODO: Perform more sophisticated check for viewable.
         return true;
+    }
+
+    FrameLayout createAdContainerLayout() {
+        return new FrameLayout(getMraidView().getContext());
+    }
+
+    RelativeLayout createExpansionLayout() {
+        return new RelativeLayout(getMraidView().getContext());
+    }
+
+    FrameLayout createPlaceholderView() {
+        return new FrameLayout(getMraidView().getContext());
     }
 }

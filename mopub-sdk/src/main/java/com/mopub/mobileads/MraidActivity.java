@@ -5,43 +5,47 @@ import com.mopub.mobileads.MraidView.ExpansionStyle;
 import com.mopub.mobileads.MraidView.NativeCloseButtonStyle;
 import com.mopub.mobileads.MraidView.PlacementType;
 import com.mopub.mobileads.MraidView.ViewState;
+import com.mopub.mobileads.factories.MraidViewFactory;
 
 public class MraidActivity extends BaseActivity {    
-    private MraidView mAdView;
+    private MraidView mMraidView;
     
     @Override
     public View getAdView() {
-        mAdView = new MraidView(this, ExpansionStyle.DISABLED, NativeCloseButtonStyle.AD_CONTROLLED,
+        mMraidView = MraidViewFactory.create(this, ExpansionStyle.DISABLED, NativeCloseButtonStyle.AD_CONTROLLED,
                 PlacementType.INTERSTITIAL);
         
-        mAdView.setOnReadyListener(new MraidView.OnReadyListener() {
-           public void onReady(MraidView view) {
-               showInterstitialCloseButton();
-           }
-        });
-        
-        mAdView.setOnCloseButtonStateChange(new MraidView.OnCloseButtonStateChangeListener() {
-            public void onCloseButtonStateChange(MraidView view, boolean enabled) {
-                if (enabled) showInterstitialCloseButton();
-                else hideInterstitialCloseButton();
+        mMraidView.setOnReadyListener(new MraidView.OnReadyListener() {
+            public void onReady(MraidView view) {
+                showInterstitialCloseButton();
             }
         });
         
-        mAdView.setOnCloseListener(new MraidView.OnCloseListener() {
+        mMraidView.setOnCloseButtonStateChange(new MraidView.OnCloseButtonStateChangeListener() {
+            public void onCloseButtonStateChange(MraidView view, boolean enabled) {
+                if (enabled) {
+                    showInterstitialCloseButton();
+                } else {
+                    hideInterstitialCloseButton();
+                }
+            }
+        });
+        
+        mMraidView.setOnCloseListener(new MraidView.OnCloseListener() {
             public void onClose(MraidView view, ViewState newViewState) {
                 finish();
             }
         });
         
-        String source = getIntent().getStringExtra("com.mopub.mobileads.Source");
-        mAdView.loadHtmlData(source);
+        String source = getIntent().getStringExtra(SOURCE_KEY);
+        mMraidView.loadHtmlData(source);
         
-        return mAdView;
+        return mMraidView;
     }
     
     @Override
     protected void onDestroy() {
-        mAdView.destroy();
+        mMraidView.destroy();
         super.onDestroy();
     }
 }

@@ -43,38 +43,64 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class Utils {
-    private Utils() {}
+    private Utils() {
+    }
 
-	public static String sha1(String s) {
-		try { 
-			MessageDigest digest = MessageDigest.getInstance("SHA-1");
-			digest.update(s.getBytes());
-			byte messageDigest[] = digest.digest();
-			
-			StringBuffer hexString = new StringBuffer();
-			for (int i = 0; i < messageDigest.length; i++) {
-				hexString.append(Integer.toHexString((0xFF & messageDigest[i]) | 0x100).substring(1));
-			}
-			return hexString.toString();
-		} catch (NoSuchAlgorithmException e) {
-			return "";
-		}
-	}
-	
-    public static Map<String,String> jsonStringToMap(String jsonParams) throws Exception {
-        Map<String,String> jsonMap = new HashMap<String,String>();
-        
+    public static String sha1(String s) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            digest.update(s.getBytes());
+            byte messageDigest[] = digest.digest();
+
+            StringBuffer hexString = new StringBuffer();
+            for (int i = 0; i < messageDigest.length; i++) {
+                hexString.append(Integer.toHexString((0xFF & messageDigest[i]) | 0x100).substring(1));
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            return "";
+        }
+    }
+
+    public static Map<String, String> jsonStringToMap(String jsonParams) throws Exception {
+        Map<String, String> jsonMap = new HashMap<String, String>();
+
         if (jsonParams == null || jsonParams.equals("")) return jsonMap;
-        
+
         JSONObject jsonObject = (JSONObject) new JSONTokener(jsonParams).nextValue();
         Iterator<?> keys = jsonObject.keys();
-        
+
         while (keys.hasNext()) {
             String key = (String) keys.next();
             jsonMap.put(key, jsonObject.getString(key));
         }
-        
+
         return jsonMap;
+    }
+
+    public static String mapToJsonString(Map<String, String> map) {
+        if (map == null) {
+            return "{}";
+        }
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("{");
+        boolean first = true;
+
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            if (!first) {
+                builder.append(",");
+            }
+            builder.append("\"");
+            builder.append(entry.getKey());
+            builder.append("\":\"");
+            builder.append(entry.getValue());
+            builder.append("\"");
+            first = false;
+        }
+
+        builder.append("}");
+        return builder.toString();
     }
 
     public static void invokeInstanceMethod(Object instance, String methodName) throws Exception {

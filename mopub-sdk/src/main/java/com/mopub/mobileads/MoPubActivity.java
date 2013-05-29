@@ -32,47 +32,30 @@
 
 package com.mopub.mobileads;
 
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.Bundle;
-import android.support.v4.content.LocalBroadcastManager;
 import android.view.View;
 import com.mopub.mobileads.MoPubView.BannerAdListener;
+import com.mopub.mobileads.factories.MoPubViewFactory;
 
 public class MoPubActivity extends BaseActivity {
-    public static final int MOPUB_ACTIVITY_NO_AD = 1234;
-
-    public static final String ACTION_INTERSTITIAL_SHOW = "com.mopub.action.interstitial.show";
-    public static final String ACTION_INTERSTITIAL_DISMISS = "com.mopub.action.interstitial.dismiss";
+    public static final String AD_UNIT_ID_KEY = "com.mopub.mobileads.AdUnitId";
+    public static final String KEYWORDS_KEY = "com.mopub.mobileads.Keywords";
+    public static final String CLICKTHROUGH_URL_KEY = "com.mopub.mobileads.ClickthroughUrl";
+    public static final String TIMEOUT_KEY = "com.mopub.mobileads.Timeout";
 
     private MoPubView mMoPubView;
     
-    public static final IntentFilter HTML_INTERSTITIAL_INTENT_FILTER;
-    static {
-        HTML_INTERSTITIAL_INTENT_FILTER = new IntentFilter();
-        HTML_INTERSTITIAL_INTENT_FILTER.addAction(ACTION_INTERSTITIAL_SHOW);
-        HTML_INTERSTITIAL_INTENT_FILTER.addAction(ACTION_INTERSTITIAL_DISMISS);
-    }
-    
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-        broadcastInterstitialAction(ACTION_INTERSTITIAL_SHOW);
-    }
-    
     @Override
     public View getAdView() {
-        String adUnitId = getIntent().getStringExtra("com.mopub.mobileads.AdUnitId");
-        String keywords = getIntent().getStringExtra("com.mopub.mobileads.Keywords");
-        String clickthroughUrl = getIntent().getStringExtra("com.mopub.mobileads.ClickthroughUrl");
-        int timeout = getIntent().getIntExtra("com.mopub.mobileads.Timeout", 0);
+        String adUnitId = getIntent().getStringExtra(AD_UNIT_ID_KEY);
+        String keywords = getIntent().getStringExtra(KEYWORDS_KEY);
+        String clickthroughUrl = getIntent().getStringExtra(CLICKTHROUGH_URL_KEY);
+        int timeout = getIntent().getIntExtra(TIMEOUT_KEY, 0);
         
         if (adUnitId == null) {
-            throw new RuntimeException("AdUnitId isn't set in com.mopub.mobileads.MoPubActivity");
+            throw new RuntimeException("AdUnitId isn't set in " + getClass().getCanonicalName());
         }
         
-        mMoPubView = new MoPubView(this);
+        mMoPubView = MoPubViewFactory.create(this);
         mMoPubView.setAdUnitId(adUnitId);
         mMoPubView.setKeywords(keywords);
         mMoPubView.setClickthroughUrl(clickthroughUrl);
@@ -89,7 +72,7 @@ public class MoPubActivity extends BaseActivity {
             public void onBannerCollapsed(MoPubView banner) {}
         }); 
         
-        String source = getIntent().getStringExtra("com.mopub.mobileads.Source");
+        String source = getIntent().getStringExtra(SOURCE_KEY);
         if (source != null) {
             source = sourceWithImpressionTrackingDisabled(source);
             mMoPubView.loadHtmlString(source);
@@ -100,19 +83,12 @@ public class MoPubActivity extends BaseActivity {
     
     @Override
     protected void onDestroy() {
-        broadcastInterstitialAction(ACTION_INTERSTITIAL_DISMISS);
-        
         mMoPubView.destroy();
         super.onDestroy();
     }
-    
+
     private String sourceWithImpressionTrackingDisabled(String source) {
         // TODO: Temporary fix. Disables impression tracking by renaming the pixel tracker's URL.
         return source.replaceAll("http://ads.mopub.com/m/imp", "mopub://null");
-    }
-    
-    private void broadcastInterstitialAction(String action) {
-        Intent intent = new Intent(action);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 }

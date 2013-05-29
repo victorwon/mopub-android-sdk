@@ -29,8 +29,8 @@ import static org.robolectric.Robolectric.application;
 import static org.robolectric.Robolectric.shadowOf;
 
 @RunWith(SdkTestRunner.class)
-public class AdViewTest {
-    private AdView subject;
+public class AdViewControllerTest {
+    private AdViewController subject;
     private MoPubView moPubView;
     private AdFetcher adFetcher;
     private HttpResponse response;
@@ -43,7 +43,7 @@ public class AdViewTest {
         httpClient = HttpClientFactory.create();
         Activity context = new Activity();
         shadowOf(context).grantPermissions(ACCESS_NETWORK_STATE);
-        subject = new AdView(context, moPubView);
+        subject = new AdViewController(context, moPubView);
         response = new TestHttpResponseWithHeaders(200, "I ain't got no-body");
     }
 
@@ -60,7 +60,7 @@ public class AdViewTest {
 
         assertThat(subject.getRedirectUrl()).isEqualTo("redirect url");
         assertThat(subject.getClickthroughUrl()).isEqualTo("clickthrough url");
-        assertThat(Robolectric.shadowOf(subject).getOnTouchListener()).isNotNull();
+        assertThat(Robolectric.shadowOf(subject.getAdWebView()).getOnTouchListener()).isNotNull();
         assertThat(subject.getAdWidth()).isEqualTo(320);
         assertThat(subject.getAdHeight()).isEqualTo(50);
         assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(70000);
@@ -71,13 +71,13 @@ public class AdViewTest {
         response.addHeader("X-Scrollable", "1");
 
         subject.configureUsingHttpResponse(response);
-        assertThat(Robolectric.shadowOf(subject).getOnTouchListener()).isNull();
+        assertThat(Robolectric.shadowOf(subject.getAdWebView()).getOnTouchListener()).isNull();
     }
 
     @Test
     public void configureUsingHttpResponse_shouldHaveNullTouchListenerWhenScrollableNotSet() throws Exception {
         subject.configureUsingHttpResponse(response);
-        assertThat(Robolectric.shadowOf(subject).getOnTouchListener()).isNull();
+        assertThat(Robolectric.shadowOf(subject.getAdWebView()).getOnTouchListener()).isNull();
     }
 
     @Test
@@ -167,7 +167,7 @@ public class AdViewTest {
     public void trackImpression_shouldHttpGetTheImpressionUrl() throws Exception {
         response.addHeader("X-Imptracker", "http://trackingUrl");
         subject.configureUsingHttpResponse(response);
-        String expectedUserAgent = subject.getSettings().getUserAgentString();
+        String expectedUserAgent = subject.getAdWebView().getSettings().getUserAgentString();
         FakeHttpLayer fakeHttpLayer = Robolectric.getFakeHttpLayer();
         fakeHttpLayer.addPendingHttpResponse(200, "");
 
@@ -205,7 +205,7 @@ public class AdViewTest {
     public void registerClick_shouldHttpGetTheClickthroughUrl() throws Exception {
         response.addHeader("X-Clickthrough", "http://clickUrl");
         subject.configureUsingHttpResponse(response);
-        String expectedUserAgent = subject.getSettings().getUserAgentString();
+        String expectedUserAgent = subject.getAdWebView().getSettings().getUserAgentString();
         FakeHttpLayer fakeHttpLayer = Robolectric.getFakeHttpLayer();
         fakeHttpLayer.addPendingHttpResponse(200, "");
 
@@ -291,8 +291,13 @@ public class AdViewTest {
 
     @Test
     public void loadUrl_shouldAcceptNullParameter() throws Exception {
-        subject.loadUrl(null);
+        subject.getAdWebView().loadUrl(null);
         // pass
     }
 
+    @Test
+    public void loadFailUrl_shouldAcceptNullErrorCode() throws Exception {
+        subject.loadFailUrl(null);
+        // pass
+    }
 }

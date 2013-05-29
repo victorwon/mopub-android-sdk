@@ -35,6 +35,7 @@
 package com.mopub.mobileads;
 
 import android.app.Activity;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
@@ -61,7 +62,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 /*
- * AdFetcher is a delegate of an AdView that handles loading ad data over a
+ * AdFetcher is a delegate of an AdViewController that handles loading ad data over a
  * network connection. The ad is fetched in a background thread by executing
  * AdFetchTask, which is an AsyncTask subclass. This class gracefully handles
  * the changes to AsyncTask in Android 4.0.1 (we continue to run parallel to
@@ -74,15 +75,17 @@ public class AdFetcher {
     public static final String AD_TYPE_HEADER = "X-Adtype";
     public static final String CUSTOM_EVENT_NAME_HEADER = "X-Custom-Event-Class-Name";
     public static final String CUSTOM_EVENT_DATA_HEADER = "X-Custom-Event-Class-Data";
+    public static final String CUSTOM_EVENT_HTML_DATA = "X-Custom-Event-Html-Data";
     @Deprecated
     public static final String CUSTOM_SELECTOR_HEADER = "X-Customselector";
     public static final String NATIVE_PARAMS_HEADER = "X-Nativeparams";
     public static final String FULL_AD_TYPE_HEADER = "X-Fulladtype";
+    public static final String MRAID_HTML_DATA = "Mraid-Html-Data";
     private int mTimeoutMilliseconds = 10000;
     // This is equivalent to Build.VERSION_CODES.ICE_CREAM_SANDWICH
     private static final int VERSION_CODE_ICE_CREAM_SANDWICH = 14;
 
-    private AdView mAdView;
+    private AdViewController mAdViewController;
     private AdFetchTask mCurrentTask;
     private String mUserAgent;
     private long mCurrentTaskId;
@@ -97,8 +100,8 @@ public class AdFetcher {
         AD_WARMING_UP;
     }
 
-    public AdFetcher(AdView adview, String userAgent) {
-        mAdView = adview;
+    public AdFetcher(AdViewController adview, String userAgent) {
+        mAdViewController = adview;
         mUserAgent = userAgent;
         mCurrentTaskId = -1;
         mLastCompletedTaskId = -1;
@@ -152,7 +155,7 @@ public class AdFetcher {
     public void cleanup() {
         cancelFetch();
 
-        mAdView = null;
+        mAdViewController = null;
         mUserAgent = "";
     }
 
@@ -169,9 +172,9 @@ public class AdFetcher {
         return (header == null) ? null : header.getValue();
     }
 
-    private static class AdFetchTask extends AsyncTask<String, Void, AdFetchResult> {
+    static class AdFetchTask extends AsyncTask<String, Void, AdLoadTask> {
         private AdFetcher mAdFetcher;
-        private AdView mAdView;
+        private AdViewController mAdViewController;
         private Exception mException;
         private HttpClient mHttpClient;
         private long mTaskId;
@@ -181,17 +184,17 @@ public class AdFetcher {
         private static final int MAXIMUM_REFRESH_TIME_MILLISECONDS = 600000;
         private static final double EXPONENTIAL_BACKOFF_FACTOR = 1.5;
 
-        private AdFetchTask(AdFetcher adFetcher) {
+        AdFetchTask(AdFetcher adFetcher) {
             mAdFetcher = adFetcher;
 
-            mAdView = mAdFetcher.mAdView;
+            mAdViewController = mAdFetcher.mAdViewController;
             mHttpClient = getDefaultHttpClient();
             mTaskId = mAdFetcher.mCurrentTaskId;
         }
 
         @Override
-        protected AdFetchResult doInBackground(String... urls) {
-            AdFetchResult result = null;
+        protected AdLoadTask doInBackground(String... urls) {
+            AdLoadTask result = null;
             try {
                 result = fetch(urls[0]);
             } catch (Exception exception) {
@@ -202,29 +205,112 @@ public class AdFetcher {
             return result;
         }
 
-        private AdFetchResult fetch(String url) throws Exception {
+        private AdLoadTask fetch(String url) throws Exception {
             HttpGet httpget = new HttpGet(url);
             httpget.addHeader(USER_AGENT_HEADER, mAdFetcher.mUserAgent);
 
-            // We check to see if this AsyncTask was cancelled, as per
-            // http://developer.android.com/reference/android/os/AsyncTask.html
-            if (isCancelled()) {
-                mFetchStatus = FetchStatus.FETCH_CANCELLED;
-                return null;
-            }
-
-            if (mAdView == null || mAdView.isDestroyed()) {
-                Log.d("MoPub", "Error loading ad: AdView has already been GCed or destroyed.");
-                return null;
-            }
+            if (!isStateValid()) return null;
 
             HttpResponse response = mHttpClient.execute(httpget);
-            HttpEntity entity = response.getEntity();
 
-            if (response == null || entity == null) {
+            if (!isResponseValid(response)) return null;
+
+            mAdViewController.configureUsingHttpResponse(response);
+
+            if (!responseContainsContent(response)) return null;
+
+            return extractAdLoadTaskFromResponse(response);
+        }
+
+        AdLoadTask extractAdLoadTaskFromResponse(HttpResponse response) throws IOException {
+            String adType = getHeaderValue(response, AD_TYPE_HEADER);
+            String adTypeCustomEventName = getAdTypeCustomEventName(response);
+
+            if ("custom".equals(adType)) {
+                return extractCustomEventAdLoadTask(response);
+            } else if ("mraid".equals(adType)) {
+                return extractCustomEventMraidAdLoadTask(response, adTypeCustomEventName);
+            } else if (adTypeCustomEventName != null) {
+                return extractCustomEventDelegateAdLoadTask(response, adTypeCustomEventName);
+            } else {
+                return extractHtmlAdLoadTask(response);
+            }
+        }
+
+        private String getAdTypeCustomEventName(HttpResponse response) {
+            String adType = getHeaderValue(response, AD_TYPE_HEADER);
+            String fullAdType = getHeaderValue(response, FULL_AD_TYPE_HEADER);
+
+            if ("mraid".equals(adType)) {
+                if (mAdViewController.getMoPubView() instanceof MoPubInterstitial.MoPubInterstitialView) {
+                    adType = "interstitial";
+                    fullAdType = "mraid";
+                }
+            }
+
+            return AdTypeTranslator.getCustomEventNameForAdType(adType, fullAdType);
+        }
+
+        private AdLoadTask extractCustomEventAdLoadTask(HttpResponse response) {
+            Log.i("MoPub", "Performing custom event.");
+
+            // If applicable, try to invoke the new custom event system (which uses custom classes)
+            String customEventName = getHeaderValue(response, CUSTOM_EVENT_NAME_HEADER);
+            if (customEventName != null) {
+                String customEventData = getHeaderValue(response, CUSTOM_EVENT_DATA_HEADER);
+                return createCustomEventAdLoadTask(customEventName, customEventData);
+            }
+
+            // Otherwise, use the (deprecated) legacy custom event system for older clients
+            Header oldCustomEventHeader = response.getFirstHeader(CUSTOM_SELECTOR_HEADER);
+            return new LegacyCustomEventAdLoadTask(mAdViewController, oldCustomEventHeader);
+        }
+
+        private AdLoadTask extractCustomEventDelegateAdLoadTask(HttpResponse response, String adTypeCustomEventName) throws IOException {
+            String eventData = getHeaderValue(response, NATIVE_PARAMS_HEADER);
+
+            return createCustomEventAdLoadTask(adTypeCustomEventName, eventData);
+        }
+
+        AdLoadTask extractCustomEventMraidAdLoadTask(HttpResponse response, String adTypeCustomEventName) throws IOException {
+            String htmlData = httpEntityToString(response.getEntity());
+            Map<String, String> eventDataMap = new HashMap<String, String>();
+            eventDataMap.put(MRAID_HTML_DATA, Uri.encode(htmlData));
+            String eventData = Utils.mapToJsonString(eventDataMap);
+
+            return createCustomEventAdLoadTask(adTypeCustomEventName, eventData);
+        }
+
+        private AdLoadTask extractHtmlAdLoadTask(HttpResponse response) throws IOException {
+            String data = httpEntityToString(response.getEntity());
+            return new HtmlAdLoadTask(mAdViewController, data);
+        }
+
+        private boolean responseContainsContent(HttpResponse response) {
+            // Ensure that the ad is not warming up.
+            if ("1".equals(getHeaderValue(response, WARMUP_HEADER))) {
+                Log.d("MoPub", "Ad Unit (" + mAdViewController.getAdUnitId() + ") is still warming up. " +
+                        "Please try again in a few minutes.");
+                mFetchStatus = FetchStatus.AD_WARMING_UP;
+                return false;
+            }
+
+            // Ensure that the ad type header is valid and not "clear".
+            String adType = getHeaderValue(response, AD_TYPE_HEADER);
+            if ("clear".equals(adType)) {
+                Log.d("MoPub", "No inventory found for adunit (" + mAdViewController.getAdUnitId() + ").");
+                mFetchStatus = FetchStatus.CLEAR_AD_TYPE;
+                return false;
+            }
+
+            return true;
+        }
+
+        private boolean isResponseValid(HttpResponse response) {
+            if (response == null || response.getEntity() == null) {
                 Log.d("MoPub", "MoPub server returned null response.");
                 mFetchStatus = FetchStatus.INVALID_SERVER_RESPONSE_NOBACKOFF;
-                return null;
+                return false;
             }
 
             final int statusCode = response.getStatusLine().getStatusCode();
@@ -234,76 +320,34 @@ public class AdFetcher {
                 Log.d("MoPub", "Server error: returned HTTP status code " + Integer.toString(statusCode) +
                         ". Please try again.");
                 mFetchStatus = FetchStatus.INVALID_SERVER_RESPONSE_BACKOFF;
-                return null;
+                return false;
             }
             // Other non-200 HTTP status codes should still fail
             else if (statusCode != HttpStatus.SC_OK) {
                 Log.d("MoPub", "MoPub server returned invalid response: HTTP status code " +
                         Integer.toString(statusCode) + ".");
                 mFetchStatus = FetchStatus.INVALID_SERVER_RESPONSE_NOBACKOFF;
-                return null;
+                return false;
             }
-
-            mAdView.configureUsingHttpResponse(response);
-
-            // Ensure that the ad is not warming up.
-            if ("1".equals(getHeaderValue(response, WARMUP_HEADER))) {
-                Log.d("MoPub", "Ad Unit (" + mAdView.getAdUnitId() + ") is still warming up. " +
-                        "Please try again in a few minutes.");
-                mFetchStatus = FetchStatus.AD_WARMING_UP;
-                return null;
-            }
-
-            // Ensure that the ad type header is valid and not "clear".
-            String adType = getHeaderValue(response, AD_TYPE_HEADER);
-            String fullAdType = getHeaderValue(response, FULL_AD_TYPE_HEADER);
-            String adTypeCustomEventName = AdTypeTranslator.getCustomEventNameForAdType(adType, fullAdType);
-            if ("clear".equals(adType)) {
-                Log.d("MoPub", "No inventory found for adunit (" + mAdView.getAdUnitId() + ").");
-                mFetchStatus = FetchStatus.CLEAR_AD_TYPE;
-                return null;
-            }
-
-            // Handle custom native ad type.
-            else if ("custom".equals(adType)) {
-                Log.i("MoPub", "Performing custom event.");
-
-                // If applicable, try to invoke the new custom event system (which uses custom classes)
-                String customEventName = getHeaderValue(response, CUSTOM_EVENT_NAME_HEADER);
-                if (customEventName != null) {
-                    String customEventData = getHeaderValue(response, CUSTOM_EVENT_DATA_HEADER);
-                    return createCustomEventTask(customEventName, customEventData);
-                }
-
-                // Otherwise, use the (deprecated) legacy custom event system for older clients
-                Header oldCustomEventHeader = response.getFirstHeader(CUSTOM_SELECTOR_HEADER);
-                return new PerformLegacyCustomEventTaskResult(mAdView, oldCustomEventHeader);
-
-            }
-
-            // Handle mraid ad type.
-            else if ("mraid".equals(adType)) {
-                Log.i("MoPub", "Loading mraid ad");
-                Map<String, String> paramsMap = new HashMap<String, String>();
-                paramsMap.put(AD_TYPE_HEADER, adType);
-
-                String data = httpEntityToString(entity);
-                paramsMap.put(NATIVE_PARAMS_HEADER, data);
-                return new LoadNativeAdTaskResult(mAdView, paramsMap);
-            }
-
-            else if (adTypeCustomEventName != null) {
-                String eventData = getHeaderValue(response, NATIVE_PARAMS_HEADER);
-
-                return createCustomEventTask(adTypeCustomEventName, eventData);
-            }
-
-            // Handle HTML ad.
-            String data = httpEntityToString(entity);
-            return new LoadHtmlAdTaskResult(mAdView, data);
+            return true;
         }
 
-        private AdFetchResult createCustomEventTask(String customEventName, String customEventData) {
+        private boolean isStateValid() {
+            // We check to see if this AsyncTask was cancelled, as per
+            // http://developer.android.com/reference/android/os/AsyncTask.html
+            if (isCancelled()) {
+                mFetchStatus = FetchStatus.FETCH_CANCELLED;
+                return false;
+            }
+
+            if (mAdViewController == null || mAdViewController.isDestroyed()) {
+                Log.d("MoPub", "Error loading ad: AdViewController has already been GCed or destroyed.");
+                return false;
+            }
+            return true;
+        }
+
+        private AdLoadTask createCustomEventAdLoadTask(String customEventName, String customEventData) {
             Map<String, String> paramsMap = new HashMap<String, String>();
             paramsMap.put(CUSTOM_EVENT_NAME_HEADER, customEventName);
 
@@ -311,28 +355,28 @@ public class AdFetcher {
                 paramsMap.put(CUSTOM_EVENT_DATA_HEADER, customEventData);
             }
 
-            return new PerformCustomEventTaskResult(mAdView, paramsMap);
+            return new CustomEventAdLoadTask(mAdViewController, paramsMap);
         }
 
         @Override
-        protected void onPostExecute(AdFetchResult result) {
+        protected void onPostExecute(AdLoadTask adLoadTask) {
             if (!isMostCurrentTask()) {
                 Log.d("MoPub", "Ad response is stale.");
                 releaseResources();
                 return;
             }
 
-            // If cleanup() has already been called on the AdView, don't proceed.
-            if (mAdView == null || mAdView.isDestroyed()) {
-                if (result != null) {
-                    result.cleanup();
+            // If cleanup() has already been called on the AdViewController, don't proceed.
+            if (mAdViewController == null || mAdViewController.isDestroyed()) {
+                if (adLoadTask != null) {
+                    adLoadTask.cleanup();
                 }
                 mAdFetcher.markTaskCompleted(mTaskId);
                 releaseResources();
                 return;
             }
 
-            if (result == null) {
+            if (adLoadTask == null) {
                 if (mException != null) {
                     Log.d("MoPub", "Exception caught while loading ad: " + mException);
                 }
@@ -358,13 +402,13 @@ public class AdFetcher {
                         break;
                 }
 
-                mAdView.adDidFail(errorCode);
+                mAdViewController.adDidFail(errorCode);
 
                 /*
                  * There are numerous reasons for the ad fetch to fail, but only in the specific
                  * case of actual server failure should we exponentially back off.
                  *
-                 * Note: We place the exponential backoff after AdView's adDidFail because we only
+                 * Note: We place the exponential backoff after AdViewController's adDidFail because we only
                  * want to increase refresh times after the first failure refresh timer is
                  * scheduled, and not before.
                  */
@@ -373,8 +417,8 @@ public class AdFetcher {
                     mFetchStatus = FetchStatus.NOT_SET;
                 }
             } else {
-                result.execute();
-                result.cleanup();
+                adLoadTask.execute();
+                adLoadTask.cleanup();
             }
 
             mAdFetcher.markTaskCompleted(mTaskId);
@@ -416,21 +460,21 @@ public class AdFetcher {
         }
 
         /* This helper function is called when a 4XX or 5XX error is received during an ad fetch.
-         * It exponentially increases the parent AdView's refreshTime up to a specified cap.
+         * It exponentially increases the parent AdViewController's refreshTime up to a specified cap.
          */
         private void exponentialBackoff() {
-            if (mAdView == null) {
+            if (mAdViewController == null) {
                 return;
             }
 
-            int refreshTimeMilliseconds = mAdView.getRefreshTimeMilliseconds();
+            int refreshTimeMilliseconds = mAdViewController.getRefreshTimeMilliseconds();
 
             refreshTimeMilliseconds = (int) (refreshTimeMilliseconds * EXPONENTIAL_BACKOFF_FACTOR);
             if (refreshTimeMilliseconds > MAXIMUM_REFRESH_TIME_MILLISECONDS) {
                 refreshTimeMilliseconds = MAXIMUM_REFRESH_TIME_MILLISECONDS;
             }
 
-            mAdView.setRefreshTimeMilliseconds(refreshTimeMilliseconds);
+            mAdViewController.setRefreshTimeMilliseconds(refreshTimeMilliseconds);
         }
 
         private void releaseResources() {
@@ -472,11 +516,11 @@ public class AdFetcher {
 
     }
 
-    private static abstract class AdFetchResult {
+    private static abstract class AdLoadTask {
 
-        WeakReference<AdView> mWeakAdView;
-        public AdFetchResult(AdView adView) {
-            mWeakAdView = new WeakReference<AdView>(adView);
+        WeakReference<AdViewController> mWeakAdView;
+        public AdLoadTask(AdViewController adViewController) {
+            mWeakAdView = new WeakReference<AdViewController>(adViewController);
         }
 
         abstract void execute();
@@ -494,22 +538,22 @@ public class AdFetcher {
      * is not specified (legacy custom events parse the X-Customselector header instead).
      */
     @Deprecated
-    private static class PerformLegacyCustomEventTaskResult extends AdFetchResult {
+    static class LegacyCustomEventAdLoadTask extends AdLoadTask {
 
         protected Header mHeader;
-        public PerformLegacyCustomEventTaskResult(AdView adView, Header header) {
-            super(adView);
+        public LegacyCustomEventAdLoadTask(AdViewController adViewController, Header header) {
+            super(adViewController);
             mHeader = header;
         }
 
         public void execute() {
-            AdView adView = mWeakAdView.get();
-            if (adView == null || adView.isDestroyed()) {
+            AdViewController adViewController = mWeakAdView.get();
+            if (adViewController == null || adViewController.isDestroyed()) {
                 return;
             }
 
-            adView.setIsLoading(false);
-            MoPubView mpv = adView.getMoPubView();
+            adViewController.setNotLoading();
+            MoPubView mpv = adViewController.getMoPubView();
 
             if (mHeader == null) {
                 Log.i("MoPub", "Couldn't call custom method because the server did not specify one.");
@@ -548,22 +592,22 @@ public class AdFetcher {
      * This is the new way of performing Custom Events. This will  be invoked on new clients when
      * X-Adtype is "custom" and the X-Custom-Event-Class-Name header is specified.
      */
-    private static class PerformCustomEventTaskResult extends AdFetchResult {
+    static class CustomEventAdLoadTask extends AdLoadTask {
 
         protected Map<String,String> mParamsMap;
-        public PerformCustomEventTaskResult(AdView adView, Map<String,String> paramsMap) {
-            super(adView);
+        public CustomEventAdLoadTask(AdViewController adViewController, Map<String, String> paramsMap) {
+            super(adViewController);
             mParamsMap = paramsMap;
         }
 
         public void execute() {
-            AdView adView = mWeakAdView.get();
-            if (adView == null || adView.isDestroyed()) {
+            AdViewController adViewController = mWeakAdView.get();
+            if (adViewController == null || adViewController.isDestroyed()) {
                 return;
             }
 
-            adView.setIsLoading(false);
-            MoPubView moPubView = adView.getMoPubView();
+            adViewController.setNotLoading();
+            MoPubView moPubView = adViewController.getMoPubView();
 
             if (mParamsMap == null) {
                 Log.i("MoPub", "Couldn't invoke custom event because the server did not specify one.");
@@ -579,41 +623,18 @@ public class AdFetcher {
         }
 
     }
-    private static class LoadNativeAdTaskResult extends AdFetchResult {
 
-        protected Map<String, String> mParamsMap;
-        private LoadNativeAdTaskResult(AdView adView, Map<String, String> paramsMap) {
-            super(adView);
-            mParamsMap = paramsMap;
-        }
-
-        public void execute() {
-            AdView adView = mWeakAdView.get();
-            if (adView == null || adView.isDestroyed()) {
-                return;
-            }
-
-            adView.setIsLoading(false);
-            MoPubView mpv = adView.getMoPubView();
-            mpv.loadNativeSDK(mParamsMap);
-        }
-
-        public void cleanup() {
-            mParamsMap = null;
-        }
-
-    }
-    private static class LoadHtmlAdTaskResult extends AdFetchResult {
+    static class HtmlAdLoadTask extends AdLoadTask {
 
         protected String mData;
-        private LoadHtmlAdTaskResult(AdView adView, String data) {
-            super(adView);
+        private HtmlAdLoadTask(AdViewController adViewController, String data) {
+            super(adViewController);
             mData = data;
         }
 
         public void execute() {
-            AdView adView = mWeakAdView.get();
-            if (adView == null || adView.isDestroyed()) {
+            AdViewController adViewController = mWeakAdView.get();
+            if (adViewController == null || adViewController.isDestroyed()) {
                 return;
             }
 
@@ -621,9 +642,8 @@ public class AdFetcher {
                 return;
             }
 
-            adView.setResponseString(mData);
-            adView.loadDataWithBaseURL("http://" + adView.getServerHostname() + "/", mData,
-                    "text/html", "utf-8", null);
+            adViewController.setResponseString(mData);
+            adViewController.loadResponseString(mData);
         }
 
         public void cleanup() {

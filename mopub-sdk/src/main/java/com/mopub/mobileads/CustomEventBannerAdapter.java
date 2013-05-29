@@ -14,19 +14,25 @@ import static com.mopub.mobileads.MoPubErrorCode.ADAPTER_NOT_FOUND;
 import static com.mopub.mobileads.MoPubErrorCode.NETWORK_TIMEOUT;
 import static com.mopub.mobileads.MoPubErrorCode.UNSPECIFIED;
 
-class CustomEventBannerAdapter extends BaseAdapter implements CustomEventBannerListener {
+public class CustomEventBannerAdapter implements CustomEventBannerListener {
+    public static final int TIMEOUT_DELAY = 10000;
+    private boolean mInvalidated;
+    private MoPubView mMoPubView;
     private Context mContext;
     private CustomEventBanner mCustomEventBanner;
     private Map<String, Object> mLocalExtras;
     private Map<String, String> mServerExtras;
+
     private final Handler mHandler;
     private final Runnable mTimeout;
+    private boolean mStoredAutorefresh;
 
-    CustomEventBannerAdapter() {
+    public CustomEventBannerAdapter(MoPubView moPubView, String className, String classData) {
+        mHandler = new Handler();
+        mMoPubView = moPubView;
+        mContext = moPubView.getContext();
         mLocalExtras = new HashMap<String, Object>();
         mServerExtras = new HashMap<String, String>();
-        mHandler = new Handler();
-
         mTimeout = new Runnable() {
             @Override
             public void run() {
@@ -35,20 +41,8 @@ class CustomEventBannerAdapter extends BaseAdapter implements CustomEventBannerL
                 invalidate();
             }
         };
-    }
 
-    @Override
-    void init(MoPubView moPubView, String className) {
-        init(moPubView, className, null);
-    }
-    
-    void init(MoPubView moPubView, String className, String jsonParams) {
-        super.init(moPubView, jsonParams);
-        
-        mContext = moPubView.getContext();
-        
         Log.d("MoPub", "Attempting to invoke custom event: " + className);
-        
         try {
             mCustomEventBanner = CustomEventBannerFactory.create(className);
         } catch (Exception exception) {
@@ -56,19 +50,20 @@ class CustomEventBannerAdapter extends BaseAdapter implements CustomEventBannerL
             mMoPubView.loadFailUrl(ADAPTER_NOT_FOUND);
             return;
         }
-        
+
         // Attempt to load the JSON extras into mServerExtras.
         try {
-            mServerExtras = Utils.jsonStringToMap(jsonParams);
+            mServerExtras = Utils.jsonStringToMap(classData);
         } catch (Exception exception) {
-            Log.d("MoPub", "Failed to create Map from JSON: " + jsonParams + exception.toString());
+            Log.d("MoPub", "Failed to create Map from JSON: " + classData + exception.toString());
         }
-        
+
         mLocalExtras = mMoPubView.getLocalExtras();
-        if (mMoPubView.getLocation() != null) mLocalExtras.put("location", mMoPubView.getLocation());
+        if (mMoPubView.getLocation() != null) {
+            mLocalExtras.put("location", mMoPubView.getLocation());
+        }
     }
-    
-    @Override
+
     void loadAd() {
         if (isInvalidated() || mCustomEventBanner == null) return;
 
@@ -76,14 +71,17 @@ class CustomEventBannerAdapter extends BaseAdapter implements CustomEventBannerL
         mCustomEventBanner.loadBanner(mContext, this, mLocalExtras, mServerExtras);
     }
 
-    @Override
     void invalidate() {
         if (mCustomEventBanner != null) mCustomEventBanner.onInvalidate();
         mContext = null;
         mCustomEventBanner = null;
         mLocalExtras = null;
         mServerExtras = null;
-        super.invalidate();
+        mInvalidated = true;
+    }
+
+    boolean isInvalidated() {
+        return mInvalidated;
     }
 
     private void cancelTimeout() {
@@ -116,6 +114,23 @@ class CustomEventBannerAdapter extends BaseAdapter implements CustomEventBannerL
             cancelTimeout();
             mMoPubView.loadFailUrl(errorCode);
         }
+    }
+
+    @Override
+    public void onBannerExpanded() {
+        if (isInvalidated()) return;
+
+        mStoredAutorefresh = mMoPubView.getAutorefreshEnabled();
+        mMoPubView.setAutorefreshEnabled(false);
+        mMoPubView.adPresentedOverlay();
+    }
+
+    @Override
+    public void onBannerCollapsed() {
+        if (isInvalidated()) return;
+
+        mMoPubView.setAutorefreshEnabled(mStoredAutorefresh);
+        mMoPubView.adClosed();
     }
 
     @Override
