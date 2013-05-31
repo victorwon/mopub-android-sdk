@@ -1,4 +1,4 @@
-package com.mopub.simpleadsdemo;
+package com.mopub.mobileads;
 
 import java.util.Map;
 
@@ -16,6 +16,8 @@ import com.mopub.mobileads.MoPubErrorCode;
  * Tested with InMobi SDK 3.6.2.
  */
 class InMobiInterstitial extends CustomEventInterstitial implements IMAdInterstitialListener {
+    public static final String APP_ID_KEY = "appId";
+
     private CustomEventInterstitialListener mInterstitialListener;
     private IMAdInterstitial mInMobiInterstitial;
 
@@ -43,7 +45,7 @@ class InMobiInterstitial extends CustomEventInterstitial implements IMAdIntersti
          * You may also pass this String down in the serverExtras Map by specifying Custom Event Data
          * in MoPub's web interface.
          */
-        String inMobiAppId = "YOUR_INMOBI_APP_ID";
+        String inMobiAppId = serverExtras.get(APP_ID_KEY);
         mInMobiInterstitial = new IMAdInterstitial(activity, inMobiAppId);
 
         mInMobiInterstitial.setIMAdInterstitialListener(this);

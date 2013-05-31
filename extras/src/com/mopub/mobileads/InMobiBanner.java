@@ -1,4 +1,4 @@
-package com.mopub.simpleadsdemo;
+package com.mopub.mobileads;
 
 import java.util.Map;
 
@@ -16,6 +16,8 @@ import com.mopub.mobileads.MoPubErrorCode;
  * Tested with InMobi SDK 3.6.2.
  */
 class InMobiBanner extends CustomEventBanner implements IMAdListener {
+    public static final String APP_ID_KEY = "appId";
+
     private CustomEventBannerListener mBannerListener;
     private IMAdView mInMobiBanner;
 
@@ -43,7 +45,7 @@ class InMobiBanner extends CustomEventBanner implements IMAdListener {
          * You may also pass this String down in the serverExtras Map by specifying Custom Event Data
          * in MoPub's web interface.
          */
-        String inMobiAppId = "YOUR_INMOBI_APP_ID";
+        String inMobiAppId = serverExtras.get(APP_ID_KEY);
         mInMobiBanner = new IMAdView(activity, IMAdView.INMOBI_AD_UNIT_320X50, inMobiAppId);
 
         mInMobiBanner.setIMAdListener(this);
