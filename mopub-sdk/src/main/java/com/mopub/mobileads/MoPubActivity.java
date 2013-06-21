@@ -32,63 +32,82 @@
 
 package com.mopub.mobileads;
 
+import android.content.Context;
+import android.content.Intent;
 import android.view.View;
-import com.mopub.mobileads.MoPubView.BannerAdListener;
-import com.mopub.mobileads.factories.MoPubViewFactory;
+import com.mopub.mobileads.factories.HtmlInterstitialWebViewFactory;
 
-public class MoPubActivity extends BaseActivity {
-    public static final String AD_UNIT_ID_KEY = "com.mopub.mobileads.AdUnitId";
-    public static final String KEYWORDS_KEY = "com.mopub.mobileads.Keywords";
-    public static final String CLICKTHROUGH_URL_KEY = "com.mopub.mobileads.ClickthroughUrl";
-    public static final String TIMEOUT_KEY = "com.mopub.mobileads.Timeout";
+import static com.mopub.mobileads.AdFetcher.CLICKTHROUGH_URL_KEY;
+import static com.mopub.mobileads.AdFetcher.HTML_RESPONSE_BODY_KEY;
+import static com.mopub.mobileads.AdFetcher.REDIRECT_URL_KEY;
+import static com.mopub.mobileads.AdFetcher.SCROLLABLE_KEY;
+import static com.mopub.mobileads.CustomEventInterstitial.CustomEventInterstitialListener;
 
-    private MoPubView mMoPubView;
-    
+public class MoPubActivity extends BaseInterstitialActivity {
+    private HtmlInterstitialWebView htmlInterstitialWebView;
+
+    public static void start(Context context, String htmlData, boolean isScrollable, String redirectUrl, String clickthroughUrl) {
+        Intent intent = createIntent(context, htmlData, isScrollable, redirectUrl, clickthroughUrl);
+        context.startActivity(intent);
+    }
+
+    public static Intent createIntent(Context context, String htmlData, boolean isScrollable, String redirectUrl, String clickthroughUrl) {
+        Intent intent = new Intent(context, MoPubActivity.class);
+        intent.putExtra(HTML_RESPONSE_BODY_KEY, htmlData);
+        intent.putExtra(SCROLLABLE_KEY, isScrollable);
+        intent.putExtra(CLICKTHROUGH_URL_KEY, clickthroughUrl);
+        intent.putExtra(REDIRECT_URL_KEY, redirectUrl);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        return intent;
+    }
+
     @Override
     public View getAdView() {
-        String adUnitId = getIntent().getStringExtra(AD_UNIT_ID_KEY);
-        String keywords = getIntent().getStringExtra(KEYWORDS_KEY);
-        String clickthroughUrl = getIntent().getStringExtra(CLICKTHROUGH_URL_KEY);
-        int timeout = getIntent().getIntExtra(TIMEOUT_KEY, 0);
-        
-        if (adUnitId == null) {
-            throw new RuntimeException("AdUnitId isn't set in " + getClass().getCanonicalName());
-        }
-        
-        mMoPubView = MoPubViewFactory.create(this);
-        mMoPubView.setAdUnitId(adUnitId);
-        mMoPubView.setKeywords(keywords);
-        mMoPubView.setClickthroughUrl(clickthroughUrl);
-        mMoPubView.setTimeout(timeout);
-        
-        mMoPubView.setBannerAdListener(new BannerAdListener() {
-            @Override
-            public void onBannerLoaded(MoPubView banner) {
-                mMoPubView.adAppeared();
-            }
-            public void onBannerFailed(MoPubView banner, MoPubErrorCode errorCode) {}
-            public void onBannerClicked(MoPubView banner) {}
-            public void onBannerExpanded(MoPubView banner) {}
-            public void onBannerCollapsed(MoPubView banner) {}
-        }); 
-        
-        String source = getIntent().getStringExtra(SOURCE_KEY);
-        if (source != null) {
-            source = sourceWithImpressionTrackingDisabled(source);
-            mMoPubView.loadHtmlString(source);
-        }
-        
-        return mMoPubView;
+        Intent intent = getIntent();
+        boolean isScrollable = intent.getBooleanExtra(SCROLLABLE_KEY, false);
+        String redirectUrl = intent.getStringExtra(REDIRECT_URL_KEY);
+        String clickthroughUrl = intent.getStringExtra(CLICKTHROUGH_URL_KEY);
+        String htmlResponse = intent.getStringExtra(HTML_RESPONSE_BODY_KEY);
+
+        htmlInterstitialWebView = HtmlInterstitialWebViewFactory.create(new BroadcastingInterstitialListener(), isScrollable, redirectUrl, clickthroughUrl);
+        htmlInterstitialWebView.loadHtmlResponse(htmlResponse);
+
+        return htmlInterstitialWebView;
     }
     
     @Override
     protected void onDestroy() {
-        mMoPubView.destroy();
+        htmlInterstitialWebView.destroy();
         super.onDestroy();
     }
 
-    private String sourceWithImpressionTrackingDisabled(String source) {
-        // TODO: Temporary fix. Disables impression tracking by renaming the pixel tracker's URL.
-        return source.replaceAll("http://ads.mopub.com/m/imp", "mopub://null");
+    private class BroadcastingInterstitialListener implements CustomEventInterstitialListener {
+        @Override
+        public void onInterstitialLoaded() {
+        }
+
+        @Override
+        public void onInterstitialFailed(MoPubErrorCode errorCode) {
+            broadcastInterstitialAction(ACTION_INTERSTITIAL_FAIL);
+            finish();
+        }
+
+        @Override
+        public void onInterstitialShown() {
+            broadcastInterstitialAction(ACTION_INTERSTITIAL_SHOW);
+        }
+
+        @Override
+        public void onInterstitialClicked() {
+            broadcastInterstitialAction(ACTION_INTERSTITIAL_CLICK);
+        }
+
+        @Override
+        public void onLeaveApplication() {
+        }
+
+        @Override
+        public void onInterstitialDismissed() {
+        }
     }
 }

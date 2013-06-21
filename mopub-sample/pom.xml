@@ -17,7 +17,7 @@
     <description>Sample application that demonstrates how to use the MoPub SDK.</description>
 
     <properties>
-        <robolectric.version>2.1-SNAPSHOT</robolectric.version>
+        <robolectric.version>2.1</robolectric.version>
     </properties>
 
     <dependencies>
@@ -27,7 +27,7 @@
             <groupId>com.mopub.mobileads</groupId>
             <artifactId>mopub-sdk</artifactId>
             <version>1.0.0-SNAPSHOT</version>
-            <type>apklib</type>
+            <type>jar</type>
         </dependency>
 
 

@@ -12,8 +12,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.mopub.mobileads.AdFetcher.*;
-import static com.mopub.mobileads.AdTypeTranslator.MRAID_BANNER;
-import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
@@ -81,18 +79,5 @@ public class AdFetcherTest {
         paramsMap.put(CUSTOM_EVENT_DATA_HEADER, json);
 
         verify(moPubInterstitialView).loadCustomEvent(eq(paramsMap));
-    }
-
-    @Test
-    public void extractCustomEventMraidAdLoadTask_shouldCreateAnEncodedJsonString() throws Exception {
-        String expectedJson = "{\"Mraid-Html-Data\":\"%3Chtml%3E%3C%2Fhtml%3E\"}";
-        AdFetchTask adFetchTask = new AdFetchTask(subject);
-        String htmlData = "<html></html>";
-        response = new TestHttpResponseWithHeaders(200, htmlData);
-        response.addHeader(AD_TYPE_HEADER, "mraid");
-
-        CustomEventAdLoadTask customEventTask = (CustomEventAdLoadTask) adFetchTask.extractCustomEventMraidAdLoadTask(response, MRAID_BANNER);
-        assertThat(customEventTask.mParamsMap.get(CUSTOM_EVENT_NAME_HEADER)).isEqualTo(MRAID_BANNER);
-        assertThat(customEventTask.mParamsMap.get(CUSTOM_EVENT_DATA_HEADER)).isEqualTo(expectedJson);
     }
 }

@@ -84,6 +84,7 @@ class MillennialBanner extends CustomEventBanner {
 
         mMillennialAdView.setMMRequest(new MMRequest());
         mMillennialAdView.setId(MMSDK.getDefaultAdId());
+        AdViewController.setShouldHonorServerDimensions(mMillennialAdView);
         mMillennialAdView.getAd();
     }
 
@@ -128,6 +129,8 @@ class MillennialBanner extends CustomEventBanner {
             mBannerListener.onBannerClicked();
         }
 
+
+        // todo test (un)register
         void register(Context context) {
             mContext = context;
             context.registerReceiver(this, MMBroadcastReceiver.createIntentFilter());
@@ -142,5 +145,10 @@ class MillennialBanner extends CustomEventBanner {
                 mContext = null;
             }
         }
+    }
+
+    @Deprecated
+    MMAdView getMMAdView() {
+        return mMillennialAdView;
     }
 }

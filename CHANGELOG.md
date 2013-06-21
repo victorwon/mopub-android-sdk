@@ -4,7 +4,14 @@
   - Removed reference to TYPE_DUMMY in AdUrlGenerator because it is not available in earlier versions of Android; fixes [GitHub issue #3](https://github.com/mopub/mopub-android-sdk/issues/3)
   - Fixed NPE in AdUrlGenerator when WiFi is off and Airplane mode is on; fixes [GitHub issue #5](https://github.com/mopub/mopub-android-sdk/issues/5)
   - `MraidInterstitial`s now properly notify `InterstitialAdListener` when they are shown and dismissed
-
+  
+### Version 1.14.1 (June 21, 2013)
+  - Wait until after loaded interstitials are shown to report an impression
+  - Remove phantom impression tracking from interstitials
+  - Remove extra whitespace from Millennial banner ads
+  - Added `onInterstitialClicked()` notification to `InterstitialAdListener`
+  - Provide default implementations for `BannerAdListener` and `InterstitialAdListener`
+  
 ## Version 1.13 (May 9, 2013)
   - Moved all Android code and documentation to its own repository: [mopub-android-sdk](https://github.com/mopub/mopub-android-sdk)
   - Updated Millennial support to Millennial Media SDK version 5.0

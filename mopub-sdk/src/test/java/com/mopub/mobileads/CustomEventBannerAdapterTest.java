@@ -14,7 +14,7 @@ import org.robolectric.Robolectric;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.mopub.mobileads.AdFetcher.MRAID_HTML_DATA;
+import static com.mopub.mobileads.AdFetcher.HTML_RESPONSE_BODY_KEY;
 import static com.mopub.mobileads.CustomEventBanner.CustomEventBannerListener;
 import static com.mopub.mobileads.MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR;
 import static com.mopub.mobileads.MoPubErrorCode.NETWORK_TIMEOUT;
@@ -23,6 +23,7 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
+
 
 @RunWith(SdkTestRunner.class)
 public class CustomEventBannerAdapterTest {
@@ -136,6 +137,16 @@ public class CustomEventBannerAdapterTest {
     }
 
     @Test
+    public void onBannerLoaded_whenViewIsHtmlBannerWebView_shouldNotTrackImpression() throws Exception {
+        View mockHtmlBannerWebView = mock(HtmlBannerWebView.class);
+        subject.onBannerLoaded(mockHtmlBannerWebView);
+
+        verify(moPubView).nativeAdLoaded();
+        verify(moPubView).setAdContentView(eq(mockHtmlBannerWebView));
+        verify(moPubView, never()).trackNativeImpression();
+    }
+
+    @Test
     public void onBannerFailed_shouldLoadFailUrl() throws Exception {
         subject.onBannerFailed(ADAPTER_CONFIGURATION_ERROR);
 
@@ -225,8 +236,8 @@ public class CustomEventBannerAdapterTest {
     @Test
     public void init_whenPassedHtmlData_shouldPutItInLocalExtras() throws Exception {
         String expectedHtmlData = "expected html data";
-        expectedServerExtras.put(MRAID_HTML_DATA, expectedHtmlData);
-        subject = new CustomEventBannerAdapter(moPubView, CLASS_NAME, "{\"Mraid-Html-Data\":\"expected html data\"}");
+        expectedServerExtras.put(HTML_RESPONSE_BODY_KEY, expectedHtmlData);
+        subject = new CustomEventBannerAdapter(moPubView, CLASS_NAME, "{\"Html-Response-Body\":\"expected html data\"}");
         subject.loadAd();
 
         verify(banner).loadBanner(

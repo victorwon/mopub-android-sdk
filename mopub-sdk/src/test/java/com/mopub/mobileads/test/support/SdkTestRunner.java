@@ -31,6 +31,9 @@ public class SdkTestRunner extends RobolectricTestRunner {
             MraidViewFactory.setInstance(new TestMraidViewFactory());
             MoPubViewFactory.setInstance(new TestMoPubViewFactory());
             CustomEventInterstitialAdapterFactory.setInstance(new TestCustomEventInterstitialAdapterFactory());
+            HtmlBannerWebViewFactory.setInstance(new TestHtmlBannerWebViewFactory());
+            HtmlInterstitialWebViewFactory.setInstance(new TestHtmlInterstitialWebViewFactory());
+            AdViewControllerFactory.setInstance(new TestAdViewControllerFactory());
 
             MockitoAnnotations.initMocks(test);
         }

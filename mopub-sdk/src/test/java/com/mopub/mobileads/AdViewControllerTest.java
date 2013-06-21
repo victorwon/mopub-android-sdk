@@ -3,10 +3,14 @@ package com.mopub.mobileads;
 import android.app.Activity;
 import android.content.Context;
 import android.net.ConnectivityManager;
-import com.mopub.mobileads.factories.AdFetcherFactory;
+import android.view.Gravity;
+import android.view.View;
+import android.webkit.WebView;
+import android.widget.FrameLayout;
+import com.mopub.mobileads.factories.HtmlBannerWebViewFactory;
+import com.mopub.mobileads.factories.HtmlInterstitialWebViewFactory;
 import com.mopub.mobileads.factories.HttpClientFactory;
-import com.mopub.mobileads.test.support.SdkTestRunner;
-import com.mopub.mobileads.test.support.TestHttpResponseWithHeaders;
+import com.mopub.mobileads.test.support.*;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -14,16 +18,23 @@ import org.apache.http.conn.ClientConnectionManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.robolectric.Robolectric;
 import org.robolectric.tester.org.apache.http.FakeHttpLayer;
 
 import java.lang.reflect.InvocationTargetException;
 
 import static android.Manifest.permission.ACCESS_NETWORK_STATE;
+import static com.mopub.mobileads.MoPubErrorCode.INTERNAL_ERROR;
+import static com.mopub.mobileads.MoPubErrorCode.NO_FILL;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.fest.assertions.api.Fail.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.robolectric.Robolectric.application;
 import static org.robolectric.Robolectric.shadowOf;
@@ -32,26 +43,33 @@ import static org.robolectric.Robolectric.shadowOf;
 public class AdViewControllerTest {
     private AdViewController subject;
     private MoPubView moPubView;
-    private AdFetcher adFetcher;
     private HttpResponse response;
     private HttpClient httpClient;
+    private AdFetcher adFetcher;
 
     @Before
     public void setup() {
         moPubView = mock(MoPubView.class);
-        adFetcher = AdFetcherFactory.create(null, null);
         httpClient = HttpClientFactory.create();
         Activity context = new Activity();
         shadowOf(context).grantPermissions(ACCESS_NETWORK_STATE);
         subject = new AdViewController(context, moPubView);
         response = new TestHttpResponseWithHeaders(200, "I ain't got no-body");
+        adFetcher = TestAdFetcherFactory.getSingletonMock();
+    }
+
+    @Test
+    public void initialization_shouldInitializeWebViewFactories() throws Exception {
+        new HtmlBannerWebViewFactory().internalCreate(null, false, "", "");
+        new HtmlInterstitialWebViewFactory().internalCreate(null, false, "", "");
+
+        // pass
     }
 
     @Test
     public void configureUsingHttpResponse_shouldSetFields() throws Exception {
         response.addHeader("X-Launchpage", "redirect url");
         response.addHeader("X-Clickthrough", "clickthrough url");
-        response.addHeader("X-Scrollable", "0");
         response.addHeader("X-Width", "320  ");
         response.addHeader("X-Height", "  50");
         response.addHeader("X-Refreshtime", "70");
@@ -60,24 +78,9 @@ public class AdViewControllerTest {
 
         assertThat(subject.getRedirectUrl()).isEqualTo("redirect url");
         assertThat(subject.getClickthroughUrl()).isEqualTo("clickthrough url");
-        assertThat(Robolectric.shadowOf(subject.getAdWebView()).getOnTouchListener()).isNotNull();
         assertThat(subject.getAdWidth()).isEqualTo(320);
         assertThat(subject.getAdHeight()).isEqualTo(50);
         assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(70000);
-    }
-
-    @Test
-    public void configureUsingHttpResponse_shouldHaveNullTouchListenerWhenScrollableIsOne() throws Exception {
-        response.addHeader("X-Scrollable", "1");
-
-        subject.configureUsingHttpResponse(response);
-        assertThat(Robolectric.shadowOf(subject.getAdWebView()).getOnTouchListener()).isNull();
-    }
-
-    @Test
-    public void configureUsingHttpResponse_shouldHaveNullTouchListenerWhenScrollableNotSet() throws Exception {
-        subject.configureUsingHttpResponse(response);
-        assertThat(Robolectric.shadowOf(subject.getAdWebView()).getOnTouchListener()).isNull();
     }
 
     @Test
@@ -99,25 +102,6 @@ public class AdViewControllerTest {
         subject.configureUsingHttpResponse(response);
 
         assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(0);
-    }
-
-    @Test
-    public void getFailUrl_whenFailUrlHasBeenProvided_shouldLoadTheUrl() throws Exception {
-        response.addHeader("X-Failurl", "fail url");
-        subject.configureUsingHttpResponse(response);
-
-        subject.loadFailUrl(MoPubErrorCode.UNSPECIFIED);
-
-        verify(adFetcher).fetchAdForUrl(eq("fail url"));
-    }
-
-    @Test
-    public void getFailUrl_whenFailUrlIsNull_shouldTellMoPubViewThatAdFailed() throws Exception {
-        subject.configureUsingHttpResponse(response);
-
-        subject.loadFailUrl(MoPubErrorCode.UNSPECIFIED);
-
-        verify(moPubView).adFailed(eq(MoPubErrorCode.NO_FILL));
     }
 
     @Test
@@ -167,7 +151,7 @@ public class AdViewControllerTest {
     public void trackImpression_shouldHttpGetTheImpressionUrl() throws Exception {
         response.addHeader("X-Imptracker", "http://trackingUrl");
         subject.configureUsingHttpResponse(response);
-        String expectedUserAgent = subject.getAdWebView().getSettings().getUserAgentString();
+        String expectedUserAgent = new WebView(subject.getContext()).getSettings().getUserAgentString();
         FakeHttpLayer fakeHttpLayer = Robolectric.getFakeHttpLayer();
         fakeHttpLayer.addPendingHttpResponse(200, "");
 
@@ -205,14 +189,14 @@ public class AdViewControllerTest {
     public void registerClick_shouldHttpGetTheClickthroughUrl() throws Exception {
         response.addHeader("X-Clickthrough", "http://clickUrl");
         subject.configureUsingHttpResponse(response);
-        String expectedUserAgent = subject.getAdWebView().getSettings().getUserAgentString();
+        String expectedUserAgent = new WebView(subject.getContext()).getSettings().getUserAgentString();
         FakeHttpLayer fakeHttpLayer = Robolectric.getFakeHttpLayer();
         fakeHttpLayer.addPendingHttpResponse(200, "");
 
         assertThat(expectedUserAgent).isNotNull();
 
         subject.registerClick();
-        Thread.sleep(50); // does this make the test flaky?
+        Thread.sleep(200); // does this make the test flaky?
 
         HttpRequest request = fakeHttpLayer.getLastSentHttpRequestInfo().getHttpRequest();
         assertThat(request.getFirstHeader("User-Agent").getValue()).isEqualTo(expectedUserAgent);
@@ -243,17 +227,12 @@ public class AdViewControllerTest {
     public void generateAdUrl_shouldIncludeMinFields() throws Exception {
         String expectedAdUrl = "http://ads.mopub.com/m/ad" +
                 "?v=6" +
-                "&id=" +
                 "&nv=" + MoPub.SDK_VERSION +
                 "&udid=sha%3A" +
                 "&z=-0700" +
                 "&o=u" +
                 "&sc_a=1.0" +
                 "&mr=1" +
-                "&mcc=" +
-                "&mnc=" +
-                "&iso=" +
-                "&cn=" +
                 "&ct=3" +
                 "&av=1.0";
 
@@ -290,14 +269,164 @@ public class AdViewControllerTest {
     }
 
     @Test
-    public void loadUrl_shouldAcceptNullParameter() throws Exception {
-        subject.getAdWebView().loadUrl(null);
+    public void loadNonJavascript_shouldFetchAd() throws Exception {
+        String url = "http://www.guy.com";
+        subject.loadNonJavascript(url);
+
+        verify(adFetcher).fetchAdForUrl(eq(url));
+    }
+
+    @Test
+    public void loadNonJavascript_whenAlreadyLoading_shouldNotFetchAd() throws Exception {
+        String url = "http://www.guy.com";
+        subject.loadNonJavascript(url);
+        reset(adFetcher);
+        subject.loadNonJavascript(url);
+
+        verify(adFetcher, never()).fetchAdForUrl(anyString());
+    }
+
+    @Test
+    public void loadNonJavascript_shouldClearTheFailUrl() throws Exception {
+        subject.setFailUrl("blarg:");
+        subject.loadNonJavascript("http://www.goodness.com");
+        reset(adFetcher);
+        subject.loadFailUrl(null);
+
+        verify(adFetcher, never()).fetchAdForUrl(anyString());
+        verify(moPubView).adFailed(eq(NO_FILL));
+    }
+
+    @Test
+    public void loadNonJavascript_shouldAcceptNullParameter() throws Exception {
+        subject.loadNonJavascript(null);
         // pass
+    }
+
+    @Test
+    public void reload_shouldReuseOldUrl() throws Exception {
+        String url = "http://www.guy.com";
+        subject.loadNonJavascript(url);
+        subject.setNotLoading();
+        reset(adFetcher);
+        subject.reload();
+
+        verify(adFetcher).fetchAdForUrl(eq(url));
+    }
+
+    @Test
+    public void loadFailUrl_shouldLoadFailUrl() throws Exception {
+        String failUrl = "http://www.bad.man";
+        subject.setFailUrl(failUrl);
+        subject.loadFailUrl(INTERNAL_ERROR);
+
+        verify(adFetcher).fetchAdForUrl(eq(failUrl));
+        verify(moPubView, never()).adFailed(any(MoPubErrorCode.class));
     }
 
     @Test
     public void loadFailUrl_shouldAcceptNullErrorCode() throws Exception {
         subject.loadFailUrl(null);
         // pass
+    }
+
+    @Test
+    public void loadFailUrl_whenFailUrlIsNull_shouldCallAdDidFail() throws Exception {
+        subject.setFailUrl(null);
+        subject.loadFailUrl(INTERNAL_ERROR);
+
+        verify(moPubView).adFailed(eq(NO_FILL));
+        verify(adFetcher, never()).fetchAdForUrl(anyString());
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void cleanup_shouldCleanupHtmlBannerWebViewFactory() throws Exception {
+        subject.cleanup();
+
+        new HtmlBannerWebViewFactory().internalCreate(null, false, "", "");
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void cleanup_shouldCleanupHtmlInterstitialWebViewFactory() throws Exception {
+        subject.cleanup();
+
+        new HtmlInterstitialWebViewFactory().internalCreate(null, false, "", "");
+    }
+
+    @Test
+    public void setAdContentView_whenHonorServerDimensionsAndHasDimensions_shouldSizeAndCenterView() throws Exception {
+        response.addHeader("X-Width", "320");
+        response.addHeader("X-Height", "50");
+        View view = mock(View.class);
+        AdViewController.setShouldHonorServerDimensions(view);
+        subject.configureUsingHttpResponse(response);
+        subject.setAdContentView(view);
+
+        verify(moPubView).removeAllViews();
+        ArgumentCaptor<FrameLayout.LayoutParams> layoutParamsCaptor = ArgumentCaptor.forClass(FrameLayout.LayoutParams.class);
+        verify(moPubView).addView(eq(view), layoutParamsCaptor.capture());
+        FrameLayout.LayoutParams layoutParams = layoutParamsCaptor.getValue();
+
+        assertThat(layoutParams.width).isEqualTo(320);
+        assertThat(layoutParams.height).isEqualTo(50);
+        assertThat(layoutParams.gravity).isEqualTo(Gravity.CENTER);
+    }
+
+    @Test
+    public void setAdContentView_whenHonorServerDimensionsAndDoesntHaveDimensions_shouldWrapAndCenterView() throws Exception {
+        View view = mock(View.class);
+        AdViewController.setShouldHonorServerDimensions(view);
+        subject.configureUsingHttpResponse(response);
+        subject.setAdContentView(view);
+
+        verify(moPubView).removeAllViews();
+        ArgumentCaptor<FrameLayout.LayoutParams> layoutParamsCaptor = ArgumentCaptor.forClass(FrameLayout.LayoutParams.class);
+        verify(moPubView).addView(eq(view), layoutParamsCaptor.capture());
+        FrameLayout.LayoutParams layoutParams = layoutParamsCaptor.getValue();
+
+        assertThat(layoutParams.width).isEqualTo(FrameLayout.LayoutParams.WRAP_CONTENT);
+        assertThat(layoutParams.height).isEqualTo(FrameLayout.LayoutParams.WRAP_CONTENT);
+        assertThat(layoutParams.gravity).isEqualTo(Gravity.CENTER);
+    }
+
+    @Test
+    public void setAdContentView_whenNotServerDimensions_shouldWrapAndCenterView() throws Exception {
+        response.addHeader("X-Width", "320");
+        response.addHeader("X-Height", "50");
+        subject.configureUsingHttpResponse(response);
+        View view = mock(View.class);
+        subject.setAdContentView(view);
+
+        verify(moPubView).removeAllViews();
+        ArgumentCaptor<FrameLayout.LayoutParams> layoutParamsCaptor = ArgumentCaptor.forClass(FrameLayout.LayoutParams.class);
+        verify(moPubView).addView(eq(view), layoutParamsCaptor.capture());
+        FrameLayout.LayoutParams layoutParams = layoutParamsCaptor.getValue();
+
+        assertThat(layoutParams.width).isEqualTo(FrameLayout.LayoutParams.WRAP_CONTENT);
+        assertThat(layoutParams.height).isEqualTo(FrameLayout.LayoutParams.WRAP_CONTENT);
+        assertThat(layoutParams.gravity).isEqualTo(Gravity.CENTER);
+    }
+
+    @Test
+    public void cleanup_whenOtherAdViewControllersAreActive_shouldNotDisableTheWebViewPool() throws Exception {
+        AdViewController anotherAdViewController = new AdViewController(new Activity(), moPubView);
+        subject.cleanup();
+
+        assertThat(TestHtmlBannerWebViewFactory.getWebViewPool().getNextHtmlWebView(null, true, "", "")).isNotNull();
+        assertThat(TestHtmlInterstitialWebViewFactory.getWebViewPool().getNextHtmlWebView(null, true, "", "")).isNotNull();
+
+        anotherAdViewController.cleanup();
+        try {
+            TestHtmlBannerWebViewFactory.getWebViewPool().getNextHtmlWebView(null, true, "", "");
+            fail("Expected getNextHtmlWebView to fail");
+        } catch(NullPointerException e) {
+            // success!
+        }
+        try {
+            TestHtmlInterstitialWebViewFactory.getWebViewPool().getNextHtmlWebView(null, true, "", "");
+            fail("Expected getNextHtmlWebView to fail");
+        } catch(NullPointerException e) {
+            // success!
+        }
     }
 }

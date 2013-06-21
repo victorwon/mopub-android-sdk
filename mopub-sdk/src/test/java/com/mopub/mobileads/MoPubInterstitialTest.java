@@ -1,8 +1,8 @@
 package com.mopub.mobileads;
 
 import android.app.Activity;
-import android.content.ComponentName;
-import android.content.Intent;
+import com.mopub.mobileads.test.support.TestAdViewControllerFactory;
+import com.mopub.mobileads.test.support.TestCustomEventBannerAdapterFactory;
 import com.mopub.mobileads.test.support.TestCustomEventInterstitialAdapterFactory;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,17 +14,17 @@ import java.util.Map;
 
 import static com.mopub.mobileads.AdFetcher.CUSTOM_EVENT_DATA_HEADER;
 import static com.mopub.mobileads.AdFetcher.CUSTOM_EVENT_NAME_HEADER;
-import static com.mopub.mobileads.BaseActivity.SOURCE_KEY;
-import static com.mopub.mobileads.MoPubActivity.AD_UNIT_ID_KEY;
-import static com.mopub.mobileads.MoPubActivity.CLICKTHROUGH_URL_KEY;
-import static com.mopub.mobileads.MoPubActivity.KEYWORDS_KEY;
+import static com.mopub.mobileads.MoPubErrorCode.ADAPTER_NOT_FOUND;
+import static com.mopub.mobileads.MoPubErrorCode.CANCELLED;
 import static com.mopub.mobileads.MoPubErrorCode.INTERNAL_ERROR;
 import static com.mopub.mobileads.MoPubErrorCode.UNSPECIFIED;
 import static com.mopub.mobileads.MoPubView.LocationAwareness.LOCATION_AWARENESS_NORMAL;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
-import static org.robolectric.Robolectric.shadowOf;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 
 @RunWith(com.mopub.mobileads.test.support.SdkTestRunner.class)
 public class MoPubInterstitialTest {
@@ -39,6 +39,7 @@ public class MoPubInterstitialTest {
     private CustomEventInterstitialAdapter customEventInterstitialAdapter;
     private MoPubInterstitial.InterstitialAdListener interstitialAdListener;
     private MoPubInterstitial.MoPubInterstitialView interstitialView;
+    private AdViewController adViewController;
 
     @Before
     public void setUp() throws Exception {
@@ -55,6 +56,7 @@ public class MoPubInterstitialTest {
 
         customEventInterstitialAdapter = TestCustomEventInterstitialAdapterFactory.getSingletonMock();
         reset(customEventInterstitialAdapter);
+        adViewController = TestAdViewControllerFactory.getSingletonMock();
     }
 
     @Test
@@ -157,22 +159,23 @@ public class MoPubInterstitialTest {
     }
 
     @Test
-    public void onCustomEventInterstitialLoaded_shouldTrackImpressionAndNotifyListener() throws Exception {
+    public void onCustomEventInterstitialLoaded_shouldNotifyListener() throws Exception {
         subject.setInterstitialView(interstitialView);
 
         subject.onCustomEventInterstitialLoaded();
-        verify(interstitialView).trackImpression();
         verify(interstitialAdListener).onInterstitialLoaded(eq(subject));
+
+        verify(interstitialView, never()).trackImpression();
     }
 
     @Test
-    public void onCustomEventInterstitialLoaded_whenInterstitialAdListenerIsNull_shouldTrackImpressionAndNotNotifyListener() throws Exception {
+    public void onCustomEventInterstitialLoaded_whenInterstitialAdListenerIsNull_shouldNotNotifyListenerOrTrackImpression() throws Exception {
         subject.setInterstitialView(interstitialView);
         subject.setInterstitialAdListener(null);
 
         subject.onCustomEventInterstitialLoaded();
 
-        verify(interstitialView).trackImpression();
+        verify(interstitialView, never()).trackImpression();
         verify(interstitialAdListener, never()).onInterstitialLoaded(eq(subject));
     }
 
@@ -186,26 +189,49 @@ public class MoPubInterstitialTest {
     }
 
     @Test
-    public void onCustomEventInterstitialShown_shouldNotifyListener() throws Exception {
-        subject.onCustomEventInterstitialShown();
+    public void onCustomEventInterstitialShown_shouldTrackImpressionAndNotifyListener() throws Exception {
+        subject.setInterstitialView(interstitialView);
+        subject.onCustomEventInterstitialShown(true);
 
+        verify(interstitialView).trackImpression();
+        verify(interstitialAdListener).onInterstitialShown(eq(subject));
+    }
+
+    @Test
+    public void onCustomEventInterstitialShown_whenShouldntTrackImpression_shouldNotTrackImpressionButStillNotifyListener() throws Exception {
+        loadCustomEvent();
+
+        subject.setInterstitialView(interstitialView);
+        subject.onCustomEventInterstitialShown(false);
+
+        verify(interstitialView, never()).trackImpression();
         verify(interstitialAdListener).onInterstitialShown(eq(subject));
     }
 
     @Test
     public void onCustomEventInterstitialShown_whenInterstitialAdListenerIsNull_shouldNotNotifyListener() throws Exception {
         subject.setInterstitialAdListener(null);
-        subject.onCustomEventInterstitialShown();
+        subject.onCustomEventInterstitialShown(true);
         verify(interstitialAdListener, never()).onInterstitialShown(eq(subject));
     }
 
     @Test
-    public void onCustomEventInterstitialClicked_shouldRegisterClick() throws Exception {
+    public void onCustomEventInterstitialClicked_shouldRegisterClickAndNotifyListener() throws Exception {
         subject.setInterstitialView(interstitialView);
 
         subject.onCustomEventInterstitialClicked();
 
         verify(interstitialView).registerClick();
+        verify(interstitialAdListener).onInterstitialClicked(eq(subject));
+    }
+
+    @Test
+    public void onCustomEventInterstitialClicked_whenInterstitialAdListenerIsNull_shouldNotNotifyListener() throws Exception {
+        subject.setInterstitialAdListener(null);
+
+        subject.onCustomEventInterstitialClicked();
+
+        verify(interstitialAdListener, never()).onInterstitialClicked(eq(subject));
     }
 
     @Test
@@ -255,7 +281,7 @@ public class MoPubInterstitialTest {
     public void destroy_shouldPreventOnCustomEventShownNotification() throws Exception {
         subject.destroy();
 
-        subject.onCustomEventInterstitialShown();
+        subject.onCustomEventInterstitialShown(true);
 
         verify(interstitialAdListener, never()).onInterstitialShown(eq(subject));
     }
@@ -271,58 +297,32 @@ public class MoPubInterstitialTest {
 
     @Test
     public void newlyCreated_shouldNotBeReadyAndNotShow() throws Exception {
-        assertShowsHtmlInterstitial(false, false);
-        assertShowsCustomEventInterstitial(false, false);
-    }
-
-    @Test
-    public void loadingHtmlBanner_shouldBecomeReadyToShowHtmlAd() throws Exception {
-        MoPubInterstitial.MoPubInterstitialBannerListener bannerListener = subject.new MoPubInterstitialBannerListener();
-
-        bannerListener.onBannerLoaded(null);
-
-        assertShowsHtmlInterstitial(true, true);
-        assertShowsCustomEventInterstitial(true, false);
-    }
-
-    @Test
-    public void loadingHtmlBannerThenFailing_shouldNotBecomeReadyToShowHtmlAd() throws Exception {
-        MoPubInterstitial.MoPubInterstitialBannerListener bannerListener = subject.new MoPubInterstitialBannerListener();
-
-        bannerListener.onBannerLoaded(null);
-        bannerListener.onBannerFailed(null, null);
-
-        assertShowsHtmlInterstitial(false, false);
-        assertShowsCustomEventInterstitial(false, false);
-    }
-
-    @Test
-    public void dismissingHtmlInterstitial_shouldNotBecomeReadyToShowHtmlAd() throws Exception {
-        MoPubInterstitial.MoPubInterstitialBannerListener bannerListener = subject.new MoPubInterstitialBannerListener();
-        BaseActivityBroadcastReceiver broadcastReceiver = subject.new MoPubInterstitialBroadcastReceiver();
-
-        bannerListener.onBannerLoaded(null);
-        broadcastReceiver.onHtmlInterstitialDismissed();
-
-        assertShowsHtmlInterstitial(false, false);
-        assertShowsCustomEventInterstitial(false, false);
+        assertShowsCustomEventInterstitial(false);
     }
 
     @Test
     public void loadingCustomEventInterstitial_shouldBecomeReadyToShowCustomEventAd() throws Exception {
         subject.onCustomEventInterstitialLoaded();
 
-        assertShowsHtmlInterstitial(true, false);
-        assertShowsCustomEventInterstitial(true, true);
+        assertShowsCustomEventInterstitial(true);
+    }
+
+    @Test
+    public void dismissingHtmlInterstitial_shouldNotBecomeReadyToShowHtmlAd() throws Exception {
+//        EventForwardingBroadcastReceiver broadcastReceiver = new EventForwardingBroadcastReceiver(subject.mInterstitialAdListener);
+//
+//        subject.onCustomEventInterstitialLoaded();
+//        broadcastReceiver.onHtmlInterstitialDismissed();
+//
+//        assertShowsCustomEventInterstitial(false);
     }
 
     @Test
     public void failingCustomEventInterstitial_shouldNotBecomeReadyToShowCustomEventAd() throws Exception {
         subject.onCustomEventInterstitialLoaded();
-        subject.onCustomEventInterstitialFailed(MoPubErrorCode.CANCELLED);
+        subject.onCustomEventInterstitialFailed(CANCELLED);
 
-        assertShowsHtmlInterstitial(false, false);
-        assertShowsCustomEventInterstitial(false, false);
+        assertShowsCustomEventInterstitial(false);
     }
 
     @Test
@@ -330,39 +330,64 @@ public class MoPubInterstitialTest {
         subject.onCustomEventInterstitialLoaded();
         subject.onCustomEventInterstitialDismissed();
 
-        assertShowsHtmlInterstitial(false, false);
-        assertShowsCustomEventInterstitial(false, false);
+        assertShowsCustomEventInterstitial(false);
     }
 
-    private void assertShowsHtmlInterstitial(boolean shouldBeReady, boolean shouldShowCustomEventInterstitial) {
-        stub(interstitialView.getKeywords()).toReturn(KEYWORDS_VALUE);
-        stub(interstitialView.getResponseString()).toReturn(SOURCE_VALUE);
-        stub(interstitialView.getClickthroughUrl()).toReturn(CLICKTHROUGH_URL_VALUE);
-        subject.setInterstitialView(interstitialView);
+    @Test
+    public void loadCustomEvent_shouldInitializeCustomEventBannerAdapter() throws Exception {
+        MoPubInterstitial.MoPubInterstitialView moPubInterstitialView = subject.new MoPubInterstitialView(activity);
 
-        assertThat(subject.isReady()).isEqualTo(shouldBeReady);
-        assertThat(subject.show()).isEqualTo(shouldBeReady);
+        paramsMap.put(AdFetcher.CUSTOM_EVENT_NAME_HEADER, "name");
+        paramsMap.put(AdFetcher.CUSTOM_EVENT_DATA_HEADER, "data");
+        paramsMap.put(AdFetcher.CUSTOM_EVENT_HTML_DATA, "html");
+        TestCustomEventBannerAdapterFactory.reset();
+        moPubInterstitialView.loadCustomEvent(paramsMap);
 
-        Intent intent = shadowOf(activity).peekNextStartedActivity();
-        if (shouldBeReady && shouldShowCustomEventInterstitial) {
-            assertThat(intent.getComponent()).isEqualTo(new ComponentName(activity, MoPubActivity.class));
-            assertThat(intent.getStringExtra(AD_UNIT_ID_KEY)).isEqualTo(AD_UNIT_ID_VALUE);
-            assertThat(intent.getStringExtra(KEYWORDS_KEY)).isEqualTo(KEYWORDS_VALUE);
-            assertThat(intent.getStringExtra(SOURCE_KEY)).isEqualTo(SOURCE_VALUE);
-            assertThat(intent.getStringExtra(CLICKTHROUGH_URL_KEY)).isEqualTo(CLICKTHROUGH_URL_VALUE);
-        } else {
-            assertThat(intent).isNull();
-        }
+        assertThat(TestCustomEventInterstitialAdapterFactory.getLatestMoPubInterstitial()).isEqualTo(subject);
+        assertThat(TestCustomEventInterstitialAdapterFactory.getLatestClassName()).isEqualTo("name");
+        assertThat(TestCustomEventInterstitialAdapterFactory.getLatestClassData()).isEqualTo("data");
+
+        verify(customEventInterstitialAdapter).setAdapterListener(eq(subject));
+        verify(customEventInterstitialAdapter).loadInterstitial();
     }
 
-    private void assertShowsCustomEventInterstitial(boolean shouldBeReady, boolean shouldShowHtmlInterstitial) {
+    @Test
+    public void loadCustomEvent_whenParamsMapIsNull_shouldCallLoadFailUrl() throws Exception {
+        MoPubInterstitial.MoPubInterstitialView moPubInterstitialView = subject.new MoPubInterstitialView(activity);
+
+        moPubInterstitialView.loadCustomEvent(null);
+
+        verify(adViewController).loadFailUrl(eq(ADAPTER_NOT_FOUND));
+        verify(customEventInterstitialAdapter, never()).invalidate();
+        verify(customEventInterstitialAdapter, never()).loadInterstitial();
+    }
+
+    @Test
+    public void adFailed_shouldNotifyInterstitialAdListener() throws Exception {
+        MoPubInterstitial.MoPubInterstitialView moPubInterstitialView = subject.new MoPubInterstitialView(activity);
+        moPubInterstitialView.adFailed(CANCELLED);
+
+        verify(interstitialAdListener).onInterstitialFailed(eq(subject), eq(CANCELLED));
+    }
+
+    private void loadCustomEvent() {
+        MoPubInterstitial.MoPubInterstitialView moPubInterstitialView = subject.new MoPubInterstitialView(activity);
+
+        paramsMap.put(AdFetcher.CUSTOM_EVENT_NAME_HEADER, "name");
+        paramsMap.put(AdFetcher.CUSTOM_EVENT_DATA_HEADER, "data");
+        paramsMap.put(AdFetcher.CUSTOM_EVENT_HTML_DATA, "html");
+        TestCustomEventBannerAdapterFactory.reset();
+        moPubInterstitialView.loadCustomEvent(paramsMap);
+    }
+
+    private void assertShowsCustomEventInterstitial(boolean shouldBeReady) {
         MoPubInterstitial.MoPubInterstitialView moPubInterstitialView = subject.new MoPubInterstitialView(activity);
         moPubInterstitialView.loadCustomEvent(paramsMap);
 
         assertThat(subject.isReady()).isEqualTo(shouldBeReady);
         assertThat(subject.show()).isEqualTo(shouldBeReady);
 
-        if (shouldBeReady && shouldShowHtmlInterstitial) {
+        if (shouldBeReady) {
             verify(customEventInterstitialAdapter).showInterstitial();
         } else {
             verify(customEventInterstitialAdapter, never()).showInterstitial();

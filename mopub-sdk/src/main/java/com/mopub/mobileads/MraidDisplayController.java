@@ -379,7 +379,6 @@ class MraidDisplayController extends MraidAbstractController {
     }
     
     protected boolean checkViewable() {
-        // TODO: Perform more sophisticated check for viewable.
         return true;
     }
 

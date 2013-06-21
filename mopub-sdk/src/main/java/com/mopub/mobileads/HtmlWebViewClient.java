@@ -15,15 +15,19 @@ import java.util.List;
 
 import static com.mopub.mobileads.MoPubErrorCode.UNSPECIFIED;
 
-class AdWebViewClient extends WebViewClient {
+class HtmlWebViewClient extends WebViewClient {
     private final Context mContext;
-    private AdViewController mAdViewController;
-    private AdWebView mAdWebView;
+    private HtmlWebViewListener mHtmlWebViewListener;
+    private BaseHtmlWebView mHtmlWebView;
+    private final String mClickthroughUrl;
+    private final String mRedirectUrl;
 
-    AdWebViewClient(AdViewController adViewController, AdWebView adWebView) {
-        this.mAdViewController = adViewController;
-        mAdWebView = adWebView;
-        mContext = mAdWebView.getContext();
+    HtmlWebViewClient(HtmlWebViewListener htmlWebViewListener, BaseHtmlWebView htmlWebView, String clickthrough, String redirect) {
+        mHtmlWebViewListener = htmlWebViewListener;
+        mHtmlWebView = htmlWebView;
+        mClickthroughUrl = clickthrough;
+        mRedirectUrl = redirect;
+        mContext = htmlWebView.getContext();
     }
 
     @Override
@@ -36,9 +40,9 @@ class AdWebViewClient extends WebViewClient {
             return true;
         }
 
-        url = urlWithClickTrackingRedirect(mAdViewController, url);
+        url = urlWithClickTrackingRedirect(url);
         Log.d("MoPub", "Ad clicked. Click URL: " + url);
-        mAdViewController.getMoPubView().adClicked();
+        mHtmlWebViewListener.onClicked();
 
         showBrowserForUrl(url);
         return true;
@@ -47,9 +51,8 @@ class AdWebViewClient extends WebViewClient {
     @Override
     public void onPageStarted(WebView view, String url, Bitmap favicon) {
         // If the URL being loaded shares the redirectUrl prefix, open it in the browser.
-        String redirectUrl = mAdViewController.getRedirectUrl();
-        if (redirectUrl != null && url.startsWith(redirectUrl)) {
-            url = urlWithClickTrackingRedirect(mAdViewController, url);
+        if (mRedirectUrl != null && url.startsWith(mRedirectUrl)) {
+            url = urlWithClickTrackingRedirect(url);
             view.stopLoading();
             showBrowserForUrl(url);
         }
@@ -62,11 +65,11 @@ class AdWebViewClient extends WebViewClient {
         String host = uri.getHost();
 
         if (host.equals("finishLoad")) {
-            mAdViewController.adDidLoad();
+            mHtmlWebViewListener.onLoaded(mHtmlWebView);
         } else if (host.equals("close")) {
-            mAdViewController.adDidClose();
+            mHtmlWebViewListener.onCollapsed();
         } else if (host.equals("failLoad")) {
-            mAdWebView.loadFailUrl(UNSPECIFIED);
+            mHtmlWebViewListener.onFailed(UNSPECIFIED);
         } else if (host.equals("custom")) {
             handleCustomIntentFromUri(uri);
         }
@@ -81,7 +84,7 @@ class AdWebViewClient extends WebViewClient {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
             mContext.startActivity(intent);
-            mAdViewController.registerClick();
+            mHtmlWebViewListener.onClicked();
         } catch (ActivityNotFoundException e) {
             Log.w("MoPub", "Could not handle intent with URI: " + url +
                     ". Is this intent unsupported on your phone?");
@@ -118,18 +121,16 @@ class AdWebViewClient extends WebViewClient {
         return true;
     }
 
-    private String urlWithClickTrackingRedirect(AdViewController adViewController, String url) {
-        String clickthroughUrl = adViewController.getClickthroughUrl();
-        if (clickthroughUrl == null) return url;
-        else {
+    private String urlWithClickTrackingRedirect(String url) {
+        if (mClickthroughUrl == null) {
+            return url;
+        } else {
             String encodedUrl = Uri.encode(url);
-            return clickthroughUrl + "&r=" + encodedUrl;
+            return mClickthroughUrl + "&r=" + encodedUrl;
         }
     }
 
     private void showBrowserForUrl(String url) {
-        if (mAdViewController.isDestroyed()) return;
-
         if (url == null || url.equals("")) url = "about:blank";
         Log.d("MoPub", "Final URI to show in browser: " + url);
         Intent intent = new Intent(mContext, MraidBrowser.class);
@@ -151,12 +152,12 @@ class AdWebViewClient extends WebViewClient {
     }
 
     private void handleCustomIntentFromUri(Uri uri) {
-        mAdViewController.registerClick();
+        mHtmlWebViewListener.onClicked();
         String action = uri.getQueryParameter("fnc");
         String adData = uri.getQueryParameter("data");
         Intent customIntent = new Intent(action);
         customIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        customIntent.putExtra(AdWebView.EXTRA_AD_CLICK_DATA, adData);
+        customIntent.putExtra(HtmlBannerWebView.EXTRA_AD_CLICK_DATA, adData);
         try {
             mContext.startActivity(customIntent);
         } catch (ActivityNotFoundException e) {

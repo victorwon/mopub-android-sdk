@@ -38,7 +38,7 @@ public abstract class CustomEventBanner {
      */
     protected abstract void onInvalidate();
     
-    protected interface CustomEventBannerListener {
+    public interface CustomEventBannerListener {
         /*
          * Your custom event subclass must call this method when it successfully loads an ad and
          * needs to display the provided View. Failure to do so will disrupt the mediation waterfall

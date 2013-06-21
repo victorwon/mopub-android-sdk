@@ -23,7 +23,7 @@
             <groupId>com.mopub.mobileads</groupId>
             <artifactId>mopub-sdk</artifactId>
             <version>1.0.0-SNAPSHOT</version>
-            <type>apklib</type>
+            <type>jar</type>
         </dependency>
 
 

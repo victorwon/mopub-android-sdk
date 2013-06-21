@@ -14,9 +14,8 @@ import org.junit.Test;
 import org.robolectric.Robolectric;
 import org.robolectric.shadows.ShadowLocalBroadcastManager;
 
-import static com.mopub.mobileads.BaseActivity.ACTION_INTERSTITIAL_DISMISS;
-import static com.mopub.mobileads.BaseActivity.ACTION_INTERSTITIAL_SHOW;
-import static com.mopub.mobileads.BaseActivity.HTML_INTERSTITIAL_INTENT_FILTER;
+import static com.mopub.mobileads.BaseInterstitialActivity.ACTION_INTERSTITIAL_DISMISS;
+import static com.mopub.mobileads.BaseInterstitialActivity.HTML_INTERSTITIAL_INTENT_FILTER;
 import static com.mopub.mobileads.resource.Drawables.INTERSTITIAL_CLOSE_BUTTON_NORMAL;
 import static com.mopub.mobileads.resource.Drawables.INTERSTITIAL_CLOSE_BUTTON_PRESSED;
 import static org.fest.assertions.api.Assertions.assertThat;
@@ -28,10 +27,10 @@ import static org.mockito.Mockito.verify;
 import static org.robolectric.Robolectric.shadowOf;
 
 @Ignore
-public class BaseActivityTest {
+public class BaseInterstitialActivityTest {
     public static final String EXPECTED_SOURCE = "expected source";
 
-    protected BaseActivity subject;
+    protected BaseInterstitialActivity subject;
     protected BroadcastReceiver broadcastReceiver;
 
     public void setup() {
@@ -52,16 +51,6 @@ public class BaseActivityTest {
         View adView = getContentView(subject).getChildAt(0);
 
         assertThat(adView).isNotNull();
-    }
-
-    @Test
-    public void onCreate_shouldBroadcastInterstitialShow() throws Exception {
-        Intent expectedIntent = new Intent(ACTION_INTERSTITIAL_SHOW);
-        ShadowLocalBroadcastManager.getInstance(subject).registerReceiver(broadcastReceiver, HTML_INTERSTITIAL_INTENT_FILTER);
-
-        subject.onCreate(null);
-
-        verify(broadcastReceiver).onReceive(eq(subject), eq(expectedIntent));
     }
 
     @Test
@@ -127,7 +116,7 @@ public class BaseActivityTest {
         return (ImageButton) getContentView(subject).getChildAt(1);
     }
 
-    protected RelativeLayout getContentView(BaseActivity subject) {
+    protected RelativeLayout getContentView(BaseInterstitialActivity subject) {
         return (RelativeLayout) ((ViewGroup) subject.findViewById(android.R.id.content)).getChildAt(0);
     }
 

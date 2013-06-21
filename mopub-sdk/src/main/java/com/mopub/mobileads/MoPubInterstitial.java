@@ -34,11 +34,8 @@ package com.mopub.mobileads;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.location.Location;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import com.mopub.mobileads.MoPubView.BannerAdListener;
 import com.mopub.mobileads.MoPubView.LocationAwareness;
 import com.mopub.mobileads.factories.CustomEventInterstitialAdapterFactory;
 
@@ -46,15 +43,11 @@ import java.util.Map;
 
 import static com.mopub.mobileads.AdFetcher.CUSTOM_EVENT_DATA_HEADER;
 import static com.mopub.mobileads.AdFetcher.CUSTOM_EVENT_NAME_HEADER;
-import static com.mopub.mobileads.BaseActivity.SOURCE_KEY;
-import static com.mopub.mobileads.MoPubActivity.AD_UNIT_ID_KEY;
-import static com.mopub.mobileads.MoPubActivity.CLICKTHROUGH_URL_KEY;
-import static com.mopub.mobileads.MoPubActivity.KEYWORDS_KEY;
+import static com.mopub.mobileads.MoPubErrorCode.ADAPTER_NOT_FOUND;
 
 public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomEventInterstitialAdapterListener {
 
     private enum InterstitialState {
-        HTML_AD_READY,
         CUSTOM_EVENT_AD_READY,
         NOT_READY;
 
@@ -69,63 +62,56 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
     private Activity mActivity;
     private String mAdUnitId;
     private InterstitialState mCurrentInterstitialState;
-    private BaseActivityBroadcastReceiver mBaseActivityBroadcastReceiver;
     private boolean mIsDestroyed;
 
     public interface InterstitialAdListener {
         public void onInterstitialLoaded(MoPubInterstitial interstitial);
         public void onInterstitialFailed(MoPubInterstitial interstitial, MoPubErrorCode errorCode);
         public void onInterstitialShown(MoPubInterstitial interstitial);
+        public void onInterstitialClicked(MoPubInterstitial interstitial);
         public void onInterstitialDismissed(MoPubInterstitial interstitial);
     }
-    
+
     private MoPubInterstitialListener mListener;
-    
+
     @Deprecated
     public interface MoPubInterstitialListener {
         public void OnInterstitialLoaded();
         public void OnInterstitialFailed();
     }
-    
+
     public MoPubInterstitial(Activity activity, String id) {
         mActivity = activity;
         mAdUnitId = id;
-        
+
         mInterstitialView = new MoPubInterstitialView(mActivity);
         mInterstitialView.setAdUnitId(mAdUnitId);
 
-        mInterstitialView.setBannerAdListener(new MoPubInterstitialBannerListener());
-        
         mCurrentInterstitialState = InterstitialState.NOT_READY;
 
-        mBaseActivityBroadcastReceiver = new MoPubInterstitialBroadcastReceiver();
-        
-        // This IntentFilter contains HTML interstitial show and dismiss actions.
-        LocalBroadcastManager.getInstance(mActivity).registerReceiver(mBaseActivityBroadcastReceiver,
-                BaseActivity.HTML_INTERSTITIAL_INTENT_FILTER);
     }
 
     public void load() {
         resetCurrentInterstitial();
         mInterstitialView.loadAd();
     }
-    
+
     public void forceRefresh() {
         resetCurrentInterstitial();
         mInterstitialView.forceRefresh();
     }
-    
+
     private void resetCurrentInterstitial() {
         mCurrentInterstitialState = InterstitialState.NOT_READY;
-        
+
         if (mCustomEventInterstitialAdapter != null) {
             mCustomEventInterstitialAdapter.invalidate();
             mCustomEventInterstitialAdapter = null;
         }
-        
+
         mIsDestroyed = false;
     }
-    
+
     public boolean isReady() {
         return mCurrentInterstitialState.isReady();
     }
@@ -133,35 +119,22 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
     boolean isDestroyed() {
         return mIsDestroyed;
     }
-    
+
     public boolean show() {
         switch (mCurrentInterstitialState) {
-            case HTML_AD_READY:
-                showHtmlInterstitial();
-                return true;
             case CUSTOM_EVENT_AD_READY:
                 showCustomEventInterstitial();
                 return true;
         }
         return false;
     }
-    
-    private void showHtmlInterstitial() {
-        String responseString = mInterstitialView.getResponseString();
-        Intent i = new Intent(mActivity, MoPubActivity.class);
-        i.putExtra(AD_UNIT_ID_KEY, mAdUnitId);
-        i.putExtra(KEYWORDS_KEY, mInterstitialView.getKeywords());
-        i.putExtra(SOURCE_KEY, responseString);
-        i.putExtra(CLICKTHROUGH_URL_KEY, mInterstitialView.getClickthroughUrl());
-        mActivity.startActivity(i);
-    }
-    
+
     private void showCustomEventInterstitial() {
         if (mCustomEventInterstitialAdapter != null) mCustomEventInterstitialAdapter.showInterstitial();
     }
-    
+
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    
+
     public void setKeywords(String keywords) {
         mInterstitialView.setKeywords(keywords);
     }
@@ -169,15 +142,15 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
     public String getKeywords() {
         return mInterstitialView.getKeywords();
     }
-    
+
     public Activity getActivity() {
-    	return mActivity;
+        return mActivity;
     }
-    
+
     public Location getLocation() {
         return mInterstitialView.getLocation();
     }
-    
+
     public void destroy() {
         mIsDestroyed = true;
 
@@ -185,21 +158,19 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
             mCustomEventInterstitialAdapter.invalidate();
             mCustomEventInterstitialAdapter = null;
         }
-        
-        LocalBroadcastManager.getInstance(mActivity).unregisterReceiver(mBaseActivityBroadcastReceiver);
-        
+
         mInterstitialView.setBannerAdListener(null);
         mInterstitialView.destroy();
     }
-    
+
     public void setInterstitialAdListener(InterstitialAdListener listener) {
         mInterstitialAdListener = listener;
     }
-    
+
     public InterstitialAdListener getInterstitialAdListener() {
         return mInterstitialAdListener;
     }
-    
+
     public void setLocationAwareness(LocationAwareness awareness) {
         mInterstitialView.setLocationAwareness(awareness);
     }
@@ -215,19 +186,19 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
     public int getLocationPrecision() {
         return mInterstitialView.getLocationPrecision();
     }
-    
+
     public void setTesting(boolean testing) {
         mInterstitialView.setTesting(testing);
     }
-    
+
     public boolean getTesting() {
         return mInterstitialView.getTesting();
     }
-    
+
     public void setLocalExtras(Map<String, Object> extras) {
         mInterstitialView.setLocalExtras(extras);
     }
-    
+
     public Map<String, Object> getLocalExtras() {
         return mInterstitialView.getLocalExtras();
     }
@@ -241,10 +212,9 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
         if (mIsDestroyed) return;
 
         mCurrentInterstitialState = InterstitialState.CUSTOM_EVENT_AD_READY;
-        mInterstitialView.trackImpression();
 
         if (mInterstitialAdListener != null) {
-            mInterstitialAdListener.onInterstitialLoaded(MoPubInterstitial.this);
+            mInterstitialAdListener.onInterstitialLoaded(this);
         } else if (mListener != null) {
             mListener.OnInterstitialLoaded();
         }
@@ -259,11 +229,15 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
     }
 
     @Override
-    public void onCustomEventInterstitialShown() {
+    public void onCustomEventInterstitialShown(boolean shouldTrackImpressions) {
         if (isDestroyed()) return;
 
+        if (shouldTrackImpressions) {
+            mInterstitialView.trackImpression();
+        }
+
         if (mInterstitialAdListener != null) {
-            mInterstitialAdListener.onInterstitialShown(MoPubInterstitial.this);
+            mInterstitialAdListener.onInterstitialShown(this);
         }
     }
 
@@ -272,6 +246,10 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
         if (isDestroyed()) return;
 
         mInterstitialView.registerClick();
+
+        if (mInterstitialAdListener != null) {
+            mInterstitialAdListener.onInterstitialClicked(this);
+        }
     }
 
     @Override
@@ -281,14 +259,14 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
         mCurrentInterstitialState = InterstitialState.NOT_READY;
 
         if (mInterstitialAdListener != null) {
-            mInterstitialAdListener.onInterstitialDismissed(MoPubInterstitial.this);
+            mInterstitialAdListener.onInterstitialDismissed(this);
         }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    
+
     public class MoPubInterstitialView extends MoPubView {
-        
+
         public MoPubInterstitialView(Context context) {
             super(context);
             setAutorefreshEnabled(false);
@@ -296,9 +274,17 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
 
         @Override
         protected void loadCustomEvent(Map<String, String> paramsMap) {
-            if (mCustomEventInterstitialAdapter != null) mCustomEventInterstitialAdapter.invalidate();
+            if (paramsMap == null) {
+                Log.d("MoPub", "Couldn't invoke custom event because the server did not specify one.");
+                loadFailUrl(ADAPTER_NOT_FOUND);
+                return;
+            }
 
-            Log.i("MoPub", "Loading custom event interstitial adapter.");
+            if (mCustomEventInterstitialAdapter != null) {
+                mCustomEventInterstitialAdapter.invalidate();
+            }
+
+            Log.d("MoPub", "Loading custom event interstitial adapter.");
 
             mCustomEventInterstitialAdapter = CustomEventInterstitialAdapterFactory.create(
                     MoPubInterstitial.this,
@@ -307,57 +293,16 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
             mCustomEventInterstitialAdapter.setAdapterListener(MoPubInterstitial.this);
             mCustomEventInterstitialAdapter.loadInterstitial();
         }
-        
+
         protected void trackImpression() {
             Log.d("MoPub", "Tracking impression for interstitial.");
             if (mAdViewController != null) mAdViewController.trackImpression();
         }
-    }
-
-    class MoPubInterstitialBannerListener implements BannerAdListener {
-        @Override
-        public void onBannerLoaded(MoPubView ignored) {
-            mCurrentInterstitialState = InterstitialState.HTML_AD_READY;
-            if (mCustomEventInterstitialAdapter != null) {
-                mCustomEventInterstitialAdapter.invalidate();
-                mCustomEventInterstitialAdapter = null;
-            }
-
-            if (mInterstitialAdListener != null) {
-                mInterstitialAdListener.onInterstitialLoaded(MoPubInterstitial.this);
-            } else if (mListener != null) {
-                mListener.OnInterstitialLoaded();
-            }
-        }
 
         @Override
-        public void onBannerFailed(MoPubView ignored, MoPubErrorCode errorCode) {
-            mCurrentInterstitialState = InterstitialState.NOT_READY;
+        protected void adFailed(MoPubErrorCode errorCode) {
             if (mInterstitialAdListener != null) {
                 mInterstitialAdListener.onInterstitialFailed(MoPubInterstitial.this, errorCode);
-            } else if (mListener != null) {
-                mListener.OnInterstitialFailed();
-            }
-        }
-
-        @Override public void onBannerClicked(MoPubView banner) {}
-        @Override public void onBannerExpanded(MoPubView banner) {}
-        @Override public void onBannerCollapsed(MoPubView banner) {}
-    }
-
-    class MoPubInterstitialBroadcastReceiver extends BaseActivityBroadcastReceiver {
-        @Override
-        void onHtmlInterstitialShown() {
-            if (mInterstitialAdListener != null) {
-                mInterstitialAdListener.onInterstitialShown(MoPubInterstitial.this);
-            }
-        }
-
-        @Override
-        void onHtmlInterstitialDismissed() {
-            mCurrentInterstitialState = InterstitialState.NOT_READY;
-            if (mInterstitialAdListener != null) {
-                mInterstitialAdListener.onInterstitialDismissed(MoPubInterstitial.this);
             }
         }
     }

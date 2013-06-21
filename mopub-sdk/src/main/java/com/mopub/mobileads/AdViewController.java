@@ -39,16 +39,17 @@ import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Handler;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.webkit.WebView;
 import android.widget.FrameLayout;
 import com.mopub.mobileads.MoPubView.LocationAwareness;
 import com.mopub.mobileads.factories.AdFetcherFactory;
+import com.mopub.mobileads.factories.HtmlBannerWebViewFactory;
+import com.mopub.mobileads.factories.HtmlInterstitialWebViewFactory;
 import com.mopub.mobileads.factories.HttpClientFactory;
-import org.apache.http.Header;
+import com.mopub.mobileads.util.Dips;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -56,8 +57,13 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import static android.Manifest.permission.ACCESS_NETWORK_STATE;
+import static com.mopub.mobileads.AdFetcher.CLICKTHROUGH_URL_HEADER;
+import static com.mopub.mobileads.AdFetcher.REDIRECT_URL_HEADER;
+import static com.mopub.mobileads.util.HttpResponses.extractHeader;
+import static com.mopub.mobileads.util.HttpResponses.extractIntHeader;
 
 public class AdViewController {
     private static final int MINIMUM_REFRESH_TIME_MILLISECONDS = 10000;
@@ -66,12 +72,12 @@ public class AdViewController {
                     FrameLayout.LayoutParams.WRAP_CONTENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT,
                     Gravity.CENTER);
+    private static WeakHashMap<View,Boolean> sViewShouldHonorServerDimensions = new WeakHashMap<View, Boolean>();;
 
     private final Context mContext;
     private MoPubView mMoPubView;
     private Map<String, Object> mLocalExtras;
     private final AdUrlGenerator mUrlGenerator;
-    private final AdWebView mAdWebView;
     private boolean mAutorefreshEnabled;
     private final String mUserAgent;
     private AdFetcher mAdFetcher;
@@ -92,13 +98,24 @@ public class AdViewController {
     private boolean mIsDestroyed;
     private Handler mHandler;
 
+    private boolean mIsLoading;
+    private String mFailUrl;
+    private String mUrl;
+
+    protected static void setShouldHonorServerDimensions(View view) {
+        sViewShouldHonorServerDimensions.put(view, true);
+    }
+
+    private static boolean getShouldHonorServerDimensions(View view) {
+        return sViewShouldHonorServerDimensions.get(view) != null;
+    }
+
     public AdViewController(Context context, MoPubView view) {
         mContext = context;
         mMoPubView = view;
 
         mLocalExtras = new HashMap<String, Object>();
         mUrlGenerator = new AdUrlGenerator(context);
-        mAdWebView = new AdWebView(this, context);
 
         mAutorefreshEnabled = true;
         mRefreshRunnable = new Runnable() {
@@ -110,8 +127,11 @@ public class AdViewController {
         /* Store user agent string at beginning to prevent NPE during background
          * thread operations.
          */
-        mUserAgent = mAdWebView.getSettings().getUserAgentString();
+        mUserAgent = new WebView(context).getSettings().getUserAgentString();
         mAdFetcher = AdFetcherFactory.create(this, mUserAgent);
+
+        HtmlBannerWebViewFactory.initialize(context);
+        HtmlInterstitialWebViewFactory.initialize(context);
 
         mHandler = new Handler();
     }
@@ -137,7 +157,50 @@ public class AdViewController {
 
         // tested (remove me when the rest of this is tested)
         String adUrl = generateAdUrl();
-        mAdWebView.loadUrl(adUrl);
+        loadNonJavascript(adUrl);
+    }
+
+    void loadNonJavascript(String url) {
+        if (url == null) return;
+
+        Log.d("MoPub", "Loading url: " + url);
+        if (mIsLoading) {
+            Log.i("MoPub", "Already loading an ad for " + mAdUnitId + ", wait to finish.");
+            return;
+        }
+
+        mUrl = url;
+        mFailUrl = null;
+        mIsLoading = true;
+
+        fetchAd(mUrl);
+    }
+
+    public void reload() {
+        Log.d("MoPub", "Reload ad: " + mUrl);
+        loadNonJavascript(mUrl);
+    }
+
+    void loadFailUrl(MoPubErrorCode errorCode) {
+        mIsLoading = false;
+
+        Log.v("MoPub", "MoPubErrorCode: " + (errorCode == null ? "" : errorCode.toString()));
+
+        if (mFailUrl != null) {
+            Log.d("MoPub", "Loading failover url: " + mFailUrl);
+            loadNonJavascript(mFailUrl);
+        } else {
+            // No other URLs to try, so signal a failure.
+            adDidFail(MoPubErrorCode.NO_FILL);
+        }
+    }
+
+    void setFailUrl(String failUrl) {
+        this.mFailUrl = failUrl;
+    }
+
+    void setNotLoading() {
+        this.mIsLoading = false;
     }
 
     public String getKeywords() {
@@ -229,7 +292,6 @@ public class AdViewController {
 
         setAutorefreshEnabled(false);
         cancelRefreshTimer();
-        mAdWebView.destroy();
 
         // WebView subclasses are not garbage-collected in a timely fashion on Froyo and below,
         // thanks to some persistent references in WebViewCore. We manually release some resources
@@ -238,20 +300,17 @@ public class AdViewController {
         mAdFetcher.cleanup();
         mAdFetcher = null;
 
+        HtmlBannerWebViewFactory.cleanup();
+        HtmlInterstitialWebViewFactory.cleanup();
+
         mLocalExtras = null;
 
         mResponseString = null;
 
-        getMoPubView().removeView(mAdWebView);
         mMoPubView = null;
 
         // Flag as destroyed. LoadUrlTask checks this before proceeding in its onPostExecute().
         mIsDestroyed = true;
-    }
-
-    void loadResponseString(String responseString) {
-        mAdWebView.loadDataWithBaseURL("http://" + getServerHostname() + "/", responseString, "text/html",
-                "utf-8", null);
     }
 
     void configureUsingHttpResponse(final HttpResponse response) {
@@ -260,16 +319,13 @@ public class AdViewController {
         if (networkType != null) Log.i("MoPub", "Fetching ad network type: " + networkType);
 
         // Set the redirect URL prefix: navigating to any matching URLs will send us to the browser.
-        mRedirectUrl = extractHeader(response, "X-Launchpage");
+        mRedirectUrl = extractHeader(response, REDIRECT_URL_HEADER);
         // Set the URL that is prepended to links for click-tracking purposes.
-        mClickthroughUrl = extractHeader(response, "X-Clickthrough");
+        mClickthroughUrl = extractHeader(response, CLICKTHROUGH_URL_HEADER);
         // Set the fall-back URL to be used if the current request fails.
-        mAdWebView.setFailUrl(extractHeader(response, "X-Failurl"));
+        setFailUrl(extractHeader(response, "X-Failurl"));
         // Set the URL to be used for impression tracking.
         mImpressionUrl = extractHeader(response, "X-Imptracker");
-        // Set the webview's scrollability.
-        boolean enabled = extractBooleanHeader(response, "X-Scrollable");
-        setWebViewScrollingEnabled(enabled);
         // Set the width and height.
         mWidth = extractIntHeader(response, "X-Width");
         mHeight = extractIntHeader(response, "X-Height");
@@ -319,28 +375,17 @@ public class AdViewController {
 
                 DefaultHttpClient httpClient = HttpClientFactory.create();
                 try {
+                    Log.d("MoPub", "Tracking click for: " + mClickthroughUrl);
                     HttpGet httpget = new HttpGet(mClickthroughUrl);
                     httpget.addHeader("User-Agent", mUserAgent);
                     httpClient.execute(httpget);
                 } catch (Exception e) {
-                    Log.i("MoPub", "Click tracking failed: " + mImpressionUrl, e);
+                    Log.d("MoPub", "Click tracking failed: " + mClickthroughUrl, e);
                 } finally {
                     httpClient.getConnectionManager().shutdown();
                 }
             }
         }).start();
-    }
-
-    void adAppeared() {
-        mAdWebView.loadUrl("javascript:webviewDidAppear();");
-    }
-
-    void setResponseString(String responseString) {
-        mResponseString = responseString;
-    }
-
-    void setNotLoading() {
-        mAdWebView.setNotLoading();
     }
 
     void fetchAd(String mUrl) {
@@ -350,12 +395,8 @@ public class AdViewController {
     }
 
     void forceRefresh() {
-        mAdWebView.setNotLoading();
+        setNotLoading();
         loadAd();
-    }
-
-    void loadFailUrl(MoPubErrorCode errorCode) {
-        mAdWebView.loadFailUrl(errorCode);
     }
 
     String generateAdUrl() {
@@ -368,7 +409,7 @@ public class AdViewController {
 
     void adDidFail(MoPubErrorCode errorCode) {
         Log.i("MoPub", "Ad failed to load.");
-        mAdWebView.setNotLoading();
+        setNotLoading();
         scheduleRefreshTimerIfEnabled();
         getMoPubView().adFailed(errorCode);
     }
@@ -393,22 +434,6 @@ public class AdViewController {
                 : new HashMap<String,Object>();
     }
 
-    void adDidLoad() {
-        Log.i("MoPub", "Ad successfully loaded.");
-        mAdWebView.setNotLoading();
-        scheduleRefreshTimerIfEnabled();
-        setAdContentView(mAdWebView, getHtmlAdLayoutParams());
-        getMoPubView().adLoaded();
-    }
-
-    void setAdContentView(View view) {
-        setAdContentView(view, WRAP_AND_CENTER_LAYOUT_PARAMS);
-    }
-
-    void adDidClose() {
-        getMoPubView().adClosed();
-    }
-
     private void cancelRefreshTimer() {
         mHandler.removeCallbacks(mRefreshRunnable);
     }
@@ -429,37 +454,15 @@ public class AdViewController {
         return networkInfo != null && networkInfo.isConnected();
     }
 
-    private int extractIntHeader(HttpResponse response, String headerName) {
-        String headerValue = extractHeader(response, headerName);
-        return (headerValue != null) ? Integer.parseInt(headerValue.trim()) : 0;
-    }
-
-    private String extractHeader(HttpResponse response, String headerName) {
-        Header header = response.getFirstHeader(headerName);
-        return header != null ? header.getValue() : null;
-    }
-
-    private boolean extractBooleanHeader(HttpResponse response, String headerName) {
-        return !"0".equals(extractHeader(response, headerName));
-    }
-
-    private void setWebViewScrollingEnabled(boolean enabled) {
-        mAdWebView.setWebViewScrollingEnabled(enabled);
-    }
-
-    private void setAdContentView(View view, FrameLayout.LayoutParams layoutParams) {
+    void setAdContentView(View view) {
         getMoPubView().removeAllViews();
-        getMoPubView().addView(view, layoutParams);
+        getMoPubView().addView(view, getAdLayoutParams(view));
     }
 
-    private FrameLayout.LayoutParams getHtmlAdLayoutParams() {
-        if (mWidth > 0 && mHeight > 0) {
-            DisplayMetrics displayMetrics = mContext.getResources().getDisplayMetrics();
-
-            int scaledWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, mWidth,
-                    displayMetrics);
-            int scaledHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, mHeight,
-                    displayMetrics);
+    private FrameLayout.LayoutParams getAdLayoutParams(View view) {
+        if (getShouldHonorServerDimensions(view) && mWidth > 0 && mHeight > 0) {
+            int scaledWidth = Dips.asIntPixels(mWidth, mContext);
+            int scaledHeight = Dips.asIntPixels(mHeight, mContext);
 
             return new FrameLayout.LayoutParams(scaledWidth, scaledHeight, Gravity.CENTER);
         } else {
@@ -477,7 +480,7 @@ public class AdViewController {
     private Location getLastKnownLocation() {
         LocationAwareness locationAwareness = getMoPubView().getLocationAwareness();
         int locationPrecision = getMoPubView().getLocationPrecision();
-        Location result = null;
+        Location result;
 
         if (locationAwareness == LocationAwareness.LOCATION_AWARENESS_DISABLED) {
             return null;
@@ -534,13 +537,13 @@ public class AdViewController {
         return mContext;
     }
 
-    AdWebView getAdWebView() {
-        return mAdWebView;
+    HtmlBannerWebView getAdWebView() {
+        return null;
     }
 
     @Deprecated
     public void customEventDidLoadAd() {
-        mAdWebView.setNotLoading();
+        setNotLoading();
         trackImpression();
         scheduleRefreshTimerIfEnabled();
     }

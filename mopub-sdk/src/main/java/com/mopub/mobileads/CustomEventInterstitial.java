@@ -45,7 +45,7 @@ public abstract class CustomEventInterstitial {
      */
     protected abstract void onInvalidate();
     
-    protected interface CustomEventInterstitialListener {
+    public interface CustomEventInterstitialListener {
         /*
          * Your custom event subclass must call this method when it successfully loads an ad.
          * Failure to do so will disrupt the mediation waterfall and cause future ad requests to

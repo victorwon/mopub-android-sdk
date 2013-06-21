@@ -10,7 +10,7 @@ import org.junit.runner.RunWith;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.mopub.mobileads.AdFetcher.MRAID_HTML_DATA;
+import static com.mopub.mobileads.AdFetcher.HTML_RESPONSE_BODY_KEY;
 import static com.mopub.mobileads.CustomEventBanner.CustomEventBannerListener;
 import static com.mopub.mobileads.MoPubErrorCode.MRAID_LOAD_ERROR;
 import static com.mopub.mobileads.MraidView.OnCloseListener;
@@ -46,12 +46,12 @@ public class MraidBannerTest {
         bannerListener = mock(CustomEventBanner.CustomEventBannerListener.class);
         localExtras = new HashMap<String, Object>();
         serverExtras = new HashMap<String, String>();
-        serverExtras.put(MRAID_HTML_DATA, INPUT_HTML_DATA);
+        serverExtras.put(HTML_RESPONSE_BODY_KEY, INPUT_HTML_DATA);
     }
 
     @Test
     public void loadBanner_whenExtrasAreMalformed_shouldNotifyBannerListenerAndReturn() throws Exception {
-        serverExtras.remove(MRAID_HTML_DATA);
+        serverExtras.remove(HTML_RESPONSE_BODY_KEY);
         subject.loadBanner(context, bannerListener, localExtras, serverExtras);
 
         verify(bannerListener).onBannerFailed(eq(MRAID_LOAD_ERROR));

@@ -39,7 +39,7 @@ import com.mopub.mobileads.factories.MraidViewFactory;
 
 import java.util.Map;
 
-import static com.mopub.mobileads.AdFetcher.MRAID_HTML_DATA;
+import static com.mopub.mobileads.AdFetcher.HTML_RESPONSE_BODY_KEY;
 import static com.mopub.mobileads.MoPubErrorCode.MRAID_LOAD_ERROR;
 
 class MraidBanner extends CustomEventBanner {
@@ -55,7 +55,7 @@ class MraidBanner extends CustomEventBanner {
 
         String htmlData;
         if (extrasAreValid(serverExtras)) {
-            htmlData = Uri.decode(serverExtras.get(MRAID_HTML_DATA));
+            htmlData = Uri.decode(serverExtras.get(HTML_RESPONSE_BODY_KEY));
         } else {
             mBannerListener.onBannerFailed(MRAID_LOAD_ERROR);
             return;
@@ -92,7 +92,7 @@ class MraidBanner extends CustomEventBanner {
     }
 
     private boolean extrasAreValid(Map<String, String> serverExtras) {
-        return serverExtras.containsKey(MRAID_HTML_DATA);
+        return serverExtras.containsKey(HTML_RESPONSE_BODY_KEY);
     }
 
     private void initMraidListeners() {

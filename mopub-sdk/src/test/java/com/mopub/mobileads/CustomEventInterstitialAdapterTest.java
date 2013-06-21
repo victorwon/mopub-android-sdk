@@ -18,11 +18,13 @@ import static com.mopub.mobileads.MoPubErrorCode.NETWORK_TIMEOUT;
 import static com.mopub.mobileads.MoPubErrorCode.UNSPECIFIED;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
+
 
 @RunWith(SdkTestRunner.class)
 public class CustomEventInterstitialAdapterTest {
@@ -158,7 +160,7 @@ public class CustomEventInterstitialAdapterTest {
     public void onInterstitialShown_shouldSignalAdapterListener() throws Exception {
         subject.onInterstitialShown();
 
-        verify(interstitialAdapterListener).onCustomEventInterstitialShown();
+        verify(interstitialAdapterListener).onCustomEventInterstitialShown(true);
     }
 
     @Test
@@ -218,8 +220,19 @@ public class CustomEventInterstitialAdapterTest {
 
         verify(interstitialAdapterListener, never()).onCustomEventInterstitialLoaded();
         verify(interstitialAdapterListener, never()).onCustomEventInterstitialFailed(any(MoPubErrorCode.class));
-        verify(interstitialAdapterListener, never()).onCustomEventInterstitialShown();
+        verify(interstitialAdapterListener, never()).onCustomEventInterstitialShown(anyBoolean());
         verify(interstitialAdapterListener, never()).onCustomEventInterstitialClicked();
         verify(interstitialAdapterListener, never()).onCustomEventInterstitialDismissed();
+    }
+
+    @Test
+    public void shouldNotTrackImpressionsWhenHoldingAnHtmlInterstitial() throws Exception {
+        subject.onInterstitialShown();
+        verify(interstitialAdapterListener).onCustomEventInterstitialShown(eq(true));
+
+        subject.setCustomEventInterstitial(mock(HtmlInterstitial.class));
+
+        subject.onInterstitialShown();
+        verify(interstitialAdapterListener).onCustomEventInterstitialShown(eq(false));
     }
 }

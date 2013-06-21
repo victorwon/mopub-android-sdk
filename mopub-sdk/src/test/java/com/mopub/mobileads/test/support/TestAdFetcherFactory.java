@@ -7,10 +7,14 @@ import com.mopub.mobileads.factories.AdFetcherFactory;
 import static org.mockito.Mockito.mock;
 
 public class TestAdFetcherFactory extends AdFetcherFactory {
-    private AdFetcher mockFetcher = mock(AdFetcher.class);
+    private AdFetcher mockAdFetcher = mock(AdFetcher.class);
+
+    public static AdFetcher getSingletonMock() {
+        return ((TestAdFetcherFactory)AdFetcherFactory.instance).mockAdFetcher;
+    }
 
     @Override
     public AdFetcher internalCreate(AdViewController adViewController, String userAgent) {
-        return mockFetcher;
+        return mockAdFetcher;
     }
 }
