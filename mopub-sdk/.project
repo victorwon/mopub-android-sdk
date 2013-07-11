@@ -30,4 +30,11 @@
 		<nature>com.android.ide.eclipse.adt.AndroidNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>extra-src</name>
+			<type>2</type>
+			<location>/Users/vweng/Projects/3rd-party-by-ref/mopub-android-sdk/extras/src</location>
+		</link>
+	</linkedResources>
 </projectDescription>
