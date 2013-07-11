@@ -41,7 +41,8 @@ class HeyZapInterstitial extends CustomEventInterstitial implements OnAdDisplayL
 		}
 
 		/*
-		 * Remember to call HeyzapLib.start(context, HeyzapLib.FLAG_NONE); in main activity's onCreate()
+		 * Remember to call HeyzapLib.start(this, HeyzapLib.FLAG_NO_HEYZAP_INSTALL_SPLASH);
+		 * in main activity's onCreate()
 		 */
 		InterstitialOverlay.setDisplayListener(this);
 	}
