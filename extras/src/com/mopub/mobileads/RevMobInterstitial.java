@@ -52,6 +52,7 @@ class RevMobInterstitial extends CustomEventInterstitial implements
 			RevMob.start(activity, appId); // if appId is null, we assume it's already init'ed in the app code.
 		}
 		
+//		RevMob.session().setTestingMode(RevMobTestingMode.WITH_ADS);
 		fullscreenAd = RevMob.session().createFullscreen(activity, this);
 		fullscreenAd.load();
 	}
@@ -74,6 +75,9 @@ class RevMobInterstitial extends CustomEventInterstitial implements
 		Log.d("MoPub", "RevMob interstitial ad clicked.");
 		mInterstitialListener.onInterstitialClicked();
 
+		this.onRevMobAdDismiss(); // must call this as Revmob doesn't trigger it after clicking
+		
+		mInterstitialListener.onLeaveApplication();
 	}
 
 	@Override
@@ -85,6 +89,7 @@ class RevMobInterstitial extends CustomEventInterstitial implements
 
 	@Override
 	public void onRevMobAdDisplayed() {
+		Log.d("MoPub", "RevMob interstitial ad displayed.");
 		mInterstitialListener.onInterstitialShown();
 	}
 
