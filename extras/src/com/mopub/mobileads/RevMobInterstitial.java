@@ -4,6 +4,7 @@ import java.util.Map;
 
 import android.app.Activity;
 import android.content.Context;
+import android.location.Location;
 import android.util.Log;
 
 import com.revmob.RevMob;
@@ -16,6 +17,7 @@ import com.revmob.ads.fullscreen.RevMobFullscreen;
 class RevMobInterstitial extends CustomEventInterstitial implements
 		RevMobAdsListener {
 	public static final String APP_ID_KEY = "appId";
+	public static final String LOCATION_KEY = "location";
 
 	private CustomEventInterstitialListener mInterstitialListener;
 	private RevMobFullscreen fullscreenAd;
@@ -48,11 +50,18 @@ class RevMobInterstitial extends CustomEventInterstitial implements
 		 * specifying Custom Event Data in MoPub's web interface.
 		 */
 		String appId = serverExtras.get(APP_ID_KEY);
-		if (appId != null && appId.length()>0) {
-			RevMob.start(activity, appId); // if appId is null, we assume it's already init'ed in the app code.
+		if (appId != null && appId.length() > 0) {
+			RevMob.start(activity, appId); // if appId is null, we assume it's
+											// already init'ed in the app code.
 		}
-		
-//		RevMob.session().setTestingMode(RevMobTestingMode.WITH_ADS);
+
+		Location location = extractLocation(localExtras);
+		if (location != null) {
+			RevMob.session().setUserLocation(location.getLatitude(), location.getLongitude(),
+					location.getAccuracy());
+		}
+
+		// RevMob.session().setTestingMode(RevMobTestingMode.WITH_ADS);
 		fullscreenAd = RevMob.session().createFullscreen(activity, this);
 		fullscreenAd.load();
 	}
@@ -68,6 +77,13 @@ class RevMobInterstitial extends CustomEventInterstitial implements
 		fullscreenAd = null;
 	}
 
+	private Location extractLocation(Map<String, Object> localExtras) {
+		Object location = localExtras.get(LOCATION_KEY);
+		if (location instanceof Location) {
+			return (Location) location;
+		}
+		return null;
+	}
 
 	// --
 	@Override
@@ -75,9 +91,9 @@ class RevMobInterstitial extends CustomEventInterstitial implements
 		Log.d("MoPub", "RevMob interstitial ad clicked.");
 		mInterstitialListener.onInterstitialClicked();
 
-		this.onRevMobAdDismiss(); // must call this as Revmob doesn't trigger it after clicking
-		
-		mInterstitialListener.onLeaveApplication();
+		this.onRevMobAdDismiss(); // must call this as Revmob doesn't trigger it
+									// after clicking
+
 	}
 
 	@Override

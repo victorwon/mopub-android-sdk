@@ -79,6 +79,7 @@ class InMobiBanner extends CustomEventBanner implements IMAdListener {
     @Override
     public void onDismissAdScreen(IMAdView adView) {
         Log.d("MoPub", "InMobi banner ad modal dismissed.");
+ 
     }
 
     @Override
