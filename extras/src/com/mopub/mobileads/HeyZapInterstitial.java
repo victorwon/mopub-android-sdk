@@ -6,18 +6,20 @@ import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
 
+import com.heyzap.sdk.ads.HeyzapAds;
 import com.heyzap.sdk.ads.InterstitialOverlay;
 import com.heyzap.sdk.ads.OnAdDisplayListener;
 
 /*
  * 
  */
-class HeyZapInterstitial extends CustomEventInterstitial implements OnAdDisplayListener {
+class HeyZapInterstitial extends CustomEventInterstitial implements
+		OnAdDisplayListener {
 
 	private CustomEventInterstitialListener mInterstitialListener;
 
 	private Activity contextActivity;
-	
+
 	/*
 	 * Abstract methods from CustomEventInterstitial
 	 */
@@ -25,7 +27,7 @@ class HeyZapInterstitial extends CustomEventInterstitial implements OnAdDisplayL
 	protected void loadInterstitial(Context context,
 			CustomEventInterstitialListener interstitialListener,
 			Map<String, Object> localExtras, Map<String, String> serverExtras) {
-		Log.d("HeyZap","loadInterstitial");
+		Log.d("HeyZap", "loadInterstitial");
 
 		mInterstitialListener = interstitialListener;
 
@@ -43,83 +45,65 @@ class HeyZapInterstitial extends CustomEventInterstitial implements OnAdDisplayL
 			return;
 		}
 
-		/*
-		 * Remember to call HeyzapLib.start(this, HeyzapLib.FLAG_NO_HEYZAP_INSTALL_SPLASH);
-		 * in main activity's onCreate()
-		 */
-		// do not use load(context, listener) as it won't set listener after initial call
 		InterstitialOverlay.setDisplayListener(this);
 
-		if (InterstitialOverlay.isAvailable()) {
-			// already
-			this.onAvailable();
-		} else {
-			if	(InterstitialOverlay.getInstance() == null)
-				InterstitialOverlay.load(context, this);
-			InterstitialOverlay.fetch(); // fetch won't do anything if loading is in process.
-		}
-
+		// no appId to specify as contrast to iOS api, that's why we can move
+		// the start() call into the custom event
+		if (!HeyzapAds.hasStarted())
+			HeyzapAds.start(context, HeyzapAds.DISABLE_AUTOMATIC_FETCH, this);
+		
+		InterstitialOverlay.fetch();
 	}
 
 	@Override
 	protected void showInterstitial() {
-		Log.d("HeyZap","showInterstitial");
-
-		if (InterstitialOverlay.isAvailable()) {
+		Log.d("HeyZap", "showInterstitial");
+		if (contextActivity != null) {
 			InterstitialOverlay.display(contextActivity);
-
-	    }
-		
+		} else {
+			mInterstitialListener
+					.onInterstitialFailed(MoPubErrorCode.INTERNAL_ERROR);
+		}
 	}
 
 	@Override
 	protected void onInvalidate() {
 		InterstitialOverlay.setDisplayListener(null);
 		contextActivity = null;
-		
 	}
 
-	
 	@Override
 	public void onShow() {
 		mInterstitialListener.onInterstitialShown();
-		
 	}
 
 	@Override
 	public void onClick() {
 		mInterstitialListener.onInterstitialClicked();
-		
 	}
 
 	@Override
 	public void onHide() {
 		mInterstitialListener.onInterstitialDismissed();
-		
 	}
 
 	@Override
 	public void onFailedToShow() {
-		mInterstitialListener.onInterstitialFailed(MoPubErrorCode.INTERNAL_ERROR);
-		
-		Log.w("HeyZap","Failed to show");
-
+		mInterstitialListener
+				.onInterstitialFailed(MoPubErrorCode.INTERNAL_ERROR);
+		Log.d("HeyZap", "Failed to show");
 	}
 
 	@Override
 	public void onAvailable() {
-		Log.d("HeyZap","onAvailable");
+		Log.d("HeyZap", "onAvailable");
 		mInterstitialListener.onInterstitialLoaded();
-		
 	}
 
 	@Override
 	public void onFailedToFetch() {
-		mInterstitialListener.onInterstitialFailed(MoPubErrorCode.NETWORK_NO_FILL);
-		
-		Log.w("HeyZap","Failed to fetch");
-
+		mInterstitialListener
+				.onInterstitialFailed(MoPubErrorCode.NETWORK_NO_FILL);
+		Log.w("HeyZap", "Failed to fetch");
 	}
-
-	
 }
