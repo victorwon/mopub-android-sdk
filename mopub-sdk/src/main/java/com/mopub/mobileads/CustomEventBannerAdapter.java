@@ -99,7 +99,9 @@ public class CustomEventBannerAdapter implements CustomEventBannerListener {
             cancelTimeout();
             mMoPubView.nativeAdLoaded();
             mMoPubView.setAdContentView(bannerView);
-            mMoPubView.trackNativeImpression();
+            if (!(bannerView instanceof HtmlBannerWebView)) {
+                mMoPubView.trackNativeImpression();
+            }
         }
     }
 

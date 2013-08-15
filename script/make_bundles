@@ -3,10 +3,9 @@
 import os
 import boto
 import re
-from os import listdir, system, chdir, environ
-from os.path import isfile, join
-from boto.s3.connection import S3Connection
-from boto.s3.key import Key
+import boto
+
+import os_helper
 
 BUCKET_NAME = 'mopub-android-sdk'
 BASE_FILENAME = 'mopub-android-base-sdk'
@@ -14,12 +13,11 @@ FULL_FILENAME = 'mopub-android-full-sdk'
 AWS_ID = 'AWS_ACCESS_KEY_ID'
 AWS_SECRET = 'AWS_SECRET_ACCESS_KEY'
 
-TEMP_STAGING_PATH = '/tmp/mopub-staging'
 TEMP_SDK_PATH = TEMP_STAGING_PATH + '/mopub-android-sdk/mopub-sdk'
 TEMP_MOPUB_PACKAGE = TEMP_SDK_PATH + '/src/main/java/com/mopub/mobileads'
+THIRD_PARTY_LIBS = TEMP_STAGING_PATH + '/mopub-android/libs'
 TEMP_BASE_SDK_ZIP_FILE = '/tmp/' + BASE_FILENAME + '.zip'
 TEMP_FULL_SDK_ZIP_FILE = '/tmp/' + FULL_FILENAME + '.zip'
-THIRD_PARTY_LIBS = TEMP_STAGING_PATH + '/mopub-android/libs'
 
 release_branch = 'master'
 if len(os.sys.argv) > 1:
@@ -27,38 +25,34 @@ if len(os.sys.argv) > 1:
 
 def clone_private_repo():
     print 'Cloning the mopub-android (private) repo'
-    system('git clone https://github.com/mopub/mopub-android.git')
-    chdir(TEMP_STAGING_PATH + '/mopub-android')
-    if system('git checkout ' + release_branch):
+    os.system('git clone https://github.com/mopub/mopub-android.git')
+    os.chdir(TEMP_STAGING_PATH + '/mopub-android')
+    if os.system('git checkout ' + release_branch):
         print 'couldn\'t check out' + release_branch
         exit(1)
-    chdir(TEMP_STAGING_PATH)
+    os.chdir(TEMP_STAGING_PATH)
 
 def start_sdk_staging():
-    os.chdir('/')
-    print 'Cleaning staging path'
-    system('rm -rf ' + TEMP_STAGING_PATH)
-    print 'Creating staging path'
-    system('mkdir -p ' + TEMP_STAGING_PATH)
+    os_helper.init_temp_staging()
     print 'Moving to staging path'
-    chdir(TEMP_STAGING_PATH)
+    os.chdir(TEMP_STAGING_PATH)
 
     clone_private_repo()
 
     print 'Cloning the mopub-android-sdk (public) repo'
-    system('git clone https://github.com/mopub/mopub-android-sdk.git')
-    system('rm ' + TEMP_SDK_PATH + '/*.iml')
+    os.system('git clone https://github.com/mopub/mopub-android-sdk.git')
+    os.system('rm ' + TEMP_SDK_PATH + '/*.iml')
 
 def create_base_bundle():
     print 'creating base bundle in /tmp'
     start_sdk_staging()
-    chdir('mopub-android-sdk')
-    system('zip -FSr ' + TEMP_BASE_SDK_ZIP_FILE + ' ' + 'mopub-sdk')
+    os.chdir('mopub-android-sdk')
+    os.system('zip -FSr ' + TEMP_BASE_SDK_ZIP_FILE + ' ' + 'mopub-sdk')
 
 def update_project_file():
     with open(TEMP_SDK_PATH + '/.classpath', 'r+w') as f:
         lines = list(f)
-        lines_to_add = [ jar for jar in listdir(THIRD_PARTY_LIBS) if isfile(join(THIRD_PARTY_LIBS, jar)) and jar.endswith('.jar') ]
+        lines_to_add = [ jar for jar in os.listdir(THIRD_PARTY_LIBS) if os.path.isfile(os.path.join(THIRD_PARTY_LIBS, jar)) and jar.endswith('.jar') ]
         lines_to_add = [ '\t<classpathentry kind="lib" path="libs/' + l + '"/>\n' for l in lines_to_add ]
         output_lines = lines[:-1] + lines_to_add + lines[-1:]
         f.seek(0)
@@ -73,18 +67,18 @@ def create_full_bundle():
     custom_events = ['MillennialBanner.java', 'MillennialInterstitial.java', 'GoogleAdMobBanner.java', 'GoogleAdMobInterstitial.java']
 
     for custom_event in custom_events:
-        system('cp ' + TEMP_STAGING_PATH + custom_event_folder + '/' + custom_event + ' ' + TEMP_MOPUB_PACKAGE)
+        os.system('cp ' + TEMP_STAGING_PATH + custom_event_folder + '/' + custom_event + ' ' + TEMP_MOPUB_PACKAGE)
 
     # copy jars (where do these come from?) into libs
-    system('mkdir -p ' + TEMP_SDK_PATH + '/libs')
-    system('cp ' + THIRD_PARTY_LIBS + '/* ' + TEMP_SDK_PATH + '/libs')
+    os.system('mkdir -p ' + TEMP_SDK_PATH + '/libs')
+    os.system('cp ' + THIRD_PARTY_LIBS + '/* ' + TEMP_SDK_PATH + '/libs')
 
     # modify .project file
     update_project_file()
 
     print 'creating full bundle in /tmp'
-    chdir('mopub-android-sdk')
-    system('zip -FSr ' + TEMP_FULL_SDK_ZIP_FILE + ' ' + 'mopub-sdk')
+    os.chdir('mopub-android-sdk')
+    os.system('zip -FSr ' + TEMP_FULL_SDK_ZIP_FILE + ' ' + 'mopub-sdk')
 
 def send_to_s3(bucket, source, destination):
     def get_version_number():
@@ -94,7 +88,7 @@ def send_to_s3(bucket, source, destination):
 
     def write_file_to_s3(destination):
         print 'adding ' + destination + ' to s3'
-        k = Key(bucket)
+        k = boto.s3.key.Key(bucket)
         k.key = destination + '.zip'
         k.set_contents_from_filename(source)
         k.set_acl('public-read')
@@ -110,11 +104,11 @@ create_base_bundle()
 create_full_bundle()
 
 print 'secret gpg magic'
-system('gpg ' + TEMP_STAGING_PATH + '/mopub-android-sdk/script/aws_keys.txt.gpg')
+os.system('gpg ' + TEMP_STAGING_PATH + '/mopub-android-sdk/script/aws_keys.txt.gpg')
 with open(TEMP_STAGING_PATH + '/mopub-android-sdk/script/aws_keys.txt') as f:
-    environ[AWS_ID] = f.readline().rstrip()
-    environ[AWS_SECRET] = f.readline().rstrip()
-system('rm script/aws_keys.txt')
+    os.environ[AWS_ID] = f.readline().rstrip()
+    os.environ[AWS_SECRET] = f.readline().rstrip()
+os.system('rm script/aws_keys.txt')
 
 print 'connecting to s3 using boto'
 conn = boto.connect_s3()

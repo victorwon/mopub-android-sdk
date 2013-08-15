@@ -20,6 +20,7 @@ import static android.Manifest.permission.ACCESS_NETWORK_STATE;
 import static android.net.ConnectivityManager.*;
 import static android.telephony.TelephonyManager.NETWORK_TYPE_UNKNOWN;
 import static com.mopub.mobileads.AdUrlGenerator.MoPubNetworkType;
+import static com.mopub.mobileads.util.Strings.isEmpty;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.robolectric.Robolectric.application;
 import static org.robolectric.Robolectric.shadowOf;
@@ -243,19 +244,19 @@ public class AdUrlGeneratorTest {
         public String build() {
             return "http://ads.mopub.com/m/ad" +
                     "?v=6" +
-                    "&id=" + adUnitId +
+                    paramIfNotEmpty("id", adUnitId) +
                     "&nv=" + MoPub.SDK_VERSION +
                     "&udid=sha%3A" + expectedUdidSha +
-                    (query.isEmpty() ? "" : "&q=" + query )+
-                    (latLon.isEmpty() ? "" : "&ll=" + latLon + "&lla=" + locationAccuracy )+
+                    paramIfNotEmpty("q", query) +
+                    (isEmpty(latLon) ? "" : "&ll=" + latLon + "&lla=" + locationAccuracy) +
                     "&z=-0700" +
                     "&o=u" +
                     "&sc_a=1.0" +
                     "&mr=1" +
-                    "&mcc=" + mcc +
-                    "&mnc=" + mnc +
-                    "&iso=" + countryIso +
-                    "&cn=" + carrierName +
+                    paramIfNotEmpty("mcc", mcc) +
+                    paramIfNotEmpty("mnc", mnc) +
+                    paramIfNotEmpty("iso", countryIso) +
+                    paramIfNotEmpty("cn", carrierName) +
                     "&ct=" + networkType +
                     "&av=1.0";
         }
@@ -299,6 +300,14 @@ public class AdUrlGeneratorTest {
         public AdUrlBuilder withNetworkType(MoPubNetworkType networkType) {
             this.networkType = networkType;
             return this;
+        }
+
+        private String paramIfNotEmpty(String key, String value) {
+            if (isEmpty(value)) {
+                return "";
+            } else {
+                return "&" + key + "=" + value;
+            }
         }
     }
 }

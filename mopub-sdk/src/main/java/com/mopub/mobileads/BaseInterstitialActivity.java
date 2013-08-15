@@ -20,14 +20,15 @@ import static android.view.View.VISIBLE;
 import static com.mopub.mobileads.resource.Drawables.INTERSTITIAL_CLOSE_BUTTON_NORMAL;
 import static com.mopub.mobileads.resource.Drawables.INTERSTITIAL_CLOSE_BUTTON_PRESSED;
 
-public abstract class BaseActivity extends Activity {
-    public static final String SOURCE_KEY = "com.mopub.mobileads.Source";
+public abstract class BaseInterstitialActivity extends Activity {
+    public static final String ACTION_INTERSTITIAL_FAIL = "com.mopub.action.interstitial.fail";
     public static final String ACTION_INTERSTITIAL_SHOW = "com.mopub.action.interstitial.show";
     public static final String ACTION_INTERSTITIAL_DISMISS = "com.mopub.action.interstitial.dismiss";
+    public static final String ACTION_INTERSTITIAL_CLICK = "com.mopub.action.interstitial.click";
     public static final IntentFilter HTML_INTERSTITIAL_INTENT_FILTER = createHtmlInterstitialIntentFilter();
     private static final float CLOSE_BUTTON_SIZE = 50f;
     private static final float CLOSE_BUTTON_PADDING = 8f;
-    
+
     private ImageView mCloseButton;
     private RelativeLayout mLayout;
     private int mButtonSize;
@@ -50,8 +51,6 @@ public abstract class BaseActivity extends Activity {
         setContentView(mLayout);
 
         createInterstitialCloseButton();
-
-        broadcastInterstitialAction(ACTION_INTERSTITIAL_SHOW);
     }
 
     @Override
@@ -71,7 +70,7 @@ public abstract class BaseActivity extends Activity {
         mCloseButton.setVisibility(INVISIBLE);
     }
 
-    private void broadcastInterstitialAction(String action) {
+    protected void broadcastInterstitialAction(String action) {
         Intent intent = new Intent(action);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
@@ -97,8 +96,10 @@ public abstract class BaseActivity extends Activity {
 
     private static IntentFilter createHtmlInterstitialIntentFilter() {
         IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(ACTION_INTERSTITIAL_FAIL);
         intentFilter.addAction(ACTION_INTERSTITIAL_SHOW);
         intentFilter.addAction(ACTION_INTERSTITIAL_DISMISS);
+        intentFilter.addAction(ACTION_INTERSTITIAL_CLICK);
         return intentFilter;
     }
 }

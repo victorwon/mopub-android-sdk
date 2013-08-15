@@ -1,29 +1,17 @@
-#!/bin/sh
+#!/usr/bin/python
 
-set -e
+import os_helper
+import git_helper
+import shared_values
 
-git co master
-git pull
+original_branch = git_helper.git_current_branch()
 
-git co chartboost
-git merge master --no-edit
+os_helper.try_system_quiet('git co master')
+os_helper.try_system_quiet('git pull')
 
-git co millennial
-git merge master --no-edit
+for branch in shared_values.branches_synced_with_master:
+    print branch
+    os_helper.try_system('git co ' + branch)
+    os_helper.try_system('git merge master --no-edit')
 
-git co admob
-git merge master --no-edit
-
-git co greystripe
-git merge master --no-edit
-
-git co inmobi
-git merge master --no-edit
-
-git co html5adview
-git merge master --no-edit
-
-git co unity
-git merge master --no-edit
-
-git co master
+os_helper.system_quiet('git co ' + original_branch)

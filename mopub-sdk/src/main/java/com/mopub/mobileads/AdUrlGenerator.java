@@ -113,9 +113,7 @@ public class AdUrlGenerator extends BaseUrlGenerator {
     }
 
     private void setKeywords(String keywords) {
-        if (keywords != null && keywords.length() > 0) {
-            addParam("q", keywords);
-        }
+        addParam("q", keywords);
     }
 
     private void setLocation(Location location) {

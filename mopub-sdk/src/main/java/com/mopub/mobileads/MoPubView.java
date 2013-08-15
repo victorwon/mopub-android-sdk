@@ -44,6 +44,7 @@ import android.util.Log;
 import android.view.View;
 import android.webkit.WebViewDatabase;
 import android.widget.FrameLayout;
+import com.mopub.mobileads.factories.AdViewControllerFactory;
 import com.mopub.mobileads.factories.CustomEventBannerAdapterFactory;
 
 import java.lang.reflect.Constructor;
@@ -53,6 +54,7 @@ import java.util.Map;
 
 import static com.mopub.mobileads.AdFetcher.CUSTOM_EVENT_DATA_HEADER;
 import static com.mopub.mobileads.AdFetcher.CUSTOM_EVENT_NAME_HEADER;
+import static com.mopub.mobileads.MoPubErrorCode.ADAPTER_NOT_FOUND;
 
 public class MoPubView extends FrameLayout {
     
@@ -126,14 +128,14 @@ public class MoPubView extends FrameLayout {
     private void initVersionDependentAdView(Context context) {
         int sdkVersion = (new Integer(Build.VERSION.SDK)).intValue();
         if (sdkVersion < 7) {
-        	mAdViewController = new AdViewController(context, this);
+        	mAdViewController = AdViewControllerFactory.create(context, this);
         } else {
             // On Android 2.1 (Eclair) and up, try to load our HTML5-enabled AdViewController class.
             Class<?> HTML5AdViewClass = null;
             try {
                 HTML5AdViewClass = (Class<?>) Class.forName("com.mopub.mobileads.HTML5AdView");
             } catch (ClassNotFoundException e) {
-                mAdViewController = new AdViewController(context, this);
+                mAdViewController = AdViewControllerFactory.create(context, this);
                 return;
             } 
 
@@ -162,7 +164,7 @@ public class MoPubView extends FrameLayout {
                 Log.e("MoPub", "Could not load HTML5AdView.");
             }
 
-            if (mAdViewController == null) mAdViewController = new AdViewController(context, this);
+            if (mAdViewController == null) mAdViewController = AdViewControllerFactory.create(context, this);
         }
     }
 
@@ -235,9 +237,17 @@ public class MoPubView extends FrameLayout {
     }
 
     protected void loadCustomEvent(Map<String, String> paramsMap) {
-        if (mCustomEventBannerAdapter != null) mCustomEventBannerAdapter.invalidate();
+        if (paramsMap == null) {
+            Log.d("MoPub", "Couldn't invoke custom event because the server did not specify one.");
+            loadFailUrl(ADAPTER_NOT_FOUND);
+            return;
+        }
 
-        Log.i("MoPub", "Loading custom event adapter.");
+        if (mCustomEventBannerAdapter != null) {
+            mCustomEventBannerAdapter.invalidate();
+        }
+
+        Log.d("MoPub", "Loading custom event adapter.");
 
         mCustomEventBannerAdapter = CustomEventBannerAdapterFactory.create(
                 this,
@@ -254,11 +264,7 @@ public class MoPubView extends FrameLayout {
             adClicked();
         }
     }
-    
-    protected void loadHtmlString(String html) {
-        if (mAdViewController != null) mAdViewController.loadResponseString(html);
-    }
-    
+
     protected void trackNativeImpression() {
         Log.d("MoPub", "Tracking impression for native adapter.");
         if (mAdViewController != null) mAdViewController.trackImpression();
@@ -327,10 +333,6 @@ public class MoPubView extends FrameLayout {
         adLoaded();
     }
     
-    protected void adAppeared() {
-        if (mAdViewController != null) mAdViewController.adAppeared();
-    }
-
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     public void setAdUnitId(String adUnitId) {

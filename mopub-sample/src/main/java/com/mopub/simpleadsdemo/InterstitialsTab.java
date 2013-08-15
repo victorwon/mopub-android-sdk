@@ -42,13 +42,13 @@ public class InterstitialsTab extends Activity implements InterstitialAdListener
             }
         });
     }
-    
+
     @Override
     protected void onDestroy() {
         mMoPubInterstitial.destroy();
         super.onDestroy();
     }
-    
+
     /*
      * MoPubInterstitial.MoPubInterstitialListener implementation
      */
@@ -61,17 +61,22 @@ public class InterstitialsTab extends Activity implements InterstitialAdListener
     public void onInterstitialFailed(MoPubInterstitial interstitial, MoPubErrorCode errorCode) {
         logToast("Interstitial failed to load with error: " + errorCode.toString());
     }
-    
+
     @Override
     public void onInterstitialShown(MoPubInterstitial interstitial) {
         logToast("Interstitial shown.");
     }
 
     @Override
+    public void onInterstitialClicked(MoPubInterstitial interstitial) {
+        logToast("Interstitial clicked.");
+    }
+
+    @Override
     public void onInterstitialDismissed(MoPubInterstitial interstitial) {
         logToast("Interstitial dismissed.");
     }
-    
+
     private void logToast(String message) {
         Log.d("MoPub Demo", message);
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();

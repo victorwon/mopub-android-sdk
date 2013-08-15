@@ -17,69 +17,68 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @RunWith(SdkTestRunner.class)
-public class AdWebViewClientTest {
+public class HtmlWebViewClientTest {
 
-    private AdWebViewClient subject;
-    private WebView webView;
-    private AdViewController adViewController;
-    private AdWebView adWebView;
+    private HtmlWebViewClient subject;
+    private HtmlWebViewListener htmlWebViewListener;
+    private BaseHtmlWebView htmlWebView;
 
     @Before
     public void setUp() throws Exception {
-        adViewController = mock(AdViewController.class);
-        adWebView = mock(AdWebView.class);
-        stub(adWebView.getContext()).toReturn(new Activity());
-        subject = new AdWebViewClient(adViewController, adWebView);
+        htmlWebViewListener = mock(HtmlWebViewListener.class);
+        htmlWebView = mock(BaseHtmlWebView.class);
+        stub(htmlWebView.getContext()).toReturn(new Activity());
+        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, "clickthrough", "redirect");
     }
 
     @Test
     public void shouldOverrideUrlLoading_withMoPubFinishLoad_shouldCallAdDidLoad() throws Exception {
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(adWebView, "mopub://finishLoad");
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, "mopub://finishLoad");
 
         assertThat(didOverrideUrl).isTrue();
-        verify(adViewController).adDidLoad();
+        verify(htmlWebViewListener).onLoaded(eq(htmlWebView));
     }
 
     @Test
     public void shouldOverrideUrlLoading_withMoPubClose_shouldCallAdDidClose() throws Exception {
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(adWebView, "mopub://close");
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, "mopub://close");
 
         assertThat(didOverrideUrl).isTrue();
-        verify(adViewController).adDidClose();
+        verify(htmlWebViewListener).onCollapsed();
     }
 
     @Test
     public void shouldOverrideUrlLoading_withMoPubFailLoad_shouldCallLoadFailUrl() throws Exception {
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(adWebView, "mopub://failLoad");
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, "mopub://failLoad");
 
         assertThat(didOverrideUrl).isTrue();
-        verify(adWebView).loadFailUrl(UNSPECIFIED);
+        verify(htmlWebViewListener).onFailed(UNSPECIFIED);
     }
 
     @Test
     public void shouldOverrideUrlLoading_withMoPubCustom_shouldStartCustomIntent() throws Exception {
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(adWebView, "mopub://custom?fnc=myFnc&data=myData");
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, "mopub://custom?fnc=myFnc&data=myData");
 
         assertThat(didOverrideUrl).isTrue();
-        verify(adViewController).registerClick();
+        verify(htmlWebViewListener).onClicked();
         Intent startedActivity = Robolectric.getShadowApplication().getNextStartedActivity();
         assertThat(startedActivity).isNotNull();
         assertThat(startedActivity.getAction()).isEqualTo("myFnc");
         assertThat(startedActivity.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK).isNotEqualTo(0);
-        assertThat(startedActivity.getStringExtra(AdWebView.EXTRA_AD_CLICK_DATA)).isEqualTo("myData");
+        assertThat(startedActivity.getStringExtra(HtmlBannerWebView.EXTRA_AD_CLICK_DATA)).isEqualTo("myData");
     }
 
     @Test
     public void shouldOverrideUrlLoading_withMoPubCustomAndNullData_shouldStartCustomIntent() throws Exception {
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(adWebView, "mopub://custom?fnc=myFnc");
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, "mopub://custom?fnc=myFnc");
 
         assertThat(didOverrideUrl).isTrue();
-        verify(adViewController).registerClick();
+        verify(htmlWebViewListener).onClicked();
         Intent startedActivity = Robolectric.getShadowApplication().getNextStartedActivity();
         assertThat(startedActivity).isNotNull();
         assertThat(startedActivity.getAction()).isEqualTo("myFnc");
         assertThat(startedActivity.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK).isNotEqualTo(0);
-        assertThat(startedActivity.getStringExtra(AdWebView.EXTRA_AD_CLICK_DATA)).isNull();
+        assertThat(startedActivity.getStringExtra(HtmlBannerWebView.EXTRA_AD_CLICK_DATA)).isNull();
     }
 
     @Test
@@ -94,14 +93,13 @@ public class AdWebViewClientTest {
 
     @Test
     public void shouldOverrideUrlLoading_withValidMarketIntent_shouldOpenBrowser() throws Exception {
-        MoPubView moPubView = mock(MoPubView.class);
-        stub(adViewController.getMoPubView()).toReturn(moPubView);
+        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
         String validMarketUrl = "market://somethingValid";
         Robolectric.packageManager.addResolveInfoForIntent(new Intent(Intent.ACTION_VIEW, Uri.parse(validMarketUrl)), new ResolveInfo());
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(adWebView, validMarketUrl);
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, validMarketUrl);
 
         assertThat(didOverrideUrl).isTrue();
-        verify(moPubView).adClicked();
+        verify(htmlWebViewListener).onClicked();
 
         Intent startedActivity = assertActivityStarted();
         assertThat(startedActivity.getComponent().getClassName()).isEqualTo("com.mopub.mobileads.MraidBrowser");
@@ -111,13 +109,11 @@ public class AdWebViewClientTest {
 
     @Test
     public void shouldOverrideUrlLoading_withUnhandleableMarketIntent_shouldNotOpenBrowser() throws Exception {
-        MoPubView moPubView = mock(MoPubView.class);
-        stub(adViewController.getMoPubView()).toReturn(moPubView);
         String validMarketUrl = "market://somethingValid";
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(adWebView, validMarketUrl);
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, validMarketUrl);
 
         assertThat(didOverrideUrl).isTrue();
-        verify(moPubView, never()).adClicked();
+        verify(htmlWebViewListener, never()).onClicked();
 
         Intent startedActivity = Robolectric.getShadowApplication().getNextStartedActivity();
         assertThat(startedActivity).isNull();
@@ -125,13 +121,12 @@ public class AdWebViewClientTest {
 
     @Test
     public void shouldOverrideUrlLoading_withHttpUrl_shouldOpenBrowser() throws Exception {
-        MoPubView moPubView = mock(MoPubView.class);
-        stub(adViewController.getMoPubView()).toReturn(moPubView);
+        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
         String validUrl = "http://www.mopub.com";
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(adWebView, validUrl);
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, validUrl);
 
         assertThat(didOverrideUrl).isTrue();
-        verify(moPubView).adClicked();
+        verify(htmlWebViewListener).onClicked();
 
         Intent startedActivity = assertActivityStarted();
         assertThat(startedActivity.getComponent().getClassName()).isEqualTo("com.mopub.mobileads.MraidBrowser");
@@ -142,18 +137,16 @@ public class AdWebViewClientTest {
     @Test
     public void shouldOverrideUrlLoading_withClickTrackingRedirect_shouldChangeUrl() throws Exception {
         String validUrl = "http://www.mopub.com";
-        stub(adViewController.getMoPubView()).toReturn(mock(MoPubView.class));
-        stub(adViewController.getClickthroughUrl()).toReturn("http://redirecturl.com");
-        subject.shouldOverrideUrlLoading(adWebView, validUrl);
+        subject.shouldOverrideUrlLoading(htmlWebView, validUrl);
 
         Intent startedActivity = assertActivityStarted();
-        assertThat(startedActivity.getStringExtra(URL_EXTRA)).isEqualTo("http://redirecturl.com&r=http%3A%2F%2Fwww.mopub.com");
+        assertThat(startedActivity.getStringExtra(URL_EXTRA)).isEqualTo("clickthrough&r=http%3A%2F%2Fwww.mopub.com");
     }
 
     @Test
     public void shouldOverrideUrlLoading_withEmptyUrl_shouldLoadAboutBlank() throws Exception {
-        stub(adViewController.getMoPubView()).toReturn(mock(MoPubView.class));
-        subject.shouldOverrideUrlLoading(adWebView, "");
+        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
+        subject.shouldOverrideUrlLoading(htmlWebView, "");
 
         Intent startedActivity = assertActivityStarted();
         assertThat(startedActivity.getComponent().getClassName()).isEqualTo("com.mopub.mobileads.MraidBrowser");
@@ -161,8 +154,48 @@ public class AdWebViewClientTest {
         assertThat(startedActivity.getData()).isNull();
     }
 
+    @Test
+    public void onPageStarted_whenLoadedUrlStartsWithRedirect_shouldOpenInBrowser() throws Exception {
+        String url = "redirectUrlToLoad";
+        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, "redirect");
+        WebView view = mock(WebView.class);
+        subject.onPageStarted(view, url, null);
+
+        verify(view).stopLoading();
+
+        Intent intent = Robolectric.getShadowApplication().getNextStartedActivity();
+        assertThat(intent.getStringExtra(MraidBrowser.URL_EXTRA)).isEqualTo(url);
+        assertThat(intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK).isNotEqualTo(0);
+        assertThat(intent.getComponent().getClassName()).isEqualTo("com.mopub.mobileads.MraidBrowser");
+    }
+
+    @Test
+    public void onPageStarted_whenLoadedUrlStartsWithRedirectAndHasClickthrough_shouldOpenInBrowser() throws Exception {
+        String url = "redirectUrlToLoad";
+        String expectedTrackingUrl = "clickthrough" + "&r=" + url;
+        WebView view = mock(WebView.class);
+        subject.onPageStarted(view, url, null);
+
+        verify(view).stopLoading();
+
+        Intent intent = Robolectric.getShadowApplication().getNextStartedActivity();
+        assertThat(intent.getStringExtra(MraidBrowser.URL_EXTRA)).isEqualTo(expectedTrackingUrl);
+        assertThat(intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK).isNotEqualTo(0);
+        assertThat(intent.getComponent().getClassName()).isEqualTo("com.mopub.mobileads.MraidBrowser");
+    }
+
+    @Test
+    public void onPageStarted_whenLoadedUrlDoesntStartWithRedirect_shouldDoNothing() throws Exception {
+        WebView view = mock(WebView.class);
+        subject.onPageStarted(view, "this doesn't start with redirect", null);
+
+        verify(view, never()).stopLoading();
+
+        assertThat(Robolectric.getShadowApplication().getNextStartedActivity()).isNull();
+    }
+
     private void assertPhoneUrlStartedCorrectIntent(String url) {
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(adWebView, url);
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, url);
 
         assertThat(didOverrideUrl).isTrue();
 
@@ -170,8 +203,8 @@ public class AdWebViewClientTest {
         assertThat(startedActivity.getAction()).isEqualTo(Intent.ACTION_VIEW);
         assertThat(startedActivity.getData().toString()).isEqualTo(url);
 
-        verify(adViewController).registerClick();
-        reset(adViewController);
+        verify(htmlWebViewListener).onClicked();
+        reset(htmlWebViewListener);
     }
 
     private Intent assertActivityStarted() {

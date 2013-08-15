@@ -93,10 +93,14 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
         mHandler.removeCallbacks(mTimeout);
     }
 
+    private boolean shouldTrackImpressions() {
+        return !(mCustomEventInterstitial instanceof HtmlInterstitial);
+    }
+
     interface CustomEventInterstitialAdapterListener {
         void onCustomEventInterstitialLoaded();
         void onCustomEventInterstitialFailed(MoPubErrorCode errorCode);
-        void onCustomEventInterstitialShown();
+        void onCustomEventInterstitialShown(boolean shouldTrackImpressions);
         void onCustomEventInterstitialClicked();
         void onCustomEventInterstitialDismissed();
     }
@@ -131,7 +135,7 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
     public void onInterstitialShown() {
         if (isInvalidated()) return;
 
-        if (mCustomEventInterstitialAdapterListener != null) mCustomEventInterstitialAdapterListener.onCustomEventInterstitialShown();
+        if (mCustomEventInterstitialAdapterListener != null) mCustomEventInterstitialAdapterListener.onCustomEventInterstitialShown(shouldTrackImpressions());
     }
 
     @Override
@@ -151,5 +155,10 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
         if (isInvalidated()) return;
 
         if (mCustomEventInterstitialAdapterListener != null) mCustomEventInterstitialAdapterListener.onCustomEventInterstitialDismissed();
+    }
+
+    @Deprecated
+    void setCustomEventInterstitial(CustomEventInterstitial interstitial) {
+        mCustomEventInterstitial = interstitial;
     }
 }

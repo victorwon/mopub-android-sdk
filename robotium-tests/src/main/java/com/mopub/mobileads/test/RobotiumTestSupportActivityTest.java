@@ -1,11 +1,12 @@
 package com.mopub.mobileads.test;
 
-import android.*;
 import android.R;
 import android.test.ActivityInstrumentationTestCase2;
 import com.jayway.android.robotium.solo.Solo;
 import com.mopub.mobileads.*;
 import com.mopub.mobileads.robotium.RobotiumTestSupportActivity;
+
+import static com.mopub.mobileads.MoPubInterstitial.InterstitialAdListener;
 
 public class RobotiumTestSupportActivityTest extends ActivityInstrumentationTestCase2<RobotiumTestSupportActivity>{
     private Solo solo;
@@ -138,10 +139,11 @@ public class RobotiumTestSupportActivityTest extends ActivityInstrumentationTest
         }
     }
 
-    private static class TestInterstitialAdListener implements MoPubInterstitial.InterstitialAdListener {
+    private static class TestInterstitialAdListener implements InterstitialAdListener {
         private boolean interstitialWasLoaded;
         private boolean interstitialWasShown;
         private boolean interstitialWasDismissed;
+        private boolean interstitialWasClicked;
 
         private boolean interstitialWasLoaded() {
             return interstitialWasLoaded;
@@ -149,6 +151,10 @@ public class RobotiumTestSupportActivityTest extends ActivityInstrumentationTest
 
         private boolean interstitialWasShown() {
             return interstitialWasShown;
+        }
+
+        private boolean isInterstitialWasClicked() {
+            return interstitialWasClicked;
         }
 
         public boolean interstitialWasDismissed() {
@@ -170,6 +176,11 @@ public class RobotiumTestSupportActivityTest extends ActivityInstrumentationTest
         }
 
         @Override
+        public void onInterstitialClicked(MoPubInterstitial interstitial) {
+            interstitialWasClicked = true;
+        }
+
+        @Override
         public void onInterstitialDismissed(MoPubInterstitial interstitial) {
             interstitialWasDismissed = true;
         }
@@ -177,6 +188,7 @@ public class RobotiumTestSupportActivityTest extends ActivityInstrumentationTest
         void reset() {
             interstitialWasLoaded = false;
             interstitialWasShown = false;
+            interstitialWasClicked = false;
             interstitialWasDismissed = false;
         }
     }

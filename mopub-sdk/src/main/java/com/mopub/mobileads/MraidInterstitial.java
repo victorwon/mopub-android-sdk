@@ -1,56 +1,26 @@
 package com.mopub.mobileads;
 
 
-import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 
 import java.util.Map;
 
-import static com.mopub.mobileads.AdFetcher.MRAID_HTML_DATA;
-import static com.mopub.mobileads.BaseActivity.SOURCE_KEY;
-import static com.mopub.mobileads.MoPubErrorCode.MRAID_LOAD_ERROR;
+import static com.mopub.mobileads.AdFetcher.HTML_RESPONSE_BODY_KEY;
 
-class MraidInterstitial extends CustomEventInterstitial {
-    private Activity mActivity;
+class MraidInterstitial extends ResponseBodyInterstitial {
     private String mHtmlData;
 
     @Override
-    protected void loadInterstitial(Context context,
-                          CustomEventInterstitialListener customEventInterstitialListener,
-                          Map<String, Object> localExtras,
-                          Map<String, String> serverExtras) {
-
-        if (context instanceof Activity) {
-            mActivity = (Activity) context;
-        } else {
-            customEventInterstitialListener.onInterstitialFailed(MRAID_LOAD_ERROR);
-            return;
-        }
-
-        if (extrasAreValid(serverExtras)) {
-            mHtmlData = Uri.decode(serverExtras.get(MRAID_HTML_DATA));
-        } else {
-            customEventInterstitialListener.onInterstitialFailed(MRAID_LOAD_ERROR);
-            return;
-        }
-
-        customEventInterstitialListener.onInterstitialLoaded();
+    protected void extractExtras(Map<String, String> serverExtras) {
+        mHtmlData = Uri.decode(serverExtras.get(HTML_RESPONSE_BODY_KEY));
     }
 
     @Override
     protected void showInterstitial() {
-        Intent intent = new Intent(mActivity, MraidActivity.class);
-        intent.putExtra(SOURCE_KEY, mHtmlData);
-        mActivity.startActivity(intent);
-    }
-
-    @Override
-    protected void onInvalidate() {
-    }
-
-    private boolean extrasAreValid(Map<String,String> serverExtras) {
-        return serverExtras.containsKey(MRAID_HTML_DATA);
+        Intent intent = new Intent(mContext, MraidActivity.class);
+        intent.putExtra(HTML_RESPONSE_BODY_KEY, mHtmlData);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
     }
 }

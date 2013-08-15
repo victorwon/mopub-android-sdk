@@ -13,6 +13,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import com.mopub.mobileads.resource.MraidJavascript;
+import com.mopub.mobileads.util.Strings;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -23,14 +24,13 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MraidView extends WebView {
+public class MraidView extends BaseWebView {
     private static final String LOGTAG = "MraidView";
     
     private MraidBrowserController mBrowserController;
@@ -144,7 +144,7 @@ public class MraidView extends WebView {
 
     public void loadUrl(String url) {
         HttpClient httpClient = new DefaultHttpClient();
-        StringBuffer out = new StringBuffer();
+        String outString = "";
         
         try {
             HttpGet httpGet = new HttpGet(url);
@@ -152,11 +152,7 @@ public class MraidView extends WebView {
             HttpEntity entity = response.getEntity();
     
             if (entity != null) {
-                InputStream is = entity.getContent();
-                byte[] b = new byte[4096];
-                for (int n; (n = is.read(b)) != -1;) {
-                    out.append(new String(b, 0, n));
-                }
+                outString = Strings.fromStream(entity.getContent());
             }
         } catch (IllegalArgumentException e) {
             Log.d("MoPub", "Mraid loadUrl failed (IllegalArgumentException): "+url);
@@ -170,7 +166,7 @@ public class MraidView extends WebView {
             return;
         }
 
-        loadHtmlData(out.toString());
+        loadHtmlData(outString);
     }
     
     private void notifyOnFailureListener() {
