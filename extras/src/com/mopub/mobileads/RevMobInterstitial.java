@@ -45,16 +45,6 @@ class RevMobInterstitial extends CustomEventInterstitial implements
 			return;
 		}
 
-		/*
-		 * You may also pass this String down in the serverExtras Map by
-		 * specifying Custom Event Data in MoPub's web interface.
-		 */
-		String appId = serverExtras.get(APP_ID_KEY);
-		if (appId != null && appId.length() > 0) {
-			RevMob.start(activity, appId); // if appId is null, we assume it's
-											// already init'ed in the app code.
-		}
-
 		Location location = extractLocation(localExtras);
 		if (location != null) {
 			RevMob.session().setUserLocation(location.getLatitude(), location.getLongitude(),
