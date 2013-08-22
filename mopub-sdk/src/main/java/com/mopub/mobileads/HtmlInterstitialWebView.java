@@ -7,7 +7,6 @@ import static com.mopub.mobileads.CustomEventInterstitial.CustomEventInterstitia
 
 public class HtmlInterstitialWebView extends BaseHtmlWebView {
     private Handler mHandler;
-    private CustomEventInterstitialListener customEventInterstitialListener;
 
     public HtmlInterstitialWebView(Context context) {
         super(context);

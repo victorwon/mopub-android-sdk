@@ -38,7 +38,6 @@ public class MoPubViewTest {
         paramsMap.put(AdFetcher.CUSTOM_EVENT_NAME_HEADER, "name");
         paramsMap.put(AdFetcher.CUSTOM_EVENT_DATA_HEADER, "data");
         paramsMap.put(AdFetcher.CUSTOM_EVENT_HTML_DATA, "html");
-        TestCustomEventBannerAdapterFactory.reset();
         subject.loadCustomEvent(paramsMap);
 
         assertThat(TestCustomEventBannerAdapterFactory.getLatestMoPubView()).isEqualTo(subject);

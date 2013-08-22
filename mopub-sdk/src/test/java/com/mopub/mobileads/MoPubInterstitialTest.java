@@ -2,7 +2,6 @@ package com.mopub.mobileads;
 
 import android.app.Activity;
 import com.mopub.mobileads.test.support.TestAdViewControllerFactory;
-import com.mopub.mobileads.test.support.TestCustomEventBannerAdapterFactory;
 import com.mopub.mobileads.test.support.TestCustomEventInterstitialAdapterFactory;
 import org.junit.Before;
 import org.junit.Test;
@@ -340,7 +339,6 @@ public class MoPubInterstitialTest {
         paramsMap.put(AdFetcher.CUSTOM_EVENT_NAME_HEADER, "name");
         paramsMap.put(AdFetcher.CUSTOM_EVENT_DATA_HEADER, "data");
         paramsMap.put(AdFetcher.CUSTOM_EVENT_HTML_DATA, "html");
-        TestCustomEventBannerAdapterFactory.reset();
         moPubInterstitialView.loadCustomEvent(paramsMap);
 
         assertThat(TestCustomEventInterstitialAdapterFactory.getLatestMoPubInterstitial()).isEqualTo(subject);
@@ -376,7 +374,6 @@ public class MoPubInterstitialTest {
         paramsMap.put(AdFetcher.CUSTOM_EVENT_NAME_HEADER, "name");
         paramsMap.put(AdFetcher.CUSTOM_EVENT_DATA_HEADER, "data");
         paramsMap.put(AdFetcher.CUSTOM_EVENT_HTML_DATA, "html");
-        TestCustomEventBannerAdapterFactory.reset();
         moPubInterstitialView.loadCustomEvent(paramsMap);
     }
 

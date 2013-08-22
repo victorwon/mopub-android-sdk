@@ -18,21 +18,26 @@ public class HttpResponsesTest {
     @Test
     public void extractBooleanHeader_whenValueIsZero_shouldReturnFalse() throws Exception {
         response.addHeader("name", "0");
+        assertThat(HttpResponses.extractBooleanHeader(response, "name", false)).isFalse();
 
-        assertThat(HttpResponses.extractBooleanHeader(response, "name")).isFalse();
+        response.addHeader("name", "0");
+        assertThat(HttpResponses.extractBooleanHeader(response, "name", true)).isFalse();
     }
 
     @Test
     public void extractBooleanHeader_whenValueIsOne_shouldReturnTrue() throws Exception {
         response.addHeader("name", "1");
+        assertThat(HttpResponses.extractBooleanHeader(response, "name", false)).isTrue();
 
-        assertThat(HttpResponses.extractBooleanHeader(response, "name")).isTrue();
+        response.addHeader("name", "1");
+        assertThat(HttpResponses.extractBooleanHeader(response, "name", true)).isTrue();
     }
 
     @Test
-    public void extractBooleanHeader_shouldDefaultToTrue() throws Exception {
+    public void extractBooleanHeader_shouldReturnDefaultValue() throws Exception {
         // no header added to response
 
-        assertThat(HttpResponses.extractBooleanHeader(response, "name")).isTrue();
+        assertThat(HttpResponses.extractBooleanHeader(response, "name", false)).isFalse();
+        assertThat(HttpResponses.extractBooleanHeader(response, "name", true)).isTrue();
     }
 }

@@ -1,8 +1,10 @@
 package com.mopub.mobileads;
 
 
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
+import android.util.Log;
 
 import java.util.Map;
 
@@ -21,6 +23,10 @@ class MraidInterstitial extends ResponseBodyInterstitial {
         Intent intent = new Intent(mContext, MraidActivity.class);
         intent.putExtra(HTML_RESPONSE_BODY_KEY, mHtmlData);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        mContext.startActivity(intent);
+        try {
+            mContext.startActivity(intent);
+        } catch (ActivityNotFoundException anfe) {
+            Log.d("MraidInterstitial", "MraidActivity.class not found. Did you declare MraidActivity in your manifest?");
+        }
     }
 }

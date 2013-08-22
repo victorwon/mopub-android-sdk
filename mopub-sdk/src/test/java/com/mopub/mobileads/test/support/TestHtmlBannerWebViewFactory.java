@@ -11,10 +11,10 @@ import static org.mockito.Mockito.stub;
 
 public class TestHtmlBannerWebViewFactory extends HtmlBannerWebViewFactory {
     private HtmlBannerWebView mockHtmlBannerWebView = mock(HtmlBannerWebView.class);
-    private CustomEventBannerListener mLatestListener;
-    private boolean mLatestIsScrollable;
-    private String mLatestRedirectUrl;
-    private String mLatestClickthroughUrl;
+    private CustomEventBannerListener latestListener;
+    private boolean latestIsScrollable;
+    private String latestRedirectUrl;
+    private String latestClickthroughUrl;
 
     public TestHtmlBannerWebViewFactory() {
         WebSettings webSettings = mock(WebSettings.class);
@@ -23,39 +23,39 @@ public class TestHtmlBannerWebViewFactory extends HtmlBannerWebViewFactory {
     }
 
     public static HtmlBannerWebView getSingletonMock() {
-        return getInstance().mockHtmlBannerWebView;
+        return getTestFactory().mockHtmlBannerWebView;
     }
 
-    public static CustomEventBannerListener getLatestListener() {
-        return getInstance().mLatestListener;
-    }
-
-    public static boolean getLatestIsScrollable() {
-        return getInstance().mLatestIsScrollable;
-    }
-
-    public static String getLatestRedirectUrl() {
-        return getInstance().mLatestRedirectUrl;
-    }
-
-    public static String getLatestClickthroughUrl() {
-        return getInstance().mLatestClickthroughUrl;
-    }
-
-    private static TestHtmlBannerWebViewFactory getInstance() {
+    private static TestHtmlBannerWebViewFactory getTestFactory() {
         return (TestHtmlBannerWebViewFactory) instance;
     }
 
     @Override
     public HtmlBannerWebView internalCreate(CustomEventBannerListener customEventBannerListener, boolean isScrollable, String redirectUrl, String clickthroughUrl) {
-        mLatestListener = customEventBannerListener;
-        mLatestIsScrollable = isScrollable;
-        mLatestRedirectUrl = redirectUrl;
-        mLatestClickthroughUrl = clickthroughUrl;
-        return getSingletonMock();
+        latestListener = customEventBannerListener;
+        latestIsScrollable = isScrollable;
+        latestRedirectUrl = redirectUrl;
+        latestClickthroughUrl = clickthroughUrl;
+        return mockHtmlBannerWebView;
+    }
+
+    public static CustomEventBannerListener getLatestListener() {
+        return getTestFactory().latestListener;
+    }
+
+    public static boolean getLatestIsScrollable() {
+        return getTestFactory().latestIsScrollable;
+    }
+
+    public static String getLatestRedirectUrl() {
+        return getTestFactory().latestRedirectUrl;
+    }
+
+    public static String getLatestClickthroughUrl() {
+        return getTestFactory().latestClickthroughUrl;
     }
 
     public static HtmlBannerWebViewPool getWebViewPool() {
-        return getInstance().mHtmlBannerWebViewPool;
+        return getTestFactory().mHtmlBannerWebViewPool;
     }
 }

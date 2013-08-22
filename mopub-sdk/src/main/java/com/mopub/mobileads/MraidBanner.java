@@ -41,6 +41,7 @@ import java.util.Map;
 
 import static com.mopub.mobileads.AdFetcher.HTML_RESPONSE_BODY_KEY;
 import static com.mopub.mobileads.MoPubErrorCode.MRAID_LOAD_ERROR;
+import static com.mopub.mobileads.MraidView.MraidListener;
 
 class MraidBanner extends CustomEventBanner {
     private MraidView mMraidView;
@@ -63,31 +64,31 @@ class MraidBanner extends CustomEventBanner {
 
         mMraidView = MraidViewFactory.create(context);
         mMraidView.loadHtmlData(htmlData);
-        initMraidListeners();
+        initMraidListener();
     }
 
     @Override
     protected void onInvalidate() {
         if (mMraidView != null) {
-            resetMraidListeners();
+            resetMraidListener();
             mMraidView.destroy();
         }
     }
 
-    void onReady() {
+    private void onReady() {
         mBannerListener.onBannerLoaded(mMraidView);
     }
 
-    void onFail() {
+    private void onFail() {
         mBannerListener.onBannerFailed(MRAID_LOAD_ERROR);
     }
 
-    void onExpand() {
+    private void onExpand() {
         mBannerListener.onBannerExpanded();
         mBannerListener.onBannerClicked();
     }
 
-    void onClose() {
+    private void onClose() {
         mBannerListener.onBannerCollapsed();
     }
 
@@ -95,36 +96,24 @@ class MraidBanner extends CustomEventBanner {
         return serverExtras.containsKey(HTML_RESPONSE_BODY_KEY);
     }
 
-    private void initMraidListeners() {
-        mMraidView.setOnReadyListener(new MraidView.OnReadyListener() {
+    private void initMraidListener() {
+        mMraidView.setMraidListener(new MraidListener() {
             public void onReady(MraidView view) {
                 MraidBanner.this.onReady();
             }
-        });
-
-        mMraidView.setOnFailureListener(new MraidView.OnFailureListener() {
             public void onFailure(MraidView view) {
                 onFail();
             }
-        });
-
-        mMraidView.setOnExpandListener(new MraidView.OnExpandListener() {
             public void onExpand(MraidView view) {
                 MraidBanner.this.onExpand();
             }
-        });
-
-        mMraidView.setOnCloseListener(new MraidView.OnCloseListener() {
             public void onClose(MraidView view, ViewState newViewState) {
                 MraidBanner.this.onClose();
             }
         });
     }
 
-    private void resetMraidListeners() {
-        mMraidView.setOnReadyListener(null);
-        mMraidView.setOnFailureListener(null);
-        mMraidView.setOnExpandListener(null);
-        mMraidView.setOnCloseListener(null);
+    private void resetMraidListener() {
+        mMraidView.setMraidListener(null);
     }
 }

@@ -32,8 +32,10 @@
 
 package com.mopub.mobileads;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 import android.view.View;
 import com.mopub.mobileads.factories.HtmlInterstitialWebViewFactory;
 
@@ -48,7 +50,11 @@ public class MoPubActivity extends BaseInterstitialActivity {
 
     public static void start(Context context, String htmlData, boolean isScrollable, String redirectUrl, String clickthroughUrl) {
         Intent intent = createIntent(context, htmlData, isScrollable, redirectUrl, clickthroughUrl);
-        context.startActivity(intent);
+        try {
+            context.startActivity(intent);
+        } catch (ActivityNotFoundException anfe) {
+            Log.d("MoPubActivity", "MoPubActivity not found - did you declare it in AndroidManifest.xml?");
+        }
     }
 
     public static Intent createIntent(Context context, String htmlData, boolean isScrollable, String redirectUrl, String clickthroughUrl) {

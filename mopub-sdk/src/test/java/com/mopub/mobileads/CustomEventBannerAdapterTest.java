@@ -24,7 +24,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
-
 @RunWith(SdkTestRunner.class)
 public class CustomEventBannerAdapterTest {
     private CustomEventBannerAdapter subject;

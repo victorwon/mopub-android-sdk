@@ -7,21 +7,24 @@ import com.mopub.mobileads.factories.MraidViewFactory;
 
 import static org.mockito.Mockito.mock;
 
-public class TestMraidViewFactory extends MraidViewFactory{
-
-    public static final MraidView instance = mock(MraidView.class);
+public class TestMraidViewFactory extends MraidViewFactory {
+    private final MraidView mockMraidView = mock(MraidView.class);
 
     public static MraidView getSingletonMock() {
-        return instance;
+        return getTestFactory().mockMraidView;
+    }
+
+    private static TestMraidViewFactory getTestFactory() {
+        return (TestMraidViewFactory) instance;
     }
 
     @Override
     protected MraidView internalCreate(Context context) {
-        return instance;
+        return mockMraidView;
     }
 
     @Override
     protected MraidView internalCreate(MraidActivity mraidActivity, MraidView.ExpansionStyle expansionStyle, MraidView.NativeCloseButtonStyle buttonStyle, MraidView.PlacementType placementType) {
-        return instance;
+        return mockMraidView;
     }
 }

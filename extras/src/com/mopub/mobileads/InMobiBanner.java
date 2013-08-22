@@ -1,16 +1,17 @@
 package com.mopub.simpleadsdemo;
 
-import java.util.Map;
-
 import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
-
 import com.inmobi.androidsdk.IMAdListener;
+import com.inmobi.androidsdk.IMAdRequest;
 import com.inmobi.androidsdk.IMAdRequest.ErrorCode;
 import com.inmobi.androidsdk.IMAdView;
 import com.mopub.mobileads.CustomEventBanner;
 import com.mopub.mobileads.MoPubErrorCode;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /*
  * Tested with InMobi SDK 3.6.2.
@@ -24,16 +25,16 @@ class InMobiBanner extends CustomEventBanner implements IMAdListener {
      */
     @Override
     protected void loadBanner(Context context, CustomEventBannerListener bannerListener,
-                              Map<String, Object> localExtras, Map<String, String> serverExtras) {
+            Map<String, Object> localExtras, Map<String, String> serverExtras) {
         mBannerListener = bannerListener;
-
+        
         Activity activity = null;
         if (context instanceof Activity) {
             activity = (Activity) context;
         } else {
             // You may also pass in an Activity Context in the localExtras map and retrieve it here.
         }
-
+        
         if (activity == null) {
             mBannerListener.onBannerFailed(MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR);
             return;
@@ -45,9 +46,15 @@ class InMobiBanner extends CustomEventBanner implements IMAdListener {
          */
         String inMobiAppId = "YOUR_INMOBI_APP_ID";
         mInMobiBanner = new IMAdView(activity, IMAdView.INMOBI_AD_UNIT_320X50, inMobiAppId);
-
+        
         mInMobiBanner.setIMAdListener(this);
-        mInMobiBanner.loadNewAd();
+
+        IMAdRequest imAdRequest = new IMAdRequest();
+        Map<String, String> requestParameters = new HashMap<String, String>();
+        requestParameters.put("tp", "c_mopub");
+        imAdRequest.setRequestParams(requestParameters);
+
+        mInMobiBanner.loadNewAd(imAdRequest);
     }
 
     @Override

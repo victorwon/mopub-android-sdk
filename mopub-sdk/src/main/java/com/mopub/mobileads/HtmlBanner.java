@@ -2,6 +2,7 @@ package com.mopub.mobileads;
 
 import android.content.Context;
 import android.net.Uri;
+import android.view.ViewGroup;
 import com.mopub.mobileads.factories.HtmlBannerWebViewFactory;
 
 import java.util.Map;
@@ -45,6 +46,9 @@ public class HtmlBanner extends CustomEventBanner {
     @Override
     protected void onInvalidate() {
         if (mHtmlBannerWebView != null) {
+            if (mHtmlBannerWebView.getParent() instanceof ViewGroup) {
+                ((ViewGroup) mHtmlBannerWebView.getParent()).removeView(mHtmlBannerWebView);
+            }
             mHtmlBannerWebView.destroy();
         }
     }

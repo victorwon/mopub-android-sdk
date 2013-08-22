@@ -6,7 +6,7 @@ import com.mopub.mobileads.MraidView;
 import com.mopub.mobileads.MraidView.NativeCloseButtonStyle;
 
 public class MraidViewFactory {
-    private static MraidViewFactory instance = new MraidViewFactory();
+    protected static MraidViewFactory instance = new MraidViewFactory();
 
     @Deprecated // for testing
     public static void setInstance(MraidViewFactory factory) {

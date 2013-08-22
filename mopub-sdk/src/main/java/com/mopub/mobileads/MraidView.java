@@ -41,12 +41,9 @@ public class MraidView extends BaseWebView {
     
     private boolean mHasFiredReadyEvent;
     private final PlacementType mPlacementType;
-    
+
     static class MraidListenerInfo {
-        private OnExpandListener mOnExpandListener;
-        private OnCloseListener mOnCloseListener;
-        private OnReadyListener mOnReadyListener;
-        private OnFailureListener mOnFailureListener;
+        private MraidListener mMraidListener;
         private OnCloseButtonStateChangeListener mOnCloseButtonListener;
         private OnOpenListener mOnOpenListener;
     }
@@ -121,7 +118,8 @@ public class MraidView extends BaseWebView {
         
         mListenerInfo = new MraidListenerInfo();
     }
-    
+
+    @Override
     public void destroy() {
         mDisplayController.destroy();
         super.destroy();
@@ -142,6 +140,7 @@ public class MraidView extends BaseWebView {
         loadDataWithBaseURL(null, data, "text/html", "UTF-8", null);
     }
 
+    @Override
     public void loadUrl(String url) {
         HttpClient httpClient = new DefaultHttpClient();
         String outString = "";
@@ -170,8 +169,8 @@ public class MraidView extends BaseWebView {
     }
     
     private void notifyOnFailureListener() {
-        if (mListenerInfo.mOnFailureListener != null) {
-            mListenerInfo.mOnFailureListener.onFailure(this);
+        if (mListenerInfo.mMraidListener != null) {
+            mListenerInfo.mMraidListener.onFailure(this);
         }
     }
 
@@ -186,39 +185,15 @@ public class MraidView extends BaseWebView {
     }
     
     // Listeners ///////////////////////////////////////////////////////////////////////////////////
-    
-    public void setOnExpandListener(OnExpandListener listener) {
-        mListenerInfo.mOnExpandListener = listener;
+
+    public void setMraidListener(MraidListener mraidListener) {
+        mListenerInfo.mMraidListener = mraidListener;
     }
-    
-    public OnExpandListener getOnExpandListener() {
-        return mListenerInfo.mOnExpandListener;
+
+    public MraidListener getMraidListener() {
+        return mListenerInfo.mMraidListener;
     }
-    
-    public void setOnCloseListener(OnCloseListener listener) {
-        mListenerInfo.mOnCloseListener = listener;
-    }
-    
-    public OnCloseListener getOnCloseListener() {
-        return mListenerInfo.mOnCloseListener;
-    }
-    
-    public void setOnReadyListener(OnReadyListener listener) {
-        mListenerInfo.mOnReadyListener = listener;
-    }
-    
-    public OnReadyListener getOnReadyListener() {
-        return mListenerInfo.mOnReadyListener;
-    }
-    
-    public void setOnFailureListener(OnFailureListener listener) {
-        mListenerInfo.mOnFailureListener = listener;
-    }
-    
-    public OnFailureListener getOnFailureListener() {
-        return mListenerInfo.mOnFailureListener;
-    }
-    
+
     public void setOnCloseButtonStateChange(OnCloseButtonStateChangeListener listener) {
         mListenerInfo.mOnCloseButtonListener = listener;
     }
@@ -289,8 +264,7 @@ public class MraidView extends BaseWebView {
 
     private class MraidWebViewClient extends WebViewClient {
         @Override
-        public void onReceivedError(WebView view, int errorCode, String description, 
-                String failingUrl) {
+        public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
             Log.d(LOGTAG, "Error: " + description);
             super.onReceivedError(view, errorCode, description, failingUrl);
         }
@@ -323,10 +297,11 @@ public class MraidView extends BaseWebView {
         public void onPageFinished(WebView view, String url) {
             if (!mHasFiredReadyEvent) {
                 mDisplayController.initializeJavaScriptState();
-                fireChangeEventForProperty(
-                        MraidPlacementTypeProperty.createWithType(mPlacementType));
+                fireChangeEventForProperty(MraidPlacementTypeProperty.createWithType(mPlacementType));
                 fireReadyEvent();
-                if (getOnReadyListener() != null) getOnReadyListener().onReady(MraidView.this);
+                if (getMraidListener() != null) {
+                    getMraidListener().onReady(MraidView.this);
+                }
                 mHasFiredReadyEvent = true;
             }
         }
@@ -344,23 +319,21 @@ public class MraidView extends BaseWebView {
             return false;
         }
     }
-    
-    public interface OnExpandListener {
+
+    public interface MraidListener {
+        public void onReady(MraidView view);
+        public void onFailure(MraidView view);
         public void onExpand(MraidView view);
-    }
-    
-    public interface OnCloseListener {
         public void onClose(MraidView view, ViewState newViewState);
     }
-    
-    public interface OnReadyListener {
-        public void onReady(MraidView view);
+
+    public static class BaseMraidListener implements MraidListener {
+        @Override public void onReady(MraidView view) { }
+        @Override public void onFailure(MraidView view) { }
+        @Override public void onExpand(MraidView view) { }
+        @Override public void onClose(MraidView view, ViewState newViewState) { }
     }
-    
-    public interface OnFailureListener {
-        public void onFailure(MraidView view);
-    }
-    
+
     public interface OnCloseButtonStateChangeListener {
         public void onCloseButtonStateChange(MraidView view, boolean enabled);
     }

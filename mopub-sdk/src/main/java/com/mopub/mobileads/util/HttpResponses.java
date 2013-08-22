@@ -14,7 +14,11 @@ public class HttpResponses {
         return (headerValue != null) ? Integer.parseInt(headerValue.trim()) : 0;
     }
 
-    public static boolean extractBooleanHeader(HttpResponse response, String headerName) {
-        return !"0".equals(extractHeader(response, headerName));
+    public static boolean extractBooleanHeader(HttpResponse response, String headerName, boolean defaultValue) {
+        String header = extractHeader(response, headerName);
+        if (header == null) {
+            return defaultValue;
+        }
+        return header.equals("1");
     }
 }

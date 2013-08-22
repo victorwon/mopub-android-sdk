@@ -27,6 +27,7 @@ Integration instructions are available on the [wiki](https://github.com/mopub/mo
 
 Please view the [changelog](https://github.com/mopub/mopub-android-sdk/blob/master/CHANGELOG.md) for details.
 
+Note: AndroidManifest.xml has changed. Please be sure to add permissions for `CALL_PHONE`, `SEND_SMS`, `WRITE_EXTERNAL_STORAGE`, and declare activity `com.mopub.mobileads.MraidVideoPlayerActivity`.
 
 ## Requirements
 

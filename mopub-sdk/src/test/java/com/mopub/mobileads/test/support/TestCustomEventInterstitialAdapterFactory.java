@@ -7,25 +7,29 @@ import com.mopub.mobileads.factories.CustomEventInterstitialAdapterFactory;
 import static org.mockito.Mockito.mock;
 
 public class TestCustomEventInterstitialAdapterFactory extends CustomEventInterstitialAdapterFactory{
-    private static CustomEventInterstitialAdapter instance = mock(CustomEventInterstitialAdapter.class);
-    private static MoPubInterstitial latestMoPubInterstitial;
-    private static String latestClassName;
-    private static String latestClassData;
+    private CustomEventInterstitialAdapter mockCustomEventInterstitalAdapter = mock(CustomEventInterstitialAdapter.class);
+    private MoPubInterstitial latestMoPubInterstitial;
+    private String latestClassName;
+    private String latestClassData;
 
     public static CustomEventInterstitialAdapter getSingletonMock() {
-        return instance;
+        return getTestFactory().mockCustomEventInterstitalAdapter;
+    }
+
+    private static TestCustomEventInterstitialAdapterFactory getTestFactory() {
+        return ((TestCustomEventInterstitialAdapterFactory)instance);
     }
 
     public static MoPubInterstitial getLatestMoPubInterstitial() {
-        return latestMoPubInterstitial;
+        return getTestFactory().latestMoPubInterstitial;
     }
 
     public static String getLatestClassName() {
-        return latestClassName;
+        return getTestFactory().latestClassName;
     }
 
     public static String getLatestClassData() {
-        return latestClassData;
+        return getTestFactory().latestClassData;
     }
 
     @Override
@@ -33,6 +37,6 @@ public class TestCustomEventInterstitialAdapterFactory extends CustomEventInters
         latestMoPubInterstitial = moPubInterstitial;
         latestClassName = className;
         latestClassData = classData;
-        return instance;
+        return mockCustomEventInterstitalAdapter;
     }
 }

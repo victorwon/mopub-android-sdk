@@ -13,9 +13,9 @@ FULL_FILENAME = 'mopub-android-full-sdk'
 AWS_ID = 'AWS_ACCESS_KEY_ID'
 AWS_SECRET = 'AWS_SECRET_ACCESS_KEY'
 
-TEMP_SDK_PATH = TEMP_STAGING_PATH + '/mopub-android-sdk/mopub-sdk'
+TEMP_SDK_PATH = os_helper.TEMP_STAGING_PATH + '/mopub-android-sdk/mopub-sdk'
 TEMP_MOPUB_PACKAGE = TEMP_SDK_PATH + '/src/main/java/com/mopub/mobileads'
-THIRD_PARTY_LIBS = TEMP_STAGING_PATH + '/mopub-android/libs'
+THIRD_PARTY_LIBS = os_helper.TEMP_STAGING_PATH + '/mopub-android/libs'
 TEMP_BASE_SDK_ZIP_FILE = '/tmp/' + BASE_FILENAME + '.zip'
 TEMP_FULL_SDK_ZIP_FILE = '/tmp/' + FULL_FILENAME + '.zip'
 
@@ -26,16 +26,16 @@ if len(os.sys.argv) > 1:
 def clone_private_repo():
     print 'Cloning the mopub-android (private) repo'
     os.system('git clone https://github.com/mopub/mopub-android.git')
-    os.chdir(TEMP_STAGING_PATH + '/mopub-android')
+    os.chdir(os_helper.TEMP_STAGING_PATH + '/mopub-android')
     if os.system('git checkout ' + release_branch):
         print 'couldn\'t check out' + release_branch
         exit(1)
-    os.chdir(TEMP_STAGING_PATH)
+    os.chdir(os_helper.TEMP_STAGING_PATH)
 
 def start_sdk_staging():
     os_helper.init_temp_staging()
     print 'Moving to staging path'
-    os.chdir(TEMP_STAGING_PATH)
+    os.chdir(os_helper.TEMP_STAGING_PATH)
 
     clone_private_repo()
 
@@ -67,7 +67,7 @@ def create_full_bundle():
     custom_events = ['MillennialBanner.java', 'MillennialInterstitial.java', 'GoogleAdMobBanner.java', 'GoogleAdMobInterstitial.java']
 
     for custom_event in custom_events:
-        os.system('cp ' + TEMP_STAGING_PATH + custom_event_folder + '/' + custom_event + ' ' + TEMP_MOPUB_PACKAGE)
+        os.system('cp ' + os_helper.TEMP_STAGING_PATH + custom_event_folder + '/' + custom_event + ' ' + TEMP_MOPUB_PACKAGE)
 
     # copy jars (where do these come from?) into libs
     os.system('mkdir -p ' + TEMP_SDK_PATH + '/libs')
@@ -104,8 +104,8 @@ create_base_bundle()
 create_full_bundle()
 
 print 'secret gpg magic'
-os.system('gpg ' + TEMP_STAGING_PATH + '/mopub-android-sdk/script/aws_keys.txt.gpg')
-with open(TEMP_STAGING_PATH + '/mopub-android-sdk/script/aws_keys.txt') as f:
+os.system('gpg ' + os_helper.TEMP_STAGING_PATH + '/mopub-android-sdk/script/aws_keys.txt.gpg')
+with open(os_helper.TEMP_STAGING_PATH + '/mopub-android-sdk/script/aws_keys.txt') as f:
     os.environ[AWS_ID] = f.readline().rstrip()
     os.environ[AWS_SECRET] = f.readline().rstrip()
 os.system('rm script/aws_keys.txt')

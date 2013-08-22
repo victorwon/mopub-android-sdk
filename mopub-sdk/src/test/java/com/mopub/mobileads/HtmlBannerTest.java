@@ -3,6 +3,8 @@ package com.mopub.mobileads;
 import android.app.Activity;
 import android.net.Uri;
 import android.view.Gravity;
+import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.widget.FrameLayout;
 import com.mopub.mobileads.test.support.TestHtmlBannerWebViewFactory;
 import com.mopub.mobileads.test.support.TestHttpResponseWithHeaders;
@@ -26,6 +28,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
 
 @RunWith(com.mopub.mobileads.test.support.SdkTestRunner.class)
@@ -91,10 +94,26 @@ public class HtmlBannerTest {
     }
 
     @Test
-    public void onInvalidate_shouldDestroyTheHtmlWebView() throws Exception {
+    public void onInvalidate_shouldRemoveAndDestroyTheHtmlWebView() throws Exception {
+        ViewGroup viewGroup = mock(ViewGroup.class);
+        stub(htmlBannerWebView.getParent()).toReturn(viewGroup);
+
         subject.loadBanner(context, customEventBannerListener, localExtras, serverExtras);
         subject.onInvalidate();
 
+        verify(viewGroup).removeView(eq(htmlBannerWebView));
+        verify(htmlBannerWebView).destroy();
+    }
+
+    @Test
+    public void onInvalidate_shouldHaveBannerWebViewsParentBeViewGroup() throws Exception {
+        ViewParent viewParent = mock(ViewParent.class);
+        stub(htmlBannerWebView.getParent()).toReturn(viewParent);
+
+        subject.loadBanner(context, customEventBannerListener, localExtras, serverExtras);
+        subject.onInvalidate();
+
+        // pass
         verify(htmlBannerWebView).destroy();
     }
 

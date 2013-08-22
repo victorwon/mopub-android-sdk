@@ -1,10 +1,11 @@
 package com.mopub.mobileads.factories;
 
-import android.app.Activity;
+import com.mopub.mobileads.MoPubActivity;
 import com.mopub.mobileads.test.support.SdkTestRunner;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
@@ -18,13 +19,25 @@ public class HtmlInterstitialWebViewFactoryTest {
 
     @Test
     public void shouldBeAbleToReinitialize() throws Exception {
-        HtmlInterstitialWebViewFactory.initialize(new Activity());
+        HtmlInterstitialWebViewFactory.initialize(Robolectric.buildActivity(MoPubActivity.class).get());
 
         assertThat(HtmlInterstitialWebViewFactory.create(null, false, "", "")).isNotNull();
 
         HtmlInterstitialWebViewFactory.cleanup();
-        HtmlInterstitialWebViewFactory.initialize(new Activity());
+        HtmlInterstitialWebViewFactory.initialize(Robolectric.buildActivity(MoPubActivity.class).get());
 
         assertThat(HtmlInterstitialWebViewFactory.create(null, false, "", "")).isNotNull();
+
+        HtmlInterstitialWebViewFactory.cleanup();
+    }
+
+    @Test
+    public void create_withTooManyCleanUps_shouldNotReturnNull() throws Exception {
+        HtmlInterstitialWebViewFactory.initialize(Robolectric.buildActivity(MoPubActivity.class).get());
+        HtmlInterstitialWebViewFactory.cleanup();
+        HtmlInterstitialWebViewFactory.cleanup();
+
+        // pass
+        HtmlInterstitialWebViewFactory.create(null, false, "", "");
     }
 }

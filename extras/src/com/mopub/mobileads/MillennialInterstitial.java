@@ -146,7 +146,6 @@ class MillennialInterstitial extends CustomEventInterstitial {
             mInterstitialListener.onInterstitialDismissed();
         }
 
-        // todo test (un)register
         void register(Context context) {
             mContext = context;
             context.registerReceiver(this, MMBroadcastReceiver.createIntentFilter());

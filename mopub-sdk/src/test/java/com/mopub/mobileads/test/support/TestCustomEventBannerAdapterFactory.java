@@ -7,13 +7,17 @@ import com.mopub.mobileads.factories.CustomEventBannerAdapterFactory;
 import static org.mockito.Mockito.mock;
 
 public class TestCustomEventBannerAdapterFactory extends CustomEventBannerAdapterFactory {
-    private static CustomEventBannerAdapter instance = mock(CustomEventBannerAdapter.class);
-    private static MoPubView moPubView;
-    private static String className;
-    private static String classData;
+    private CustomEventBannerAdapter mockCustomEventBannerAdapter = mock(CustomEventBannerAdapter.class);
+    private MoPubView moPubView;
+    private String className;
+    private String classData;
 
     public static CustomEventBannerAdapter getSingletonMock() {
-        return instance;
+        return getTestFactory().mockCustomEventBannerAdapter;
+    }
+
+    private static TestCustomEventBannerAdapterFactory getTestFactory() {
+        return ((TestCustomEventBannerAdapterFactory) instance);
     }
 
     @Override
@@ -21,24 +25,18 @@ public class TestCustomEventBannerAdapterFactory extends CustomEventBannerAdapte
         this.moPubView = moPubView;
         this.className = className;
         this.classData = classData;
-        return instance;
+        return mockCustomEventBannerAdapter;
     }
 
     public static MoPubView getLatestMoPubView() {
-        return moPubView;
+        return getTestFactory().moPubView;
     }
 
     public static String getLatestClassName() {
-        return className;
+        return getTestFactory().className;
     }
 
     public static String getLatestClassData() {
-        return classData;
-    }
-
-    public static void reset() {
-        moPubView = null;
-        className = null;
-        classData = null;
+        return getTestFactory().classData;
     }
 }

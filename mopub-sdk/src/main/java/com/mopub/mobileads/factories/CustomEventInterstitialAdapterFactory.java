@@ -4,7 +4,7 @@ import com.mopub.mobileads.CustomEventInterstitialAdapter;
 import com.mopub.mobileads.MoPubInterstitial;
 
 public class CustomEventInterstitialAdapterFactory {
-    private static CustomEventInterstitialAdapterFactory instance = new CustomEventInterstitialAdapterFactory();
+    protected static CustomEventInterstitialAdapterFactory instance = new CustomEventInterstitialAdapterFactory();
 
     @Deprecated // for testing
     public static void setInstance(CustomEventInterstitialAdapterFactory factory) {

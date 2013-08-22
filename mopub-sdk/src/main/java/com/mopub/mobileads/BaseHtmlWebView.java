@@ -6,13 +6,19 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import static com.mopub.mobileads.util.VersionCode.ICE_CREAM_SANDWICH;
+import static com.mopub.mobileads.util.VersionCode.currentApiLevel;
+
 public class BaseHtmlWebView extends BaseWebView {
     public BaseHtmlWebView(Context context) {
         super(context);
 
         disableScrollingAndZoom();
         getSettings().setJavaScriptEnabled(true);
-        getSettings().setPluginsEnabled(true);
+
+        if (currentApiLevel().isAtLeast(ICE_CREAM_SANDWICH)) {
+            getSettings().setPluginsEnabled(true);
+        }
         setBackgroundColor(Color.TRANSPARENT);
     }
 

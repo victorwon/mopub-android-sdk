@@ -117,7 +117,7 @@ public class AdLoadTaskTest {
     @Test
     public void fromHttpResponse_whenEntityIsNull_shouldCreateMinimumJsonString() throws Exception {
         String htmlData = "<html></html>";
-        String expectedJson = "{\"Scrollable\":\"true\",\"Html-Response-Body\":\"\"}";
+        String expectedJson = "{\"Scrollable\":\"false\",\"Html-Response-Body\":\"\"}";
         response = new TestHttpResponseWithHeaders(200, htmlData) {
             @Override
             public HttpEntity getEntity() {
@@ -144,8 +144,8 @@ public class AdLoadTaskTest {
     }
 
     @Test
-    public void fromHttpResponse_whenScrollableIsNotSpecified_shouldDefaultToTrueInJson() throws Exception {
-        String expectedJson = "{\"Scrollable\":\"true\",\"Html-Response-Body\":\"\"}";
+    public void fromHttpResponse_whenScrollableIsNotSpecified_shouldDefaultToFalseInJson() throws Exception {
+        String expectedJson = "{\"Scrollable\":\"false\",\"Html-Response-Body\":\"\"}";
         response.addHeader(AD_TYPE_HEADER, "html");
 
         AdLoadTask.CustomEventAdLoadTask customEventTask = (AdLoadTask.CustomEventAdLoadTask) AdLoadTask.fromHttpResponse(response, adViewController);

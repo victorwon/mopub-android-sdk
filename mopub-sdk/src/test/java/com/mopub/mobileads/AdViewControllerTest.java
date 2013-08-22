@@ -354,12 +354,40 @@ public class AdViewControllerTest {
     }
 
     @Test
+    public void setAdContentView_whenCalledFromWrongUiThread_shouldStillSetContentView() throws Exception {
+        response.addHeader("X-Width", "320");
+        response.addHeader("X-Height", "50");
+        final View view = mock(View.class);
+        AdViewController.setShouldHonorServerDimensions(view);
+        subject.configureUsingHttpResponse(response);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                subject.setAdContentView(view);
+            }
+        }).start();
+        ThreadUtils.pause(10);
+        Robolectric.runUiThreadTasks();
+
+        verify(moPubView).removeAllViews();
+        ArgumentCaptor<FrameLayout.LayoutParams> layoutParamsCaptor = ArgumentCaptor.forClass(FrameLayout.LayoutParams.class);
+        verify(moPubView).addView(eq(view), layoutParamsCaptor.capture());
+        FrameLayout.LayoutParams layoutParams = layoutParamsCaptor.getValue();
+
+        assertThat(layoutParams.width).isEqualTo(320);
+        assertThat(layoutParams.height).isEqualTo(50);
+        assertThat(layoutParams.gravity).isEqualTo(Gravity.CENTER);
+    }
+
+    @Test
     public void setAdContentView_whenHonorServerDimensionsAndHasDimensions_shouldSizeAndCenterView() throws Exception {
         response.addHeader("X-Width", "320");
         response.addHeader("X-Height", "50");
         View view = mock(View.class);
         AdViewController.setShouldHonorServerDimensions(view);
         subject.configureUsingHttpResponse(response);
+
         subject.setAdContentView(view);
 
         verify(moPubView).removeAllViews();
@@ -377,6 +405,7 @@ public class AdViewControllerTest {
         View view = mock(View.class);
         AdViewController.setShouldHonorServerDimensions(view);
         subject.configureUsingHttpResponse(response);
+
         subject.setAdContentView(view);
 
         verify(moPubView).removeAllViews();
@@ -395,6 +424,7 @@ public class AdViewControllerTest {
         response.addHeader("X-Height", "50");
         subject.configureUsingHttpResponse(response);
         View view = mock(View.class);
+
         subject.setAdContentView(view);
 
         verify(moPubView).removeAllViews();

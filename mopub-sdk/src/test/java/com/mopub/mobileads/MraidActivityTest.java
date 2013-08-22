@@ -2,6 +2,7 @@ package com.mopub.mobileads;
 
 import android.content.ComponentName;
 import android.content.Intent;
+import android.os.Build;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageButton;
@@ -45,9 +46,8 @@ public class MraidActivityTest extends BaseInterstitialActivityTest {
         subject.onCreate(null);
 
         assertThat(getContentView(subject).getChildAt(0)).isSameAs(mraidView);
-        verify(mraidView).setOnReadyListener(any(MraidView.OnReadyListener.class));
+        verify(mraidView).setMraidListener(any(MraidView.MraidListener.class));
         verify(mraidView).setOnCloseButtonStateChange(any(MraidView.OnCloseButtonStateChangeListener.class));
-        verify(mraidView).setOnCloseListener(any(MraidView.OnCloseListener.class));
 
         verify(mraidView).loadHtmlData(EXPECTED_SOURCE);
     }
@@ -63,11 +63,23 @@ public class MraidActivityTest extends BaseInterstitialActivityTest {
     }
 
     @Test
-    public void onCreate_shouldSetHardwareAcceleratedFlag() throws Exception {
+    public void onCreate_whenICS_shouldSetHardwareAcceleratedFlag() throws Exception {
+        Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", 14);
+
         subject.onCreate(null);
 
         boolean hardwareAccelerated = shadowOf(subject.getWindow()).getFlag(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
         assertThat(hardwareAccelerated).isTrue();
+    }
+
+    @Test
+    public void onCreate_whenPreICS_shouldNotSetHardwareAcceleratedFlag() throws Exception {
+        Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", 13);
+
+        subject.onCreate(null);
+
+        boolean hardwareAccelerated = shadowOf(subject.getWindow()).getFlag(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
+        assertThat(hardwareAccelerated).isFalse();
     }
 
     @Test
@@ -87,11 +99,11 @@ public class MraidActivityTest extends BaseInterstitialActivityTest {
     public void getAdView_shouldSetupOnReadyListener() throws Exception {
         subject.onCreate(null);
         resetMockedView(mraidView);
-        ArgumentCaptor<MraidView.OnReadyListener> captor = ArgumentCaptor.forClass(MraidView.OnReadyListener.class);
+        ArgumentCaptor<MraidView.MraidListener> captor = ArgumentCaptor.forClass(MraidView.MraidListener.class);
         View actualAdView = subject.getAdView();
 
         assertThat(actualAdView).isSameAs(mraidView);
-        verify(mraidView).setOnReadyListener(captor.capture());
+        verify(mraidView).setMraidListener(captor.capture());
 
         subject.hideInterstitialCloseButton();
         captor.getValue().onReady(null);
@@ -123,11 +135,11 @@ public class MraidActivityTest extends BaseInterstitialActivityTest {
     public void getAdView_shouldSetupOnCloseListener() throws Exception {
         subject.onCreate(null);
         resetMockedView(mraidView);
-        ArgumentCaptor<MraidView.OnCloseListener> captor = ArgumentCaptor.forClass(MraidView.OnCloseListener.class);
+        ArgumentCaptor<MraidView.MraidListener> captor = ArgumentCaptor.forClass(MraidView.MraidListener.class);
         View actualAdView = subject.getAdView();
 
         assertThat(actualAdView).isSameAs(mraidView);
-        verify(mraidView).setOnCloseListener(captor.capture());
+        verify(mraidView).setMraidListener(captor.capture());
 
         captor.getValue().onClose(null, null);
 

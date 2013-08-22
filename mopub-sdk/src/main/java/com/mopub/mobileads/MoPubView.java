@@ -38,7 +38,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.location.Location;
-import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -47,8 +46,6 @@ import android.widget.FrameLayout;
 import com.mopub.mobileads.factories.AdViewControllerFactory;
 import com.mopub.mobileads.factories.CustomEventBannerAdapterFactory;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.Map;
 
@@ -57,7 +54,7 @@ import static com.mopub.mobileads.AdFetcher.CUSTOM_EVENT_NAME_HEADER;
 import static com.mopub.mobileads.MoPubErrorCode.ADAPTER_NOT_FOUND;
 
 public class MoPubView extends FrameLayout {
-    
+
     public interface BannerAdListener {
         public void onBannerLoaded(MoPubView banner);
         public void onBannerFailed(MoPubView banner, MoPubErrorCode errorCode);
@@ -65,7 +62,7 @@ public class MoPubView extends FrameLayout {
         public void onBannerExpanded(MoPubView banner);
         public void onBannerCollapsed(MoPubView banner);
     }
-    
+
     public enum LocationAwareness {
         LOCATION_AWARENESS_NORMAL, LOCATION_AWARENESS_TRUNCATED, LOCATION_AWARENESS_DISABLED
     }
@@ -77,7 +74,7 @@ public class MoPubView extends FrameLayout {
 
     protected AdViewController mAdViewController;
     protected CustomEventBannerAdapter mCustomEventBannerAdapter;
-    
+
     private Context mContext;
     private BroadcastReceiver mScreenStateReceiver;
     private boolean mIsInForeground;
@@ -108,7 +105,7 @@ public class MoPubView extends FrameLayout {
         
         setHorizontalScrollBarEnabled(false);
         setVerticalScrollBarEnabled(false);
-        
+
         // There is a rare bug in Froyo/2.2 where creation of a WebView causes a
         // NullPointerException. (http://code.google.com/p/android/issues/detail?id=10789)
         // It happens when the WebView can't access the local file store to make a cache file.
@@ -120,57 +117,14 @@ public class MoPubView extends FrameLayout {
                     "http://code.google.com/p/android/issues/detail?id=10789");
             return;
         }
-        
-        initVersionDependentAdView(context);
+
+        mAdViewController = AdViewControllerFactory.create(context, this);
         registerScreenStateBroadcastReceiver();
-    }
-    
-    private void initVersionDependentAdView(Context context) {
-        int sdkVersion = (new Integer(Build.VERSION.SDK)).intValue();
-        if (sdkVersion < 7) {
-        	mAdViewController = AdViewControllerFactory.create(context, this);
-        } else {
-            // On Android 2.1 (Eclair) and up, try to load our HTML5-enabled AdViewController class.
-            Class<?> HTML5AdViewClass = null;
-            try {
-                HTML5AdViewClass = (Class<?>) Class.forName("com.mopub.mobileads.HTML5AdView");
-            } catch (ClassNotFoundException e) {
-                mAdViewController = AdViewControllerFactory.create(context, this);
-                return;
-            } 
-
-            Class<?>[] parameterTypes = new Class[2];
-            parameterTypes[0] = Context.class;
-            parameterTypes[1] = MoPubView.class;
-
-            Object[] args = new Object[2];
-            args[0] = context;
-            args[1] = this;
-
-            try {
-                Constructor<?> constructor = HTML5AdViewClass.getConstructor(parameterTypes);
-                mAdViewController = (AdViewController) constructor.newInstance(args);
-            } catch (SecurityException e) {
-                Log.e("MoPub", "Could not load HTML5AdView.");
-            } catch (NoSuchMethodException e) {
-                Log.e("MoPub", "Could not load HTML5AdView.");
-            } catch (IllegalArgumentException e) {
-                Log.e("MoPub", "Could not load HTML5AdView.");
-            } catch (InstantiationException e) {
-                Log.e("MoPub", "Could not load HTML5AdView.");
-            } catch (IllegalAccessException e) {
-                Log.e("MoPub", "Could not load HTML5AdView.");
-            } catch (InvocationTargetException e) {
-                Log.e("MoPub", "Could not load HTML5AdView.");
-            }
-
-            if (mAdViewController == null) mAdViewController = AdViewControllerFactory.create(context, this);
-        }
     }
 
     private void registerScreenStateBroadcastReceiver() {
         if (mAdViewController == null) return;
-        
+
         mScreenStateReceiver = new BroadcastReceiver() {
             public void onReceive(Context context, Intent intent) {
                 if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
@@ -181,7 +135,7 @@ public class MoPubView extends FrameLayout {
                             mAdViewController.setAutorefreshEnabled(false);
                         }
                     } else {
-                        Log.d("MoPub", "Screen sleep but ad in background; " + 
+                        Log.d("MoPub", "Screen sleep but ad in background; " +
                                 "refresh should already be disabled");
                     }
                 } else if (intent.getAction().equals(Intent.ACTION_USER_PRESENT)) {
@@ -200,7 +154,7 @@ public class MoPubView extends FrameLayout {
         filter.addAction(Intent.ACTION_USER_PRESENT);
         mContext.registerReceiver(mScreenStateReceiver, filter);
     }
-    
+
     private void unregisterScreenStateBroadcastReceiver() {
         try {
             mContext.unregisterReceiver(mScreenStateReceiver);
@@ -208,11 +162,11 @@ public class MoPubView extends FrameLayout {
             Log.d("MoPub", "Failed to unregister screen state broadcast receiver (never registered).");
         }
     }
-    
+
     public void loadAd() {
         if (mAdViewController != null) mAdViewController.loadAd();
     }
-    
+
     /*
      * Tears down the ad view: no ads will be shown once this method executes. The parent
      * Activity's onDestroy implementation must include a call to this method.
@@ -220,12 +174,12 @@ public class MoPubView extends FrameLayout {
     public void destroy() {
         unregisterScreenStateBroadcastReceiver();
         removeAllViews();
-        
+
         if (mAdViewController != null) {
             mAdViewController.cleanup();
             mAdViewController = null;
         }
-        
+
         if (mCustomEventBannerAdapter != null) {
             mCustomEventBannerAdapter.invalidate();
             mCustomEventBannerAdapter = null;
@@ -269,11 +223,11 @@ public class MoPubView extends FrameLayout {
         Log.d("MoPub", "Tracking impression for native adapter.");
         if (mAdViewController != null) mAdViewController.trackImpression();
     }
-    
+
     @Override
     protected void onWindowVisibilityChanged(int visibility) {
         if (mAdViewController == null) return;
-        
+
         if (visibility == VISIBLE) {
             Log.d("MoPub", "Ad Unit ("+ mAdViewController.getAdUnitId()+") going visible: enabling refresh");
             mIsInForeground = true;
@@ -311,7 +265,7 @@ public class MoPubView extends FrameLayout {
             mOnAdPresentedOverlayListener.OnAdPresentedOverlay(this);
         }
     }
-    
+
     protected void adClosed() {
         if (mBannerAdListener != null) {
             mBannerAdListener.onBannerCollapsed(this);
@@ -327,18 +281,18 @@ public class MoPubView extends FrameLayout {
             mOnAdClickedListener.OnAdClicked(this);
         }
     }
-    
+
     protected void nativeAdLoaded() {
         if (mAdViewController != null) mAdViewController.scheduleRefreshTimerIfEnabled();
         adLoaded();
     }
-    
+
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     public void setAdUnitId(String adUnitId) {
         if (mAdViewController != null) mAdViewController.setAdUnitId(adUnitId);
     }
-    
+
     public void setKeywords(String keywords) {
         if (mAdViewController != null) mAdViewController.setKeywords(keywords);
     }
@@ -370,11 +324,11 @@ public class MoPubView extends FrameLayout {
     public String getResponseString() {
         return (mAdViewController != null) ? mAdViewController.getResponseString() : null;
     }
-    
+
     public void setClickthroughUrl(String url) {
         if (mAdViewController != null) mAdViewController.setClickthroughUrl(url);
     }
-    
+
     public String getClickthroughUrl() {
         return (mAdViewController != null) ? mAdViewController.getClickthroughUrl() : null;
     }
@@ -382,15 +336,15 @@ public class MoPubView extends FrameLayout {
     public Activity getActivity() {
         return (Activity) mContext;
     }
-    
+
     public void setBannerAdListener(BannerAdListener listener) {
         mBannerAdListener = listener;
     }
-    
+
     public BannerAdListener getBannerAdListener() {
         return mBannerAdListener;
     }
-    
+
     public void setLocationAwareness(LocationAwareness awareness) {
         mLocationAwareness = awareness;
     }
@@ -406,131 +360,131 @@ public class MoPubView extends FrameLayout {
     public int getLocationPrecision() {
         return mLocationPrecision;
     }
-    
+
     public void setLocalExtras(Map<String, Object> localExtras) {
         if (mAdViewController != null) mAdViewController.setLocalExtras(localExtras);
     }
-    
+
     public Map<String, Object> getLocalExtras() {
         if (mAdViewController != null) return mAdViewController.getLocalExtras();
         return Collections.emptyMap();
     }
-    
+
     public void setAutorefreshEnabled(boolean enabled) {
         if (mAdViewController != null) mAdViewController.setAutorefreshEnabled(enabled);
     }
-    
+
     public boolean getAutorefreshEnabled() {
         if (mAdViewController != null) return mAdViewController.getAutorefreshEnabled();
         else {
-            Log.d("MoPub", "Can't get autorefresh status for destroyed MoPubView. " + 
+            Log.d("MoPub", "Can't get autorefresh status for destroyed MoPubView. " +
                     "Returning false.");
             return false;
         }
     }
-    
+
     public void setAdContentView(View view) {
         if (mAdViewController != null) mAdViewController.setAdContentView(view);
     }
-    
+
     public void setTesting(boolean testing) {
         if (mAdViewController != null) mAdViewController.setTesting(testing);
     }
-    
+
     public boolean getTesting() {
         if (mAdViewController != null) return mAdViewController.getTesting();
         else {
-            Log.d("MoPub", "Can't get testing status for destroyed MoPubView. " + 
+            Log.d("MoPub", "Can't get testing status for destroyed MoPubView. " +
                     "Returning false.");
             return false;
         }
     }
-    
+
     public void forceRefresh() {
         if (mCustomEventBannerAdapter != null) {
             mCustomEventBannerAdapter.invalidate();
             mCustomEventBannerAdapter = null;
         }
-        
+
         if (mAdViewController != null) mAdViewController.forceRefresh();
     }
-    
+
     @Deprecated
     public interface OnAdWillLoadListener {
         public void OnAdWillLoad(MoPubView m, String url);
     }
-    
+
     @Deprecated
     public interface OnAdLoadedListener {
         public void OnAdLoaded(MoPubView m);
     }
-    
+
     @Deprecated
     public interface OnAdFailedListener {
         public void OnAdFailed(MoPubView m);
     }
-    
+
     @Deprecated
     public interface OnAdClosedListener {
         public void OnAdClosed(MoPubView m);
     }
-    
+
     @Deprecated
     public interface OnAdClickedListener {
         public void OnAdClicked(MoPubView m);
     }
-    
+
     @Deprecated
     public interface OnAdPresentedOverlayListener {
         public void OnAdPresentedOverlay(MoPubView m);
     }
-    
+
     @Deprecated
     public void setOnAdWillLoadListener(OnAdWillLoadListener listener) {
         mOnAdWillLoadListener = listener;
     }
-    
+
     @Deprecated
     public void setOnAdLoadedListener(OnAdLoadedListener listener) {
         mOnAdLoadedListener = listener;
     }
-    
+
     @Deprecated
     public void setOnAdFailedListener(OnAdFailedListener listener) {
         mOnAdFailedListener = listener;
     }
-    
+
     @Deprecated
     public void setOnAdPresentedOverlayListener(OnAdPresentedOverlayListener listener) {
         mOnAdPresentedOverlayListener = listener;
     }
-    
+
     @Deprecated
     public void setOnAdClosedListener(OnAdClosedListener listener) {
         mOnAdClosedListener = listener;
     }
-    
+
     @Deprecated
     public void setOnAdClickedListener(OnAdClickedListener listener) {
         mOnAdClickedListener = listener;
     }
-    
+
     @Deprecated
     protected void adWillLoad(String url) {
         Log.d("MoPub", "adWillLoad: " + url);
         if (mOnAdWillLoadListener != null) mOnAdWillLoadListener.OnAdWillLoad(this, url);
     }
-    
+
     @Deprecated
     public void customEventDidLoadAd() {
         if (mAdViewController != null) mAdViewController.customEventDidLoadAd();
     }
-    
+
     @Deprecated
     public void customEventDidFailToLoadAd() {
         if (mAdViewController != null) mAdViewController.customEventDidFailToLoadAd();
     }
-    
+
     @Deprecated
     public void customEventActionWillBegin() {
         if (mAdViewController != null) mAdViewController.customEventActionWillBegin();

@@ -14,7 +14,7 @@ import org.apache.http.params.HttpParams;
 
 import static com.mopub.mobileads.util.HttpResponses.extractHeader;
 
-class AdFetchTask extends AsyncTask<String, Void, AdLoadTask> {
+public class AdFetchTask extends AsyncTask<String, Void, AdLoadTask> {
     private TaskTracker mTaskTracker;
     private AdViewController mAdViewController;
     private Exception mException;
@@ -26,7 +26,7 @@ class AdFetchTask extends AsyncTask<String, Void, AdLoadTask> {
     private static final int MAXIMUM_REFRESH_TIME_MILLISECONDS = 600000;
     private static final double EXPONENTIAL_BACKOFF_FACTOR = 1.5;
 
-    AdFetchTask(TaskTracker taskTracker, AdViewController adViewController, String userAgent, int timeoutMilliseconds) {
+    public AdFetchTask(TaskTracker taskTracker, AdViewController adViewController, String userAgent, int timeoutMilliseconds) {
         mTaskTracker = taskTracker;
 
         mAdViewController = adViewController;

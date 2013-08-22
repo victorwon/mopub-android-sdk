@@ -10,7 +10,11 @@ public class TestAdFetcherFactory extends AdFetcherFactory {
     private AdFetcher mockAdFetcher = mock(AdFetcher.class);
 
     public static AdFetcher getSingletonMock() {
-        return ((TestAdFetcherFactory)AdFetcherFactory.instance).mockAdFetcher;
+        return getTestFactory().mockAdFetcher;
+    }
+
+    private static TestAdFetcherFactory getTestFactory() {
+        return ((TestAdFetcherFactory) AdFetcherFactory.instance);
     }
 
     @Override

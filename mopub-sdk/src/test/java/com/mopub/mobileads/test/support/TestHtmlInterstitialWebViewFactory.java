@@ -10,45 +10,45 @@ import static org.mockito.Mockito.mock;
 public class TestHtmlInterstitialWebViewFactory extends HtmlInterstitialWebViewFactory {
     private HtmlInterstitialWebView mockHtmlInterstitialWebView = mock(HtmlInterstitialWebView.class);
 
-    private CustomEventInterstitialListener mLatestListener;
-    private boolean mLatestIsScrollable;
-    private String mLatestRedirectUrl;
-    private String mLatestClickthroughUrl;
+    private CustomEventInterstitialListener latestListener;
+    private boolean latestIsScrollable;
+    private String latestRedirectUrl;
+    private String latestClickthroughUrl;
 
 
-    @Override
-    public HtmlInterstitialWebView internalCreate(CustomEventInterstitialListener customEventInterstitialListener, boolean isScrollable, String redirectUrl, String clickthroughUrl) {
-        mLatestListener = customEventInterstitialListener;
-        mLatestIsScrollable = isScrollable;
-        mLatestRedirectUrl = redirectUrl;
-        mLatestClickthroughUrl = clickthroughUrl;
-        return getInstance().mockHtmlInterstitialWebView;
+    public static HtmlInterstitialWebView getSingletonMock() {
+        return getTestFactory().mockHtmlInterstitialWebView;
     }
 
-    private static TestHtmlInterstitialWebViewFactory getInstance() {
+    private static TestHtmlInterstitialWebViewFactory getTestFactory() {
         return (TestHtmlInterstitialWebViewFactory) instance;
     }
 
-    public static HtmlInterstitialWebView getSingletonMock() {
-        return getInstance().mockHtmlInterstitialWebView;
+    @Override
+    public HtmlInterstitialWebView internalCreate(CustomEventInterstitialListener customEventInterstitialListener, boolean isScrollable, String redirectUrl, String clickthroughUrl) {
+        latestListener = customEventInterstitialListener;
+        latestIsScrollable = isScrollable;
+        latestRedirectUrl = redirectUrl;
+        latestClickthroughUrl = clickthroughUrl;
+        return getTestFactory().mockHtmlInterstitialWebView;
     }
 
     public static CustomEventInterstitialListener getLatestListener() {
-        return getInstance().mLatestListener;
+        return getTestFactory().latestListener;
     }
 
     public static boolean getLatestIsScrollable() {
-        return getInstance().mLatestIsScrollable;
+        return getTestFactory().latestIsScrollable;
     }
     public static String getLatestRedirectUrl() {
-        return getInstance().mLatestRedirectUrl;
+        return getTestFactory().latestRedirectUrl;
     }
 
     public static String getLatestClickthroughUrl() {
-        return getInstance().mLatestClickthroughUrl;
+        return getTestFactory().latestClickthroughUrl;
     }
 
     public static HtmlInterstitialWebViewPool getWebViewPool() {
-        return getInstance().mHtmlInterstitialWebViewPool;
+        return getTestFactory().mHtmlInterstitialWebViewPool;
     }
 }

@@ -7,14 +7,18 @@ import com.mopub.mobileads.factories.MoPubViewFactory;
 import static org.mockito.Mockito.mock;
 
 public class TestMoPubViewFactory extends MoPubViewFactory {
-    private static MoPubView instance = mock(MoPubView.class);
+    private final MoPubView mockMoPubView = mock(MoPubView.class);
 
     public static MoPubView getSingletonMock() {
-        return instance;
+        return getTestFactory().mockMoPubView;
+    }
+
+    private static TestMoPubViewFactory getTestFactory() {
+        return (TestMoPubViewFactory) instance;
     }
 
     @Override
     protected MoPubView internalCreate(Context context) {
-        return instance;
+        return mockMoPubView;
     }
 }

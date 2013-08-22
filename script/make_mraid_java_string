@@ -1,0 +1,26 @@
+#!/usr/bin/python
+import os
+
+import shared_values
+
+JAVA_FILE_NAME = 'MraidJavascript'
+
+java_out = open(shared_values.SDK_SRC_ROOT + 'com/mopub/mobileads/resource/' + JAVA_FILE_NAME + '.java', 'w')
+javascript_in = open(shared_values.SDK_ROOT + 'etc/mraid.js', 'r')
+
+java_out.write (
+    'package com.mopub.mobileads.resource;\n' +
+    '\n' +
+    'public class ' + JAVA_FILE_NAME + ' {\n' +
+    '    public static final String JAVASCRIPT_SOURCE =\n')
+first = True
+for line in javascript_in:
+    if (first) :
+        first = False
+    else :
+        java_out.write('" +\n')
+    java_out.write('            "' + line.rstrip().replace('\\', '\\\\').replace('"', '\\"') + '\\n')
+java_out.write('\";\n}\n')
+
+
+

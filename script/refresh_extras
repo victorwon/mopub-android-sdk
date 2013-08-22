@@ -40,6 +40,8 @@ if filestem in shared_values.duplicated_custom_events:
 		print 'no changes in current repo, not committing'
 
 source_path = shared_values.DEMO_ROOT + filename
+if not os.path.exists(source_path) :
+	source_path = shared_values.ALT_DEMO_ROOT + filename
 
 if filestem in shared_values.custom_events:
 	destination_path = shared_values.EXTRAS_ROOT + filename
@@ -49,9 +51,10 @@ else:
 
 temp_path = '/tmp/' + filename
 shutil.copyfile(source_path, temp_path)
-shutil.rmtree('/tmp/mopub_jars', ignore_errors=True)
-os.mkdir('/tmp/mopub_jars')
-os.system('cp libs/*.jar /tmp/mopub_jars/.')
+if filestem in shared_values.jars_to_copy :
+	shutil.rmtree('/tmp/mopub_jars', ignore_errors=True)
+	os.mkdir('/tmp/mopub_jars')
+	os.system('cp libs/*.jar /tmp/mopub_jars/.')
 
 if os.system('git co master'):
 	print 'error: unable to checkout master'

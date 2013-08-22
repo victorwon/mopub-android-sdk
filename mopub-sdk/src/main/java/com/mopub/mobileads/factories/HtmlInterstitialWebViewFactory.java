@@ -8,10 +8,12 @@ import static com.mopub.mobileads.CustomEventInterstitial.CustomEventInterstitia
 public class HtmlInterstitialWebViewFactory {
     protected static HtmlInterstitialWebViewFactory instance = new HtmlInterstitialWebViewFactory();
     protected HtmlInterstitialWebViewPool mHtmlInterstitialWebViewPool;
-    private int mRefCount;
+    private Context context;
+    private Integer mRefCount = 0;
 
     public static void initialize(Context context) {
         instance.initializeInstance(context);
+        instance.context = context;
     }
 
     public static void cleanup() {
@@ -19,16 +21,20 @@ public class HtmlInterstitialWebViewFactory {
     }
 
     private void initializeInstance(Context context) {
-        if (mHtmlInterstitialWebViewPool == null) {
-            mHtmlInterstitialWebViewPool = new HtmlInterstitialWebViewPool(context);
+        synchronized (mRefCount) {
+            if (mHtmlInterstitialWebViewPool == null) {
+                mHtmlInterstitialWebViewPool = new HtmlInterstitialWebViewPool(context);
+            }
+            mRefCount++;
         }
-        mRefCount++;
     }
 
     private void cleanupInstance() {
-        if (--mRefCount == 0) {
-            mHtmlInterstitialWebViewPool.cleanup();
-            mHtmlInterstitialWebViewPool = null;
+        synchronized (mRefCount) {
+            if (--mRefCount == 0) {
+                mHtmlInterstitialWebViewPool.cleanup();
+                mHtmlInterstitialWebViewPool = null;
+            }
         }
     }
 
@@ -50,6 +56,9 @@ public class HtmlInterstitialWebViewFactory {
             boolean isScrollable,
             String redirectUrl,
             String clickthroughUrl) {
+        if (mHtmlInterstitialWebViewPool == null) {
+            initializeInstance(instance.context);
+        }
         return instance.mHtmlInterstitialWebViewPool.getNextHtmlWebView(
                 customEventInterstitialListener,
                 isScrollable,

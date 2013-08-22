@@ -32,17 +32,22 @@ class HtmlWebViewClient extends WebViewClient {
 
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
-        if (handleSpecialMoPubScheme(url) || handlePhoneScheme(url)) {
+        if (handleSpecialMoPubScheme(url) || handlePhoneScheme(url) || handleNativeBrowserScheme(url)) {
             return true;
         }
 
-        if (isMarketUrl(url) && !canHandleMarketUrl(url)) {
+        if (isApplicationUrl(url) && !canHandleApplicationUrl(url)) {
             return true;
         }
 
         url = urlWithClickTrackingRedirect(url);
         Log.d("MoPub", "Ad clicked. Click URL: " + url);
         mHtmlWebViewListener.onClicked();
+
+        if (isApplicationUrl(url)) {
+            launchApplicationUrl(url);
+            return true;
+        }
 
         showBrowserForUrl(url);
         return true;
@@ -93,17 +98,47 @@ class HtmlWebViewClient extends WebViewClient {
         return true;
     }
 
+    private boolean handleNativeBrowserScheme(String url){
+        Uri uri = Uri.parse(url);
+        String urlToOpenInNativeBrowser = uri.getQueryParameter("url");
+        if (!"mopubnativebrowser".equals(uri.getScheme()) || !"navigate".equals(uri.getHost())
+                || urlToOpenInNativeBrowser == null) return false;
+
+        Uri intentUri = Uri.parse(urlToOpenInNativeBrowser);
+
+        if (intentUri == null) { return false; }
+
+        try{
+            Intent iNativeBrowser = new Intent(Intent.ACTION_VIEW, intentUri);
+            iNativeBrowser.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            mContext.startActivity(iNativeBrowser);
+            mHtmlWebViewListener.onClicked();
+        } catch (ActivityNotFoundException e){
+            Log.w("MoPub", "Could not handle intent with URI: " + url + ". Is this intent unsupported on your phone?");
+        }
+
+        return true;
+    }
+
     private boolean isPhoneIntent(String url) {
         return url.startsWith("tel:") || url.startsWith("voicemail:") ||
                 url.startsWith("sms:") || url.startsWith("mailto:") ||
                 url.startsWith("geo:") || url.startsWith("google.streetview:");
     }
 
+    private boolean isApplicationUrl(String url) {
+        return isMarketUrl(url) || isAmazonUrl(url);
+    }
+
     private boolean isMarketUrl(String url) {
         return url.startsWith("market://");
     }
 
-    private boolean canHandleMarketUrl(String url) {
+    private boolean isAmazonUrl(String url) {
+        return url.startsWith("amzn://");
+    }
+
+    private boolean canHandleApplicationUrl(String url) {
         // Determine which activities can handle the market intent
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         PackageManager packageManager = mContext.getPackageManager();
@@ -112,9 +147,9 @@ class HtmlWebViewClient extends WebViewClient {
         // If there are no relevant activities, don't follow the link
         boolean isIntentSafe = activities.size() > 0;
         if (!isIntentSafe) {
-            Log.w("MoPub", "Could not handle market action: " + url
-                    + ". Perhaps you're running in the emulator, which does not have "
-                    + "the Android Market?");
+            Log.w("MoPub", "Could not handle application specific action: " + url + ". " +
+                    "You may be running in the emulator or another device which does not " +
+                    "have the required application.");
             return false;
         }
 
@@ -128,6 +163,12 @@ class HtmlWebViewClient extends WebViewClient {
             String encodedUrl = Uri.encode(url);
             return mClickthroughUrl + "&r=" + encodedUrl;
         }
+    }
+
+    private void launchApplicationUrl(String url) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
     }
 
     private void showBrowserForUrl(String url) {

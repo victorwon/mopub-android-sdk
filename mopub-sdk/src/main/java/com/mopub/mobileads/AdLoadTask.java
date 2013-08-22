@@ -85,7 +85,7 @@ abstract class AdLoadTask {
             String htmlData = entity != null ? Strings.fromStream(entity.getContent()) : "";
             String redirectUrl = extractHeader(response, REDIRECT_URL_HEADER);
             String clickthroughUrl = extractHeader(response, CLICKTHROUGH_URL_HEADER);
-            boolean scrollingEnabled = extractBooleanHeader(response, SCROLLABLE_HEADER);
+            boolean scrollingEnabled = extractBooleanHeader(response, SCROLLABLE_HEADER, false);
 
             Map<String, String> eventDataMap = new HashMap<String, String>();
             eventDataMap.put(HTML_RESPONSE_BODY_KEY, Uri.encode(htmlData));

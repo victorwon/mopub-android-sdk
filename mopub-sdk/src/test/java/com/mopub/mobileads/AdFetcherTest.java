@@ -1,6 +1,9 @@
 package com.mopub.mobileads;
 
+import android.os.Build;
+import com.mopub.mobileads.factories.AdFetchTaskFactory;
 import com.mopub.mobileads.test.support.SdkTestRunner;
+import com.mopub.mobileads.test.support.TestAdFetchTaskFactory;
 import com.mopub.mobileads.test.support.TestHttpResponseWithHeaders;
 import org.apache.http.HttpResponse;
 import org.junit.Before;
@@ -10,10 +13,16 @@ import org.robolectric.Robolectric;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 import static com.mopub.mobileads.AdFetcher.*;
+import static com.mopub.mobileads.util.VersionCode.HONEYCOMB_MR2;
+import static com.mopub.mobileads.util.VersionCode.ICE_CREAM_SANDWICH;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
 
@@ -79,5 +88,29 @@ public class AdFetcherTest {
         paramsMap.put(CUSTOM_EVENT_DATA_HEADER, json);
 
         verify(moPubInterstitialView).loadCustomEvent(eq(paramsMap));
+    }
+
+    @Test
+    public void fetchAdForUrl_whenApiLevelIsAtLeastICS_shouldExecuteUsingAnExecutor() throws Exception {
+        Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", ICE_CREAM_SANDWICH.getApiLevel());
+        AdFetchTaskFactory.setInstance(new TestAdFetchTaskFactory());
+        AdFetchTask adFetchTask = TestAdFetchTaskFactory.getSingletonMock();
+
+        subject.fetchAdForUrl("some url");
+
+        verify(adFetchTask).executeOnExecutor(eq(AdFetchTask.THREAD_POOL_EXECUTOR), eq("some url"));
+        verify(adFetchTask, never()).execute(anyString());
+    }
+
+    @Test
+    public void fetchAdForUrl_whenApiLevelIsBelowICS_shouldExecuteWithoutAnExecutor() throws Exception {
+        Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", HONEYCOMB_MR2.getApiLevel());
+        AdFetchTaskFactory.setInstance(new TestAdFetchTaskFactory());
+        AdFetchTask adFetchTask = TestAdFetchTaskFactory.getSingletonMock();
+
+        subject.fetchAdForUrl("some url");
+
+        verify(adFetchTask, never()).executeOnExecutor(any(Executor.class), anyString());
+        verify(adFetchTask).execute(eq("some url"));
     }
 }

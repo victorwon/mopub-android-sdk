@@ -15,8 +15,10 @@ def check_current_extras():
         filename = filestem + '.java'
         extras_filepath = shared_values.EXTRAS_ROOT + filename
         demo_filepath = shared_values.DEMO_ROOT + filename
+        alt_demo_filepath = shared_values.ALT_DEMO_ROOT + filename
         robotium_filepath = shared_values.ROBOTIUM_ROOT + filename
-        
+
+
         if not os.path.exists(extras_filepath) :
             print extras_filepath + ' does not exist. Something is wrong. Exiting.'
             exit(1)
@@ -24,6 +26,10 @@ def check_current_extras():
         if os.path.exists(demo_filepath) : 
             print 'checking simpleadsdemo: ' + filestem
             demo_is_sane = filepaths_match(extras_filepath, demo_filepath) and demo_is_sane
+        
+        if os.path.exists(alt_demo_filepath) : 
+            print 'checking simpleadsdemo (alt): ' + filestem
+            demo_is_sane = filepaths_match(extras_filepath, alt_demo_filepath) and demo_is_sane
         
         if os.path.exists(robotium_filepath) : 
             print 'checking robotium: ' + filestem
@@ -38,3 +44,4 @@ for branch in shared_values.branches_synced_with_master:
         print 'Problem in branch: ' + branch + "\n"
 
 os_helper.system_quiet('git co ' + original_branch)
+

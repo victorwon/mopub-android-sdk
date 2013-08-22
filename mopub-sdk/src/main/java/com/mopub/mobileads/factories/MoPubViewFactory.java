@@ -4,7 +4,7 @@ import android.content.Context;
 import com.mopub.mobileads.MoPubView;
 
 public class MoPubViewFactory {
-    private static MoPubViewFactory instance = new MoPubViewFactory();
+    protected static MoPubViewFactory instance = new MoPubViewFactory();
 
     @Deprecated // for testing
     public static void setInstance(MoPubViewFactory factory) {

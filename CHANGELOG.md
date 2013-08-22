@@ -1,3 +1,12 @@
+## Version 1.15 (Aug 21, 2013)
+
+  - Added several changes to AndroidManifest.xml. Please be sure to include the permissions for `CALL_PHONE`, `SEND_SMS`, `WRITE_EXTERNAL_STORAGE` and declare activity `com.mopub.mobileads.MraidVideoPlayerActivity`
+  - Added the following MRAID 2.0 features: `createCalendarEvent` (Android 4.0 and above), `playVideo`, `storePicture`, and `supports`
+  - Hardware Acceleration is now enabled by default for `MraidInterstitial`s on Android 4.0 and above  
+  - Ensured that Cursors in `FacebookKeywordProvider` are always closed properly; fixes [GitHub issue #8](https://github.com/mopub/mopub-android-sdk/issues/8)  
+  - Added tracking parameter to InMobi ad requests; fixes [GitHub issue #15](https://github.com/mopub/mopub-android-sdk/issues/15)  
+  - Banner WebViews are now removed from the view hierarchy before they are destroyed; fixes [GitHub issue #23](https://github.com/mopub/mopub-android-sdk/issues/23)  
+
 ## Version 1.14 (May 28, 2013)
 
   - Provided improved support for Android Unity by moving all project resources (including layouts, javascript, images, and values) into source

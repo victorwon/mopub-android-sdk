@@ -61,20 +61,6 @@ public class MraidInterstitialTest {
     }
 
     @Test
-    public void showInterstitial_shouldStartActivityWithIntent() throws Exception {
-        subject.loadInterstitial(context, customEventInterstitialListener, localExtras, serverExtras);
-        subject.showInterstitial();
-
-        ShadowActivity shadowActivity = shadowOf_(context);
-        Intent intent = shadowActivity.getNextStartedActivityForResult().intent;
-
-        assertThat(intent.getComponent().getPackageName()).isEqualTo("com.mopub.mobileads");
-        assertThat(intent.getComponent().getClassName()).isEqualTo("com.mopub.mobileads.MraidActivity");
-        assertThat(intent.getExtras().get(HTML_RESPONSE_BODY_KEY)).isEqualTo(EXPECTED_HTML_DATA);
-        assertThat(intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK).isNotEqualTo(0);
-    }
-
-    @Test
     public void loadInterstitial_shouldConnectListenerToBroadcastReceiver() throws Exception {
         subject.loadInterstitial(context, customEventInterstitialListener, localExtras, serverExtras);
 
@@ -88,6 +74,20 @@ public class MraidInterstitialTest {
         ShadowLocalBroadcastManager.getInstance(context).sendBroadcast(intent);
 
         verify(customEventInterstitialListener).onInterstitialDismissed();
+    }
+
+    @Test
+    public void showInterstitial_shouldStartActivityWithIntent() throws Exception {
+        subject.loadInterstitial(context, customEventInterstitialListener, localExtras, serverExtras);
+        subject.showInterstitial();
+
+        ShadowActivity shadowActivity = shadowOf_(context);
+        Intent intent = shadowActivity.getNextStartedActivityForResult().intent;
+
+        assertThat(intent.getComponent().getPackageName()).isEqualTo("com.mopub.mobileads");
+        assertThat(intent.getComponent().getClassName()).isEqualTo("com.mopub.mobileads.MraidActivity");
+        assertThat(intent.getExtras().get(HTML_RESPONSE_BODY_KEY)).isEqualTo(EXPECTED_HTML_DATA);
+        assertThat(intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK).isNotEqualTo(0);
     }
 
     @Test

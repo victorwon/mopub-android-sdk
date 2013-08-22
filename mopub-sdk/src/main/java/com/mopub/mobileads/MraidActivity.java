@@ -11,6 +11,8 @@ import com.mopub.mobileads.factories.MraidViewFactory;
 import com.mopub.mobileads.util.WebViews;
 
 import static com.mopub.mobileads.AdFetcher.HTML_RESPONSE_BODY_KEY;
+import static com.mopub.mobileads.util.VersionCode.ICE_CREAM_SANDWICH;
+import static com.mopub.mobileads.util.VersionCode.currentApiLevel;
 
 public class MraidActivity extends BaseInterstitialActivity {
     private MraidView mMraidView;
@@ -20,22 +22,27 @@ public class MraidActivity extends BaseInterstitialActivity {
         super.onCreate(savedInstanceState);
         broadcastInterstitialAction(ACTION_INTERSTITIAL_SHOW);
 
-        getWindow().setFlags(
-                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
+        if (currentApiLevel().isAtLeast(ICE_CREAM_SANDWICH)) {
+            getWindow().setFlags(
+                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
+        }
     }
 
     @Override
     public View getAdView() {
         mMraidView = MraidViewFactory.create(this, ExpansionStyle.DISABLED, NativeCloseButtonStyle.AD_CONTROLLED,
                 PlacementType.INTERSTITIAL);
-        
-        mMraidView.setOnReadyListener(new MraidView.OnReadyListener() {
+
+        mMraidView.setMraidListener(new MraidView.BaseMraidListener(){
             public void onReady(MraidView view) {
                 showInterstitialCloseButton();
             }
+            public void onClose(MraidView view, ViewState newViewState) {
+                finish();
+            }
         });
-        
+
         mMraidView.setOnCloseButtonStateChange(new MraidView.OnCloseButtonStateChangeListener() {
             public void onCloseButtonStateChange(MraidView view, boolean enabled) {
                 if (enabled) {
@@ -45,16 +52,10 @@ public class MraidActivity extends BaseInterstitialActivity {
                 }
             }
         });
-        
-        mMraidView.setOnCloseListener(new MraidView.OnCloseListener() {
-            public void onClose(MraidView view, ViewState newViewState) {
-                finish();
-            }
-        });
-        
+
         String source = getIntent().getStringExtra(HTML_RESPONSE_BODY_KEY);
         mMraidView.loadHtmlData(source);
-        
+
         return mMraidView;
     }
 

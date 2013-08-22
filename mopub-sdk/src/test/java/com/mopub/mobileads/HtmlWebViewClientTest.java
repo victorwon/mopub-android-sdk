@@ -92,7 +92,7 @@ public class HtmlWebViewClientTest {
     }
 
     @Test
-    public void shouldOverrideUrlLoading_withValidMarketIntent_shouldOpenBrowser() throws Exception {
+    public void shouldOverrideUrlLoading_withValidMarketIntent_shouldOpenPlayStore() throws Exception {
         subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
         String validMarketUrl = "market://somethingValid";
         Robolectric.packageManager.addResolveInfoForIntent(new Intent(Intent.ACTION_VIEW, Uri.parse(validMarketUrl)), new ResolveInfo());
@@ -102,15 +102,41 @@ public class HtmlWebViewClientTest {
         verify(htmlWebViewListener).onClicked();
 
         Intent startedActivity = assertActivityStarted();
-        assertThat(startedActivity.getComponent().getClassName()).isEqualTo("com.mopub.mobileads.MraidBrowser");
-        assertThat(startedActivity.getStringExtra(URL_EXTRA)).isEqualTo(validMarketUrl);
-        assertThat(startedActivity.getData()).isNull();
+        assertThat(startedActivity.getAction()).isEqualTo(Intent.ACTION_VIEW);
+        assertThat(startedActivity.getData().toString()).isEqualTo(validMarketUrl);
     }
 
     @Test
     public void shouldOverrideUrlLoading_withUnhandleableMarketIntent_shouldNotOpenBrowser() throws Exception {
-        String validMarketUrl = "market://somethingValid";
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, validMarketUrl);
+        String invalidMarketUrl = "market://somethingInvalid";
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, invalidMarketUrl);
+
+        assertThat(didOverrideUrl).isTrue();
+        verify(htmlWebViewListener, never()).onClicked();
+
+        Intent startedActivity = Robolectric.getShadowApplication().getNextStartedActivity();
+        assertThat(startedActivity).isNull();
+    }
+
+    @Test
+    public void shouldOverrideUrlLoading_withAmazonIntentAndAmazonPresent_shouldOpenAmazonMarket() throws Exception {
+        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
+        String validAmazonUrl = "amzn://somethingValid";
+        Robolectric.packageManager.addResolveInfoForIntent(new Intent(Intent.ACTION_VIEW, Uri.parse(validAmazonUrl)), new ResolveInfo());
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, validAmazonUrl);
+
+        assertThat(didOverrideUrl).isTrue();
+        verify(htmlWebViewListener).onClicked();
+
+        Intent startedActivity = assertActivityStarted();
+        assertThat(startedActivity.getAction()).isEqualTo(Intent.ACTION_VIEW);
+        assertThat(startedActivity.getData().toString()).isEqualTo(validAmazonUrl);
+    }
+
+    @Test
+    public void shouldOverrideUrlLoading_withAmazonIntentAndNoAmazon_shouldNotTryToOpenAmazonMarket() throws Exception {
+        String invalidAmazonUrl = "amzn://somethingValid";
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, invalidAmazonUrl);
 
         assertThat(didOverrideUrl).isTrue();
         verify(htmlWebViewListener, never()).onClicked();
@@ -152,6 +178,41 @@ public class HtmlWebViewClientTest {
         assertThat(startedActivity.getComponent().getClassName()).isEqualTo("com.mopub.mobileads.MraidBrowser");
         assertThat(startedActivity.getStringExtra(URL_EXTRA)).isEqualTo("about:blank");
         assertThat(startedActivity.getData()).isNull();
+    }
+
+    @Test
+    public void shouldOverrideUrlLoading_withNativeBrowserScheme_shouldStartIntentWithActionView() throws Exception {
+        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
+        subject.shouldOverrideUrlLoading(htmlWebView, "mopubnativebrowser://navigate?url=http://mopub.com");
+
+        Intent startedActivity = assertActivityStarted();
+        assertThat(isWebsiteUrl(startedActivity.getData().toString()));
+        assertThat(startedActivity.getAction()).isEqualTo("android.intent.action.VIEW");
+    }
+
+    @Test
+    public void shouldOverrideUrlLoading_withNativeBrowserScheme_shouldCallHtmlWebViewListener() throws Exception {
+        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
+        subject.shouldOverrideUrlLoading(htmlWebView, "mopubnativebrowser://navigate?url=http://mopub.com");
+
+        verify(htmlWebViewListener).onClicked();
+        reset(htmlWebViewListener);
+    }
+
+    @Test
+    public void shouldOverrideUrlLoading_withNativeBrowserScheme_withInvalidHostSchemeUrl_shouldNotInvokeNativeBrowser() throws Exception {
+        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
+        subject.shouldOverrideUrlLoading(htmlWebView, "something://blah?url=invalid");
+
+        Intent startedActivity = assertActivityStarted();
+        assertThat(startedActivity.getAction()).isNotEqualTo("android.intent.action.VIEW");
+
+        verify(htmlWebViewListener).onClicked();
+        reset(htmlWebViewListener);
+    }
+
+    private boolean isWebsiteUrl(String url){
+        return url.startsWith("http://") || url.startsWith("https://");
     }
 
     @Test

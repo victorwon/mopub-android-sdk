@@ -11,7 +11,11 @@ public class TestAdViewControllerFactory extends AdViewControllerFactory {
     private AdViewController mockAdViewController = mock(AdViewController.class);
 
     public static AdViewController getSingletonMock() {
-        return ((TestAdViewControllerFactory) AdViewControllerFactory.instance).mockAdViewController;
+        return getTestFactory().mockAdViewController;
+    }
+
+    private static TestAdViewControllerFactory getTestFactory() {
+        return ((TestAdViewControllerFactory) instance);
     }
 
     @Override

@@ -37,11 +37,10 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.TabHost;
 import android.widget.Toast;
-import com.mopub.mobileads.MoPubActivity;
 import com.mopub.mobileads.MoPubConversionTracker;
 
 public class SimpleAdsDemo extends TabActivity {
-    private final int   INTERSTITIAL_AD_REQUEST = 0;
+    private final int INTERSTITIAL_AD_REQUEST = 0;
 
     /** Called when the activity is first created. */
     @Override
@@ -74,12 +73,6 @@ public class SimpleAdsDemo extends TabActivity {
 
         // Conversion tracking
         new MoPubConversionTracker().reportAppOpen(this);
-    }
-
-    public void showInterstitialAd() {
-        Intent i = new Intent(this, MoPubActivity.class);
-        i.putExtra("com.mopub.mobileads.AdUnitId", "agltb3B1Yi1pbmNyDAsSBFNpdGUY6tERDA");
-        startActivityForResult(i, INTERSTITIAL_AD_REQUEST);
     }
 
     // Listen for results from the interstitial ad

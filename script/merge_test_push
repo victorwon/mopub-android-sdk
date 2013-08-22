@@ -1,0 +1,2 @@
+#!/bin/sh
+git stash && script/merge_master_into_everything && mvn clean install && git push && git stash pop
