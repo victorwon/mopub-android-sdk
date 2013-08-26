@@ -25,9 +25,15 @@ Integration instructions are available on the [wiki](https://github.com/mopub/mo
 
 ## New in this Version
 
-Please view the [changelog](https://github.com/mopub/mopub-android-sdk/blob/master/CHANGELOG.md) for details.
+This release of the Android SDK includes support for ads in the MRAID 2.0 format. MRAID 2.0 allows advertisers to create ads with rich media functionality, including adding calendar events, storing pictures and playing videos in the native video player. 
 
-Note: AndroidManifest.xml has changed. Please be sure to add permissions for `CALL_PHONE`, `SEND_SMS`, `WRITE_EXTERNAL_STORAGE`, and declare activity `com.mopub.mobileads.MraidVideoPlayerActivity`.
+To allow advertisers to show store picture ads, you need to make the following change to AndroidManifest.xml:  
+* Add the`WRITE_EXTERNAL_STORAGE` permission. Note: This permission is optional. However, if it is not added, we will not be able to display store picture ads. All other features will remain functional with or without the new permission. 
+
+To allow advertiser to play videos using the native video player:
+* Declare activity `com.mopub.mobileads.MraidVideoPlayerActivity` This activity is required to support playing videos in the native player.
+
+Please view the [changelog](https://github.com/mopub/mopub-android-sdk/blob/master/CHANGELOG.md) for details.
 
 ## Requirements
 
