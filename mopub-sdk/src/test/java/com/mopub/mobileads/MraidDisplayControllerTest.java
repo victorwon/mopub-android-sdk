@@ -5,7 +5,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.CalendarContract;
@@ -15,14 +14,18 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import com.mopub.mobileads.test.support.*;
+import com.mopub.mobileads.util.MraidUtilsTest;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.robolectric.Robolectric;
 import org.robolectric.shadows.ShadowAlertDialog;
+import org.robolectric.shadows.ShadowEnvironment;
 import org.robolectric.shadows.ShadowLog;
 import org.robolectric.shadows.ShadowToast;
 
@@ -36,7 +39,9 @@ import static android.content.DialogInterface.BUTTON_POSITIVE;
 import static com.mopub.mobileads.MraidCommandRegistry.*;
 import static com.mopub.mobileads.MraidCommandStorePicture.MIME_TYPE_HEADER;
 import static com.mopub.mobileads.MraidVideoPlayerActivityTest.assertVideoPlayerActivityStarted;
+import static com.mopub.mobileads.util.MraidUtils.ANDROID_CALENDAR_CONTENT_TYPE;
 import static com.mopub.mobileads.util.VersionCode.ECLAIR;
+import static com.mopub.mobileads.util.VersionCode.FROYO;
 import static com.mopub.mobileads.util.VersionCode.ICE_CREAM_SANDWICH;
 import static java.io.File.separator;
 import static org.fest.assertions.api.Assertions.assertThat;
@@ -78,7 +83,7 @@ public class MraidDisplayControllerTest {
         placeholderView = mock(FrameLayout.class);
         params = new HashMap<String, String>();
 
-        resetMockMraidView();
+        resetMockMraidView(new Activity());
         stub(rootView.findViewById(eq(android.R.id.content))).toReturn(contentView);
         stub(contentView.getContext()).toReturn(new Activity());
 
@@ -88,6 +93,9 @@ public class MraidDisplayControllerTest {
         expectedFile = new File(Environment.getExternalStorageDirectory(), "Pictures" + separator + "expectedFile.jpg");
         pictureDirectory = new File(Environment.getExternalStorageDirectory(), "Pictures");
         fileWithoutExtension = new File(pictureDirectory, "file");
+
+        ShadowEnvironment.setExternalStorageState(Environment.MEDIA_MOUNTED);
+        Robolectric.getShadowApplication().grantPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE);
     }
 
     @Test
@@ -105,10 +113,9 @@ public class MraidDisplayControllerTest {
 
     @Test
     public void initializeSupportedFunctionsProperty_whenPhoneIsAvailable_shouldReportPhoneAvailable() throws Exception {
-        Robolectric.packageManager.setSystemFeature(PackageManager.FEATURE_TELEPHONY, true);
-        Robolectric.getShadowApplication().grantPermissions(Manifest.permission.CALL_PHONE);
+        Context mockContext = createMockContextWithSpecificIntentData("tel", null, null, "android.intent.action.DIAL");
 
-        resetMockMraidView();
+        resetMockMraidView(mockContext);
         subject.initializeSupportedFunctionsProperty();
 
         MraidSupportsProperty mraidSupportsProperty = captureMraidSupportProperties();
@@ -117,24 +124,10 @@ public class MraidDisplayControllerTest {
     }
 
     @Test
-    public void initializeSupportedFunctionsProperty_whenNoPhone_shouldReportPhoneNotAvailable() throws Exception {
-        Robolectric.packageManager.setSystemFeature(PackageManager.FEATURE_TELEPHONY, false);
-        Robolectric.getShadowApplication().grantPermissions(Manifest.permission.CALL_PHONE);
+    public void initializeSupportedFunctionsProperty_whenPhoneNotAvailable_shouldReportPhoneNotAvailable() throws Exception {
+        Context mockContext = createMockContextWithSpecificIntentData("", null, null, "android.intent.action.DIAL");
 
-        resetMockMraidView();
-        subject.initializeSupportedFunctionsProperty();
-
-        MraidSupportsProperty mraidSupportsProperty = captureMraidSupportProperties();
-
-        assertThat(mraidSupportsProperty.toJsonPair()).contains("tel: false");
-    }
-
-    @Test
-    public void initializeSupportedFunctionsProperty_whenPhonePermissionNotGranted_shouldReportPhoneNotAvailable() throws Exception {
-        Robolectric.packageManager.setSystemFeature(PackageManager.FEATURE_TELEPHONY, true);
-        Robolectric.getShadowApplication().denyPermissions(Manifest.permission.CALL_PHONE);
-
-        resetMockMraidView();
+        resetMockMraidView(mockContext);
         subject.initializeSupportedFunctionsProperty();
 
         MraidSupportsProperty mraidSupportsProperty = captureMraidSupportProperties();
@@ -144,10 +137,9 @@ public class MraidDisplayControllerTest {
 
     @Test
     public void initializeSupportedFunctionsProperty_whenSmsIsAvailable_shouldReportSmsAvailable() throws Exception {
-        Robolectric.packageManager.setSystemFeature(PackageManager.FEATURE_TELEPHONY, true);
-        Robolectric.getShadowApplication().grantPermissions(Manifest.permission.SEND_SMS);
+        Context mockContext = createMockContextWithSpecificIntentData("sms", null, null, "android.intent.action.VIEW");
 
-        resetMockMraidView();
+        resetMockMraidView(mockContext);
         subject.initializeSupportedFunctionsProperty();
 
         MraidSupportsProperty mraidSupportsProperty = captureMraidSupportProperties();
@@ -156,11 +148,10 @@ public class MraidDisplayControllerTest {
     }
 
     @Test
-    public void initializeSupportedFunctionsProperty_whenNoPhone_shouldReportSmsNotAvailable() throws Exception {
-        Robolectric.packageManager.setSystemFeature(PackageManager.FEATURE_TELEPHONY, false);
-        Robolectric.getShadowApplication().grantPermissions(Manifest.permission.SEND_SMS);
+    public void initializeSupportedFunctionsProperty_whenSmsNotAvailable_shouldReportSmsNotAvailable() throws Exception {
+        Context mockContext = createMockContextWithSpecificIntentData("", null, null, "android.intent.action.VIEW");
 
-        resetMockMraidView();
+        resetMockMraidView(mockContext);
         subject.initializeSupportedFunctionsProperty();
 
         MraidSupportsProperty mraidSupportsProperty = captureMraidSupportProperties();
@@ -169,28 +160,84 @@ public class MraidDisplayControllerTest {
     }
 
     @Test
-    public void initializeSupportedFunctionsProperty_whenSmsPermissionNotGranted_shouldReportSmsNotAvailable() throws Exception {
-        Robolectric.packageManager.setSystemFeature(PackageManager.FEATURE_TELEPHONY, true);
-        Robolectric.getShadowApplication().denyPermissions(Manifest.permission.SEND_SMS);
+    public void initializeSupportedFunctionsProperty_whenWriteExternalStoragePermissionNotGranted_shouldReportStorePictureNotAvailable() throws Exception {
+        Robolectric.getShadowApplication().denyPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
-        resetMockMraidView();
+        resetMockMraidView(new Activity());
         subject.initializeSupportedFunctionsProperty();
 
         MraidSupportsProperty mraidSupportsProperty = captureMraidSupportProperties();
 
-        assertThat(mraidSupportsProperty.toJsonPair()).contains("sms: false");
+        assertThat(mraidSupportsProperty.toJsonPair()).contains("storePicture: false");
     }
 
     @Test
-    public void initializeSupportedFunctionsProperty_shouldReportCalendarInlineVideoAndStorePictureAvailable() throws Exception {
-        resetMockMraidView();
+    public void initializeSupportedFunctionsProperty_whenSDCardNotMounted_shouldReportStorePictureNotAvailable() throws Exception {
+        ShadowEnvironment.setExternalStorageState(Environment.MEDIA_UNMOUNTED);
+
+        resetMockMraidView(new Activity());
+        subject.initializeSupportedFunctionsProperty();
+
+        MraidSupportsProperty mraidSupportsProperty = captureMraidSupportProperties();
+
+        assertThat(mraidSupportsProperty.toJsonPair()).contains("storePicture: false");
+    }
+
+    @Test
+    public void initializeSupportedFunctionsProperty_whenSDCardMounted_andWriteExternalStoragePermissionGranted_shouldReportStorePictureAvailable() throws Exception {
+        resetMockMraidView(new Activity());
+        subject.initializeSupportedFunctionsProperty();
+
+        MraidSupportsProperty mraidSupportsProperty = captureMraidSupportProperties();
+
+        assertThat(mraidSupportsProperty.toJsonPair()).contains("storePicture: true");
+    }
+
+    @Test
+    public void initializeSupportedFunctionsProperty_whenApiLevelICSAndAbove_shouldReportCalendarAvailable() throws Exception {
+        Context mockContext = createMockContextWithSpecificIntentData(null, null, ANDROID_CALENDAR_CONTENT_TYPE, "android.intent.action.INSERT");
+        Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", ICE_CREAM_SANDWICH.getApiLevel());
+        resetMockMraidView(mockContext);
+
         subject.initializeSupportedFunctionsProperty();
 
         MraidSupportsProperty mraidSupportsProperty = captureMraidSupportProperties();
 
         assertThat(mraidSupportsProperty.toJsonPair()).contains("calendar: true");
+    }
+
+    @Test
+    public void initializeSupportedFunctionsProperty_whenBelowApiLevelICS_shouldNotReportCalendarAvailable() throws Exception {
+        Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", FROYO.getApiLevel());
+
+        resetMockMraidView(new Activity());
+        subject.initializeSupportedFunctionsProperty();
+
+        MraidSupportsProperty mraidSupportsProperty = captureMraidSupportProperties();
+
+        assertThat(mraidSupportsProperty.toJsonPair()).contains("calendar: false");
+    }
+
+    @Test
+    public void initializeSupportedFunctionsProperty_whenMraidVideoPlayerActivityDeclared_shouldReportInlineVideoAvailable() throws Exception {
+        Context mockContext = createMockContextWithSpecificIntentData(null, "com.mopub.mobileads.MraidVideoPlayerActivity", null, null);
+
+        resetMockMraidView(mockContext);
+        subject.initializeSupportedFunctionsProperty();
+
+        MraidSupportsProperty mraidSupportsProperty = captureMraidSupportProperties();
+
         assertThat(mraidSupportsProperty.toJsonPair()).contains("inlineVideo: true");
-        assertThat(mraidSupportsProperty.toJsonPair()).contains("storePicture: true");
+    }
+
+    @Test
+    public void initializeSupportedFunctionsProperty_MraidVideoPlayerActivityNotDeclared_shouldReportInlineVideoNotAvailable() throws Exception {
+        resetMockMraidView(new Activity());
+        subject.initializeSupportedFunctionsProperty();
+
+        MraidSupportsProperty mraidSupportsProperty = captureMraidSupportProperties();
+
+        assertThat(mraidSupportsProperty.toJsonPair()).contains("inlineVideo: false");
     }
 
     @Test
@@ -233,7 +280,7 @@ public class MraidDisplayControllerTest {
 
         assertThat(shadowAlertDialog.getTitle()).isEqualTo("Save Image");
         assertThat(shadowAlertDialog.getMessage()).isEqualTo("Download image to Picture gallery?");
-        assertThat(shadowAlertDialog.isCancelable());
+        assertThat(shadowAlertDialog.isCancelable()).isTrue();
 
         assertThat(alertDialog.getButton(BUTTON_POSITIVE).hasOnClickListeners());
         assertThat(alertDialog.getButton(BUTTON_NEGATIVE)).isNotNull();
@@ -280,15 +327,53 @@ public class MraidDisplayControllerTest {
         response = new TestHttpResponseWithHeaders(200, FAKE_IMAGE_DATA);
         Robolectric.addPendingHttpResponse(response);
 
-        assertThat(ShadowToast.getLatestToast()).isNull();
+        assertThat(ShadowToast.shownToastCount()).isEqualTo(0);
 
         subject.showUserDownloadImageAlert(IMAGE_URI_VALUE);
         ThreadUtils.pause(TIME_TO_PAUSE_FOR_NETWORK);
 
-        assertThat(ShadowToast.getLatestToast()).isNotNull();
+        assertThat(ShadowToast.shownToastCount()).isEqualTo(1);
+        assertThat(ShadowToast.getTextOfLatestToast()).isEqualTo("Downloading image to Picture gallery...");
+
+        Robolectric.runUiThreadTasks();
 
         assertThat(expectedFile.exists()).isTrue();
         assertThat(expectedFile.length()).isEqualTo(FAKE_IMAGE_DATA.length());
+    }
+
+    @Test
+    public void showUserDownloadImageAlert_withAppContext_whenDownloadImageFails_shouldDisplayFailureToastAndNotDownloadImage() throws Exception {
+        stub(mraidView.getContext()).toReturn(Robolectric.application);
+        subject = new TestMraidDisplayController(mraidView, null, null);
+        response = new TestHttpResponseWithHeaders(200, FAKE_IMAGE_DATA);
+        Robolectric.addPendingHttpResponse(response);
+
+        assertThat(ShadowToast.shownToastCount()).isEqualTo(0);
+
+        subject.showUserDownloadImageAlert("this is an invalid image url and cannot be downloaded");
+        ThreadUtils.pause(TIME_TO_PAUSE_FOR_NETWORK);
+
+        assertThat(ShadowToast.shownToastCount()).isEqualTo(1);
+        assertThat(ShadowToast.getTextOfLatestToast()).isEqualTo("Downloading image to Picture gallery...");
+
+        Robolectric.runUiThreadTasks();
+
+        assertThat(ShadowToast.shownToastCount()).isEqualTo(2);
+        assertThat(ShadowToast.getTextOfLatestToast()).isEqualTo("Image failed to download.");
+
+        assertThat(expectedFile.exists()).isFalse();
+        assertThat(expectedFile.length()).isEqualTo(0);
+    }
+
+    @Test
+    public void showUserDownloadImageAlert_whenStorePictureNotSupported_shouldFireErrorEvent_andNotToastNorAlertDialog() throws Exception {
+        Robolectric.getShadowApplication().denyPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        subject.showUserDownloadImageAlert("http://image.jpg");
+
+        assertThat(ShadowToast.shownToastCount()).isEqualTo(0);
+        assertThat(ShadowAlertDialog.getLatestAlertDialog()).isNull();
+        verify(mraidView).fireErrorEvent(eq(MRAID_JAVASCRIPT_COMMAND_STORE_PICTURE), any(String.class));
     }
 
     @Test
@@ -358,7 +443,7 @@ public class MraidDisplayControllerTest {
 
     @Test
     public void getCurrentPosition_shouldFireErrorEvent() throws Exception {
-        resetMockMraidView();
+        resetMockMraidView(new Activity());
 
         subject.getCurrentPosition();
 
@@ -367,7 +452,7 @@ public class MraidDisplayControllerTest {
 
     @Test
     public void getDefaultPosition_shouldFireErrorEvent() throws Exception {
-        resetMockMraidView();
+        resetMockMraidView(new Activity());
 
         subject.getDefaultPosition();
 
@@ -376,7 +461,7 @@ public class MraidDisplayControllerTest {
 
     @Test
     public void getMaxSize_shouldFireErrorEvent() throws Exception {
-        resetMockMraidView();
+        resetMockMraidView(new Activity());
 
         subject.getMaxSize();
 
@@ -384,7 +469,7 @@ public class MraidDisplayControllerTest {
     }
     @Test
     public void getScreenSize_shouldFireErrorEvent() throws Exception {
-        resetMockMraidView();
+        resetMockMraidView(new Activity());
 
         subject.getScreenSize();
 
@@ -401,7 +486,7 @@ public class MraidDisplayControllerTest {
 
         Intent intent = Robolectric.getShadowApplication().getNextStartedActivity();
 
-        assertThat(intent.getType()).isEqualTo("vnd.android.cursor.item/event");
+        assertThat(intent.getType()).isEqualTo(ANDROID_CALENDAR_CONTENT_TYPE);
         assertThat(intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK).isNotEqualTo(0);
         assertThat(intent.getStringExtra(CalendarContract.Events.TITLE)).isNotNull();
         assertThat(intent.getLongExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, -1)).isNotEqualTo(-1);
@@ -415,7 +500,7 @@ public class MraidDisplayControllerTest {
         subject.createCalendarEvent(params);
 
         Intent intent = Robolectric.getShadowApplication().getNextStartedActivity();
-        assertThat(intent.getType()).isEqualTo("vnd.android.cursor.item/event");
+        assertThat(intent.getType()).isEqualTo(ANDROID_CALENDAR_CONTENT_TYPE);
         assertThat(intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK).isNotEqualTo(0);
         assertThat(intent.getStringExtra(CalendarContract.Events.RRULE)).isEqualTo("FREQ=DAILY;");
     }
@@ -573,7 +658,7 @@ public class MraidDisplayControllerTest {
 
     @Test
     public void createCalendarEvent_onPreICSDevice_shouldFireErrorEvent() throws Exception {
-        resetMockMraidView();
+        resetMockMraidView(new Activity());
         Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", ECLAIR.getApiLevel());
 
         subject.createCalendarEvent(params);
@@ -583,7 +668,7 @@ public class MraidDisplayControllerTest {
 
     @Test
     public void createCalendarEvent_withInvalidDate_shouldFireErrorEvent() throws Exception {
-        resetMockMraidView();
+        resetMockMraidView(new Activity());
         Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", ICE_CREAM_SANDWICH.getApiLevel());
         params.put("start", "2013-08-14T09:00.-08:00");
         params.put("description", "Some Event");
@@ -595,7 +680,7 @@ public class MraidDisplayControllerTest {
 
     @Test
     public void createCalendarEvent_withMissingParameters_shouldFireErrorEvent() throws Exception {
-        resetMockMraidView();
+        resetMockMraidView(new Activity());
         Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", ICE_CREAM_SANDWICH.getApiLevel());
         //it needs a start time
         params.put("description", "Some Event");
@@ -607,7 +692,7 @@ public class MraidDisplayControllerTest {
 
     @Test
     public void createCalendarEvent_withNullDate_shouldFireErrorEvent() throws Exception {
-        resetMockMraidView();
+        resetMockMraidView(new Activity());
         Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", ICE_CREAM_SANDWICH.getApiLevel());
         params.put("start", null);
         params.put("description", "Some Event");
@@ -629,7 +714,7 @@ public class MraidDisplayControllerTest {
 
         Intent intent = Robolectric.getShadowApplication().getNextStartedActivity();
 
-        assertThat(intent.getType()).isEqualTo("vnd.android.cursor.item/event");
+        assertThat(intent.getType()).isEqualTo(ANDROID_CALENDAR_CONTENT_TYPE);
         assertThat(intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK).isNotEqualTo(0);
         assertThat(intent.getStringExtra(CalendarContract.Events.TITLE)).isNotNull();
         assertThat(intent.getStringExtra(CalendarContract.Events.DESCRIPTION)).isNotNull();
@@ -639,9 +724,9 @@ public class MraidDisplayControllerTest {
         assertThat(intent.getIntExtra(CalendarContract.Events.AVAILABILITY, -1)).isEqualTo(CalendarContract.Events.AVAILABILITY_FREE);
     }
 
-    private void resetMockMraidView() {
+    private void resetMockMraidView(Context context) {
         reset(mraidView);
-        stub(mraidView.getContext()).toReturn(new Activity());
+        stub(mraidView.getContext()).toReturn(context);
         when(mraidView.getParent()).thenReturn(moPubView).thenReturn(null);
         stub(mraidView.getRootView()).toReturn(rootView);
     }
@@ -674,14 +759,31 @@ public class MraidDisplayControllerTest {
         assertThat(fileWithoutExtension.exists()).isFalse();
     }
 
-
     private void setupCalendarParams() {
-        resetMockMraidView();
+        //we need mock Context so that we can validate that isCalendarAvailable() is true
+        Context mockContext = createMockContextWithSpecificIntentData(null, null, ANDROID_CALENDAR_CONTENT_TYPE, "android.intent.action.INSERT");
+
+        //but a mock context does't know how to startActivity(), so we stub it to use ShadowContext for starting activity
+        doAnswer(new Answer<Void>() {
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                if (!(invocation.getArguments()[0] instanceof Intent)) {
+                    throw new ClassCastException("For some reason you are not passing the calendar intent properly");
+                }
+                Context shadowContext = Robolectric.getShadowApplication().getApplicationContext();
+                shadowContext.startActivity((Intent) invocation.getArguments()[0]);
+                return null;
+            }
+        }).when(mockContext).startActivity(any(Intent.class));
+
+        resetMockMraidView(mockContext);
         Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", ICE_CREAM_SANDWICH.getApiLevel());
         params.put("description", "Some Event");
         params.put("start", CALENDAR_START_TIME);
     }
 
+    private Context createMockContextWithSpecificIntentData(final String scheme, final String componentName, final String type, final String action) {
+        return MraidUtilsTest.createMockContextWithSpecificIntentData(scheme, componentName, type, action);
+    }
 
     private class TestMraidDisplayController extends MraidDisplayController {
         public TestMraidDisplayController(MraidView mraidView, MraidView.ExpansionStyle expStyle,

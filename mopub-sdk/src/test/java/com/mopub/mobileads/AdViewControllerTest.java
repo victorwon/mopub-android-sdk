@@ -234,7 +234,8 @@ public class AdViewControllerTest {
                 "&sc_a=1.0" +
                 "&mr=1" +
                 "&ct=3" +
-                "&av=1.0";
+                "&av=1.0" +
+                "&android_perms_ext_storage=0";
 
         String adUrl = subject.generateAdUrl();
 
@@ -378,6 +379,28 @@ public class AdViewControllerTest {
         assertThat(layoutParams.width).isEqualTo(320);
         assertThat(layoutParams.height).isEqualTo(50);
         assertThat(layoutParams.gravity).isEqualTo(Gravity.CENTER);
+    }
+
+    @Test
+    public void setAdContentView_whenCalledAfterCleanUp_shouldNotRemoveViewsAndAddView() throws Exception {
+        response.addHeader("X-Width", "320");
+        response.addHeader("X-Height", "50");
+        final View view = mock(View.class);
+        AdViewController.setShouldHonorServerDimensions(view);
+        subject.configureUsingHttpResponse(response);
+
+        subject.cleanup();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                subject.setAdContentView(view);
+            }
+        }).start();
+        ThreadUtils.pause(10);
+        Robolectric.runUiThreadTasks();
+
+        verify(moPubView, never()).removeAllViews();
+        verify(moPubView, never()).addView(any(View.class), any(FrameLayout.LayoutParams.class));
     }
 
     @Test

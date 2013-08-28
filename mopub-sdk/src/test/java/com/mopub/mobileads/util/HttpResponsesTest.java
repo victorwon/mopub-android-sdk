@@ -1,11 +1,14 @@
 package com.mopub.mobileads.util;
 
+import com.mopub.mobileads.test.support.SdkTestRunner;
 import com.mopub.mobileads.test.support.TestHttpResponseWithHeaders;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
+@RunWith(SdkTestRunner.class)
 public class HttpResponsesTest {
 
     private TestHttpResponseWithHeaders response;

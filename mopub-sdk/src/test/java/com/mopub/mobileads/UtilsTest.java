@@ -1,14 +1,24 @@
 package com.mopub.mobileads;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.net.Uri;
 import com.mopub.mobileads.test.support.SdkTestRunner;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.fest.assertions.api.Assertions.assertThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.stub;
 
 @RunWith(SdkTestRunner.class)
 public class UtilsTest {
@@ -72,5 +82,41 @@ public class UtilsTest {
     public void mapToJsonString_whenMapIsNull_shouldReturnEmptyJson() throws Exception {
         String expectedJson = "{}";
         assertThat(Utils.mapToJsonString(null)).isEqualTo(expectedJson);
+    }
+
+    @Test
+    public void deviceCanHandleIntent_whenActivityCanResolveIntent_shouldReturnTrue() throws Exception {
+        Context context = mock(Context.class);
+        PackageManager packageManager = mock(PackageManager.class);
+
+        List<ResolveInfo> resolveInfos = new ArrayList<ResolveInfo>();
+        resolveInfos.add(new ResolveInfo());
+
+        stub(context.getPackageManager()).toReturn(packageManager);
+        Intent specificIntent = new Intent();
+        specificIntent.setData(Uri.parse("specificIntent:"));
+
+        stub(packageManager.queryIntentActivities(eq(specificIntent), eq(0))).toReturn(resolveInfos);
+
+        assertThat(Utils.deviceCanHandleIntent(context, specificIntent)).isTrue();
+    }
+
+    @Test
+    public void deviceCanHandleIntent_whenActivityCanNotResolveIntent_shouldReturnFalse() throws Exception {
+        Context context = mock(Context.class);
+        PackageManager packageManager = mock(PackageManager.class);
+
+        List<ResolveInfo> resolveInfos = new ArrayList<ResolveInfo>();
+        resolveInfos.add(new ResolveInfo());
+
+        stub(context.getPackageManager()).toReturn(packageManager);
+        Intent specificIntent = new Intent();
+        specificIntent.setData(Uri.parse("specificIntent:"));
+
+        Intent otherIntent = new Intent();
+        otherIntent.setData(Uri.parse("other:"));
+        stub(packageManager.queryIntentActivities(eq(specificIntent), eq(0))).toReturn(resolveInfos);
+
+        assertThat(Utils.deviceCanHandleIntent(context, otherIntent)).isFalse();
     }
 }

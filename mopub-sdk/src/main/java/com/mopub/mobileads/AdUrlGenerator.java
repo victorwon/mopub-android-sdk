@@ -18,6 +18,7 @@ import static com.mopub.mobileads.AdUrlGenerator.MoPubNetworkType.ETHERNET;
 import static com.mopub.mobileads.AdUrlGenerator.MoPubNetworkType.MOBILE;
 import static com.mopub.mobileads.AdUrlGenerator.MoPubNetworkType.UNKNOWN;
 import static com.mopub.mobileads.AdUrlGenerator.MoPubNetworkType.WIFI;
+import static com.mopub.mobileads.util.MraidUtils.isStorePictureSupported;
 
 public class AdUrlGenerator extends BaseUrlGenerator {
     public static final String DEVICE_ORIENTATION_PORTRAIT = "p";
@@ -100,6 +101,8 @@ public class AdUrlGenerator extends BaseUrlGenerator {
         setNetworkType(getActiveNetworkType());
 
         setAppVersion(getAppVersionFromContext(mContext));
+
+        setExternalStoragePermission(isStorePictureSupported(mContext));
 
         return getFinalUrlString();
     }
@@ -246,4 +249,5 @@ public class AdUrlGenerator extends BaseUrlGenerator {
             return keywords + "," + addition;
         }
     }
+
 }

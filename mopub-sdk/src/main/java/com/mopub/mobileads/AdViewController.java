@@ -155,6 +155,7 @@ public class AdViewController {
 
         if (mLocation == null) mLocation = getLastKnownLocation();
 
+        // tested (remove me when the rest of this is tested)
         String adUrl = generateAdUrl();
         loadNonJavascript(adUrl);
     }
@@ -460,8 +461,12 @@ public class AdViewController {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
-                getMoPubView().removeAllViews();
-                getMoPubView().addView(view, getAdLayoutParams(view));
+                MoPubView moPubView = getMoPubView();
+                if(moPubView == null) {
+                    return;
+                }
+                moPubView.removeAllViews();
+                moPubView.addView(view, getAdLayoutParams(view));
             }
         });
     }

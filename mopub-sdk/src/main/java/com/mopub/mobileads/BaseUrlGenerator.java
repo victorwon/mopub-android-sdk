@@ -49,6 +49,10 @@ public abstract class BaseUrlGenerator {
         addParam("av", appVersion);
     }
 
+    protected void setExternalStoragePermission(boolean isExternalStoragePermissionGranted) {
+        addParam("android_perms_ext_storage", isExternalStoragePermissionGranted ? "1" : "0");
+    }
+
     protected void setUdid(String udid) {
         String udidDigest = (udid == null) ? "" : Utils.sha1(udid);
         addParam("udid", "sha:" + udidDigest);

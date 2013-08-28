@@ -37,7 +37,7 @@ public class HtmlBannerWebViewFactory {
     }
 
     public HtmlBannerWebView internalCreate(CustomEventBannerListener customEventBannerListener, boolean isScrollable, String redirectUrl, String clickthroughUrl) {
-        return instance.mHtmlBannerWebViewPool.getNextHtmlWebView(customEventBannerListener, isScrollable, clickthroughUrl, redirectUrl);
+        return instance.mHtmlBannerWebViewPool.getNextHtmlWebView(customEventBannerListener, isScrollable, redirectUrl, clickthroughUrl);
     }
 
     @Deprecated // for testing

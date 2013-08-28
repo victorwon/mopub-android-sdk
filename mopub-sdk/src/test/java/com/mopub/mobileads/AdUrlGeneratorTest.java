@@ -69,7 +69,7 @@ public class AdUrlGeneratorTest {
 
     @Test
     public void generateAdUrl_shouldIncludeAllFields() throws Exception {
-        String expectedAdUrl = new AdUrlBuilder(expectedUdidSha)
+        final String expectedAdUrl = new AdUrlBuilder(expectedUdidSha)
                 .withAdUnitId("adUnitId")
                 .withQuery("key%3Avalue")
                 .withLatLon("20.1%2C30.0", "1")
@@ -77,6 +77,7 @@ public class AdUrlGeneratorTest {
                 .withMnc("456")
                 .withCountryIso("expected%20country")
                 .withCarrierName("expected%20carrier")
+                .withExternalStoragePermission(false)
                 .build();
 
         shadowTelephonyManager.setNetworkOperator("123456");
@@ -236,6 +237,7 @@ public class AdUrlGeneratorTest {
         private String countryIso = "";
         private String carrierName = "";
         private MoPubNetworkType networkType = MoPubNetworkType.MOBILE;
+        private int externalStoragePermission;
 
         public AdUrlBuilder(String expectedUdidSha) {
             this.expectedUdidSha = expectedUdidSha;
@@ -258,7 +260,8 @@ public class AdUrlGeneratorTest {
                     paramIfNotEmpty("iso", countryIso) +
                     paramIfNotEmpty("cn", carrierName) +
                     "&ct=" + networkType +
-                    "&av=1.0";
+                    "&av=1.0" +
+                    "&android_perms_ext_storage=" + externalStoragePermission;
         }
 
         public AdUrlBuilder withAdUnitId(String adUnitId) {
@@ -299,6 +302,11 @@ public class AdUrlGeneratorTest {
 
         public AdUrlBuilder withNetworkType(MoPubNetworkType networkType) {
             this.networkType = networkType;
+            return this;
+        }
+
+        public AdUrlBuilder withExternalStoragePermission(boolean enabled) {
+            this.externalStoragePermission = enabled ? 1 : 0;
             return this;
         }
 
