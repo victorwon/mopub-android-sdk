@@ -17,6 +17,9 @@ To allow users to play videos using the native video player:
 ### Version 1.15.1 (Aug 27, 2013)
   - Updated documentation to remove the requirement for certain AndroidManifest permissions.
   - Fixed minor bug with mraid 2.0 `storePicture` command where the user sees a false download completed message.
+  
+### Version 1.15.1.1 (Sep 4, 2013)
+  - Made the SDK more resilient to unexpected Flash creatives.
 
 ## Version 1.14 (May 28, 2013)
 

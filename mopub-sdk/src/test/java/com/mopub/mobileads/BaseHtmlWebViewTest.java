@@ -9,6 +9,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.shadows.ShadowWebView;
 
+import static android.webkit.WebSettings.PluginState;
 import static com.mopub.mobileads.util.VersionCode.HONEYCOMB_MR2;
 import static com.mopub.mobileads.util.VersionCode.ICE_CREAM_SANDWICH;
 import static org.fest.assertions.api.Assertions.assertThat;
@@ -27,11 +28,12 @@ public class BaseHtmlWebViewTest {
     @Test
     public void shouldEnablePluginsBasedOnApiLevel() throws Exception {
         Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", ICE_CREAM_SANDWICH.getApiLevel());
-        assertThat(subject.getSettings().getPluginsEnabled()).isFalse();
+        subject = new BaseHtmlWebView(new Activity());
+        assertThat(subject.getSettings().getPluginState()).isEqualTo(PluginState.ON);
 
         Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", HONEYCOMB_MR2.getApiLevel());
         subject = new BaseHtmlWebView(new Activity());
-        assertThat(subject.getSettings().getPluginsEnabled()).isFalse();
+        assertThat(subject.getSettings().getPluginState()).isEqualTo(PluginState.OFF);
     }
 
     @Test

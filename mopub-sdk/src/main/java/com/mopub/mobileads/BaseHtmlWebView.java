@@ -17,7 +17,7 @@ public class BaseHtmlWebView extends BaseWebView {
         getSettings().setJavaScriptEnabled(true);
 
         if (currentApiLevel().isAtLeast(ICE_CREAM_SANDWICH)) {
-            getSettings().setPluginsEnabled(true);
+            enablePlugins(true);
         }
         setBackgroundColor(Color.TRANSPARENT);
     }
