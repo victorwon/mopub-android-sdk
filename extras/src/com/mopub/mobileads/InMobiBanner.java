@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /*
- * Tested with InMobi SDK 3.6.2.
+ * Tested with InMobi SDK 3.7.0.
  */
 class InMobiBanner extends CustomEventBanner implements IMAdListener {
     private CustomEventBannerListener mBannerListener;

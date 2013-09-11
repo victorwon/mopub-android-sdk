@@ -36,6 +36,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.location.Location;
 import android.util.Log;
+
 import com.mopub.mobileads.MoPubView.LocationAwareness;
 import com.mopub.mobileads.factories.CustomEventInterstitialAdapterFactory;
 
@@ -133,6 +134,10 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
         if (mCustomEventInterstitialAdapter != null) mCustomEventInterstitialAdapter.showInterstitial();
     }
 
+    Integer getAdTimeoutDelay() {
+        return mInterstitialView.getAdTimeoutDelay();
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     public void setKeywords(String keywords) {
@@ -141,6 +146,14 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
 
     public String getKeywords() {
         return mInterstitialView.getKeywords();
+    }
+
+    public void setFacebookSupported(boolean enabled) {
+        mInterstitialView.setFacebookSupported(enabled);
+    }
+
+    public boolean isFacebookSupported() {
+        return mInterstitialView.isFacebookSupported();
     }
 
     public Activity getActivity() {

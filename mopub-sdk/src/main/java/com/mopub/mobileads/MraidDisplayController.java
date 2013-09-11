@@ -37,7 +37,6 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.security.InvalidParameterException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -56,7 +55,10 @@ class MraidDisplayController extends MraidAbstractController {
     private static final String LOGTAG = "MraidDisplayController";
     private static final long VIEWABILITY_TIMER_MILLIS = 3000;
     private static final int CLOSE_BUTTON_SIZE_DP = 50;
-    private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZZZZZ";
+    private static final String[] DATE_FORMATS = {
+            "yyyy-MM-dd'T'HH:mm:ssZZZZZ",
+            "yyyy-MM-dd'T'HH:mmZZZZZ"
+    };
     private static final int MAX_NUMBER_DAYS_IN_MONTH = 31;
 
     // The view's current state.
@@ -447,24 +449,31 @@ class MraidDisplayController extends MraidAbstractController {
     }
 
     private Map<String, Object> translateJSParamsToAndroidCalendarEventMapping(Map<String, String> params) throws Exception {
-        SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
         Map<String, Object> validatedParamsMapping = new HashMap<String, Object>();
         if (!params.containsKey("description") || !params.containsKey("start")) {
-            throw new InvalidParameterException("missing start and description fields");
+            throw new IllegalArgumentException("Missing start and description fields");
         }
 
         validatedParamsMapping.put(CalendarContract.Events.TITLE, params.get("description"));
-        try {
-            Date date = dateFormat.parse(params.get("start"));
-            validatedParamsMapping.put(CalendarContract.EXTRA_EVENT_BEGIN_TIME, date.getTime());
-            if(params.containsKey("end")) {
-                date = dateFormat.parse(params.get("end"));
-                validatedParamsMapping.put(CalendarContract.EXTRA_EVENT_END_TIME, date.getTime());
+
+        if (params.containsKey("start") && params.get("start") != null) {
+            Date startDateTime = parseDate(params.get("start"));
+            if (startDateTime != null) {
+                validatedParamsMapping.put(CalendarContract.EXTRA_EVENT_BEGIN_TIME, startDateTime.getTime());
+            } else {
+                throw new IllegalArgumentException("Invalid calendar event: start time is malformed. Date format expecting (yyyy-MM-DDTHH:MM:SS-xx:xx) or (yyyy-MM-DDTHH:MM-xx:xx) i.e. 2013-08-14T09:00:01-08:00");
             }
-        } catch (ParseException pe) {
-            throw new InvalidParameterException("Invalid date format. Date format expecting (yyyy-MM-DDTHH:MM:SS-xx:xx) i.e. 2013-08-14T09:00:00-08:00");
-        } catch (NullPointerException npe) {
-            throw new InvalidParameterException("invalid calendar event: start or end is null");
+        } else {
+            throw new IllegalArgumentException("Invalid calendar event: start is null.");
+        }
+
+        if (params.containsKey("end") && params.get("end") != null) {
+            Date endDateTime = parseDate(params.get("end"));
+            if (endDateTime != null) {
+                validatedParamsMapping.put(CalendarContract.EXTRA_EVENT_END_TIME, endDateTime.getTime());
+            } else {
+                throw new IllegalArgumentException("Invalid calendar event: end time is malformed. Date format expecting (yyyy-MM-DDTHH:MM:SS-xx:xx) or (yyyy-MM-DDTHH:MM-xx:xx) i.e. 2013-08-14T09:00:01-08:00");
+            }
         }
 
         if (params.containsKey("location")) {
@@ -487,6 +496,21 @@ class MraidDisplayController extends MraidAbstractController {
         validatedParamsMapping.put(CalendarContract.Events.RRULE, parseRecurrenceRule(params));
 
         return validatedParamsMapping;
+    }
+
+    private Date parseDate(String dateTime) {
+        Date result = null;
+        for (int i=0; i<DATE_FORMATS.length; i++) {
+            try {
+                result = new SimpleDateFormat(DATE_FORMATS[i]).parse(dateTime);
+                if (result != null) {
+                    break;
+                }
+            } catch (ParseException e) {
+                // an exception is okay, just try the next format and find the first one that works
+            }
+        }
+        return result;
     }
 
     private String parseRecurrenceRule(Map<String, String> params) throws IllegalArgumentException {
@@ -533,7 +557,7 @@ class MraidDisplayController extends MraidAbstractController {
         return rule.toString();
     }
 
-    private String translateWeekIntegersToDays(String expression) throws InvalidParameterException{
+    private String translateWeekIntegersToDays(String expression) throws IllegalArgumentException{
         StringBuilder daysResult = new StringBuilder();
         boolean[] daysAlreadyCounted = new boolean[7];
         String[] days = expression.split(",");
@@ -547,13 +571,13 @@ class MraidDisplayController extends MraidAbstractController {
             }
         }
         if (days.length == 0) {
-            throw new InvalidParameterException("must have at least 1 day of the week if specifying repeating weekly");
+            throw new IllegalArgumentException("must have at least 1 day of the week if specifying repeating weekly");
         }
         daysResult.deleteCharAt(daysResult.length()-1);
         return daysResult.toString();
     }
 
-    private String translateMonthIntegersToDays(String expression) throws InvalidParameterException {
+    private String translateMonthIntegersToDays(String expression) throws IllegalArgumentException {
         StringBuilder daysResult = new StringBuilder();
         boolean[] daysAlreadyCounted = new boolean[2*MAX_NUMBER_DAYS_IN_MONTH +1]; //for -31 to 31
         String[] days = expression.split(",");
@@ -566,13 +590,13 @@ class MraidDisplayController extends MraidAbstractController {
             }
         }
         if (days.length == 0) {
-            throw new InvalidParameterException("must have at least 1 day of the month if specifying repeating weekly");
+            throw new IllegalArgumentException("must have at least 1 day of the month if specifying repeating weekly");
         }
         daysResult.deleteCharAt(daysResult.length() - 1);
         return daysResult.toString();
     }
 
-    private String dayNumberToDayOfWeekString(int number) throws InvalidParameterException {
+    private String dayNumberToDayOfWeekString(int number) throws IllegalArgumentException {
         String dayOfWeek;
         switch(number) {
             case 0: dayOfWeek="SU"; break;
@@ -582,18 +606,18 @@ class MraidDisplayController extends MraidAbstractController {
             case 4: dayOfWeek="TH"; break;
             case 5: dayOfWeek="FR"; break;
             case 6: dayOfWeek="SA"; break;
-            default: throw new InvalidParameterException("invalid day of week " + number);
+            default: throw new IllegalArgumentException("invalid day of week " + number);
         }
         return dayOfWeek;
     }
 
-    private String dayNumberToDayOfMonthString(int number) throws InvalidParameterException {
+    private String dayNumberToDayOfMonthString(int number) throws IllegalArgumentException {
         String dayOfMonth;
         // https://android.googlesource.com/platform/frameworks/opt/calendar/+/504844526f1b7afec048c6d2976ffb332670d5ba/src/com/android/calendarcommon2/EventRecurrence.java
         if (number != 0 && number >= -MAX_NUMBER_DAYS_IN_MONTH && number <= MAX_NUMBER_DAYS_IN_MONTH) {
             dayOfMonth = "" + number;
         } else {
-            throw new InvalidParameterException("invalid day of month " + number);
+            throw new IllegalArgumentException("invalid day of month " + number);
         }
         return dayOfMonth;
     }

@@ -66,6 +66,7 @@ public class AdFetcher {
     public static final String FULL_AD_TYPE_HEADER = "X-Fulladtype";
     public static final String REDIRECT_URL_HEADER = "X-Launchpage";
     public static final String CLICKTHROUGH_URL_HEADER = "X-Clickthrough";
+    public static final String AD_TIMEOUT_HEADER = "X-AdTimeout";
     public static final String SCROLLABLE_HEADER = "X-Scrollable";
 
     public static final String HTML_RESPONSE_BODY_KEY = "Html-Response-Body";

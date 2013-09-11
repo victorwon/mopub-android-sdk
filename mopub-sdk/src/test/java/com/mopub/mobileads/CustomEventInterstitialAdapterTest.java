@@ -39,6 +39,8 @@ public class CustomEventInterstitialAdapterTest {
     @Before
     public void setUp() throws Exception {
         moPubInterstitial = mock(MoPubInterstitial.class);
+        stub(moPubInterstitial.getAdTimeoutDelay()).toReturn(null);
+
         subject = new CustomEventInterstitialAdapter(moPubInterstitial, CLASS_NAME, JSON_PARAMS);
 
         expectedLocalExtras = new HashMap<String, Object>();
@@ -51,9 +53,37 @@ public class CustomEventInterstitialAdapterTest {
     }
 
     @Test
-    public void timeout_shouldSignalFailureAndInvalidate() throws Exception {
+    public void timeout_shouldSignalFailureAndInvalidateWithDefaultDelay() throws Exception {
         subject.loadInterstitial();
-        Robolectric.idleMainLooper(CustomEventInterstitialAdapter.TIMEOUT_DELAY - 1);
+        Robolectric.idleMainLooper(CustomEventInterstitialAdapter.DEFAULT_INTERSTITIAL_TIMEOUT_DELAY - 1);
+        verify(interstitialAdapterListener, never()).onCustomEventInterstitialFailed(eq(NETWORK_TIMEOUT));
+        assertThat(subject.isInvalidated()).isFalse();
+
+        Robolectric.idleMainLooper(1);
+        verify(interstitialAdapterListener).onCustomEventInterstitialFailed(eq(NETWORK_TIMEOUT));
+        assertThat(subject.isInvalidated()).isTrue();
+    }
+
+    @Test
+    public void timeout_withNegativeAdTimeoutDelay_shouldSignalFailureAndInvalidateWithDefaultDelay() throws Exception {
+        stub(moPubInterstitial.getAdTimeoutDelay()).toReturn(-1);
+
+        subject.loadInterstitial();
+        Robolectric.idleMainLooper(CustomEventInterstitialAdapter.DEFAULT_INTERSTITIAL_TIMEOUT_DELAY - 1);
+        verify(interstitialAdapterListener, never()).onCustomEventInterstitialFailed(eq(NETWORK_TIMEOUT));
+        assertThat(subject.isInvalidated()).isFalse();
+
+        Robolectric.idleMainLooper(1);
+        verify(interstitialAdapterListener).onCustomEventInterstitialFailed(eq(NETWORK_TIMEOUT));
+        assertThat(subject.isInvalidated()).isTrue();
+    }
+
+    @Test
+    public void timeout_withNonNullAdTimeoutDelay_shouldSignalFailureAndInvalidateWithCustomDelay() throws Exception {
+        stub(moPubInterstitial.getAdTimeoutDelay()).toReturn(77);
+
+        subject.loadInterstitial();
+        Robolectric.idleMainLooper(77000 - 1);
         verify(interstitialAdapterListener, never()).onCustomEventInterstitialFailed(eq(NETWORK_TIMEOUT));
         assertThat(subject.isInvalidated()).isFalse();
 

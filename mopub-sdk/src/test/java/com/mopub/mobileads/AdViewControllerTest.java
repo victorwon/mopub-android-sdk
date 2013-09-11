@@ -25,6 +25,8 @@ import org.robolectric.tester.org.apache.http.FakeHttpLayer;
 import java.lang.reflect.InvocationTargetException;
 
 import static android.Manifest.permission.ACCESS_NETWORK_STATE;
+import static com.mopub.mobileads.AdViewController.DEFAULT_REFRESH_TIME_MILLISECONDS;
+import static com.mopub.mobileads.AdViewController.MINIMUM_REFRESH_TIME_MILLISECONDS;
 import static com.mopub.mobileads.MoPubErrorCode.INTERNAL_ERROR;
 import static com.mopub.mobileads.MoPubErrorCode.NO_FILL;
 import static org.fest.assertions.api.Assertions.assertThat;
@@ -72,6 +74,7 @@ public class AdViewControllerTest {
         response.addHeader("X-Clickthrough", "clickthrough url");
         response.addHeader("X-Width", "320  ");
         response.addHeader("X-Height", "  50");
+        response.addHeader("X-AdTimeout", "  12  ");
         response.addHeader("X-Refreshtime", "70");
 
         subject.configureUsingHttpResponse(response);
@@ -80,7 +83,32 @@ public class AdViewControllerTest {
         assertThat(subject.getClickthroughUrl()).isEqualTo("clickthrough url");
         assertThat(subject.getAdWidth()).isEqualTo(320);
         assertThat(subject.getAdHeight()).isEqualTo(50);
+        assertThat(subject.getAdTimeoutDelay()).isEqualTo(12);
         assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(70000);
+    }
+
+    @Test
+    public void configureUsingHttpResponse_withFloatTimeoutDelay_shouldTruncateTimeoutDelay() throws Exception {
+        response.addHeader("X-AdTimeout", "3.14");
+        subject.configureUsingHttpResponse(response);
+        assertThat(subject.getAdTimeoutDelay()).isEqualTo(3);
+
+        response = new TestHttpResponseWithHeaders(200, "I ain't got no-body");
+        response.addHeader("X-AdTimeout", "-3.14");
+        subject.configureUsingHttpResponse(response);
+        assertThat(subject.getAdTimeoutDelay()).isEqualTo(-3);
+    }
+
+    @Test
+    public void configureUsingHttpResponse_withInvalidTimeoutDelay_shouldSetAdTimeoutDelayToNull() throws Exception {
+        // no X-AdTimeout header
+        subject.configureUsingHttpResponse(response);
+        assertThat(subject.getAdTimeoutDelay()).isNull();
+
+        response = new TestHttpResponseWithHeaders(200, "I ain't got no-body");
+        response.addHeader("X-AdTimeout", "not a number, i promise");
+        subject.configureUsingHttpResponse(response);
+        assertThat(subject.getAdTimeoutDelay()).isNull();
     }
 
     @Test
@@ -88,7 +116,7 @@ public class AdViewControllerTest {
         response.addHeader("X-Refreshtime", "0");
 
         subject.configureUsingHttpResponse(response);
-        assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(10000);
+        assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(MINIMUM_REFRESH_TIME_MILLISECONDS);
     }
 
     @Test
@@ -96,7 +124,7 @@ public class AdViewControllerTest {
         response.addHeader("X-Refreshtime", "5");
         subject.configureUsingHttpResponse(response);
 
-        assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(10000);
+        assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(MINIMUM_REFRESH_TIME_MILLISECONDS);
         response = new TestHttpResponseWithHeaders(200, "I ain't got no-body");
         // no X-Refreshtime header
         subject.configureUsingHttpResponse(response);
@@ -131,6 +159,21 @@ public class AdViewControllerTest {
 
         subject.scheduleRefreshTimerIfEnabled();
 
+        assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(0);
+    }
+
+    @Test
+    public void scheduleRefreshTimer_whenAdViewControllerNotConfiguredByResponse_shouldHaveDefaultRefreshTime() throws Exception {
+        Robolectric.pauseMainLooper();
+        assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(0);
+
+        subject.scheduleRefreshTimerIfEnabled();
+        assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(1);
+
+        Robolectric.idleMainLooper(DEFAULT_REFRESH_TIME_MILLISECONDS - 1);
+        assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(1);
+
+        Robolectric.idleMainLooper(1);
         assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(0);
     }
 

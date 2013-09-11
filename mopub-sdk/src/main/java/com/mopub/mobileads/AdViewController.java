@@ -60,13 +60,16 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 import static android.Manifest.permission.ACCESS_NETWORK_STATE;
+import static com.mopub.mobileads.AdFetcher.AD_TIMEOUT_HEADER;
 import static com.mopub.mobileads.AdFetcher.CLICKTHROUGH_URL_HEADER;
 import static com.mopub.mobileads.AdFetcher.REDIRECT_URL_HEADER;
 import static com.mopub.mobileads.util.HttpResponses.extractHeader;
 import static com.mopub.mobileads.util.HttpResponses.extractIntHeader;
+import static com.mopub.mobileads.util.HttpResponses.extractIntegerHeader;
 
 public class AdViewController {
-    private static final int MINIMUM_REFRESH_TIME_MILLISECONDS = 10000;
+    static final int MINIMUM_REFRESH_TIME_MILLISECONDS = 10000;
+    static final int DEFAULT_REFRESH_TIME_MILLISECONDS = 60000;
     private static final FrameLayout.LayoutParams WRAP_AND_CENTER_LAYOUT_PARAMS =
             new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -88,10 +91,12 @@ public class AdViewController {
     private String mImpressionUrl;
     private int mWidth;
     private int mHeight;
-    private int mRefreshTimeMilliseconds;
+    private Integer mAdTimeoutDelay;
+    private int mRefreshTimeMilliseconds = DEFAULT_REFRESH_TIME_MILLISECONDS;
 
     private String mAdUnitId;
     private String mKeywords;
+    private boolean mFacebookSupportEnabled = true;
     private Location mLocation;
     private boolean mTesting;
     private String mResponseString;
@@ -211,6 +216,14 @@ public class AdViewController {
         mKeywords = keywords;
     }
 
+    public boolean isFacebookSupported() {
+        return mFacebookSupportEnabled;
+    }
+
+    public void setFacebookSupported(boolean enabled) {
+        mFacebookSupportEnabled = enabled;
+    }
+
     public Location getLocation() {
         return mLocation;
     }
@@ -327,18 +340,24 @@ public class AdViewController {
         // Set the URL to be used for impression tracking.
         mImpressionUrl = extractHeader(response, "X-Imptracker");
         // Set the width and height.
-        mWidth = extractIntHeader(response, "X-Width");
-        mHeight = extractIntHeader(response, "X-Height");
+        mWidth = extractIntHeader(response, "X-Width", 0);
+        mHeight = extractIntHeader(response, "X-Height", 0);
+        // Set the allowable amount of time an ad has before it automatically fails.
+        mAdTimeoutDelay = extractIntegerHeader(response, AD_TIMEOUT_HEADER);
 
         // Set the auto-refresh time. A timer will be scheduled upon ad success or failure.
         if (!response.containsHeader("X-Refreshtime")) {
             mRefreshTimeMilliseconds = 0;
         } else {
-            mRefreshTimeMilliseconds = extractIntHeader(response, "X-Refreshtime") * 1000;
+            mRefreshTimeMilliseconds = extractIntHeader(response, "X-Refreshtime", 0) * 1000;
             mRefreshTimeMilliseconds = Math.max(
                     mRefreshTimeMilliseconds,
                     MINIMUM_REFRESH_TIME_MILLISECONDS);
         }
+    }
+
+    Integer getAdTimeoutDelay() {
+        return mAdTimeoutDelay;
     }
 
     int getRefreshTimeMilliseconds() {
@@ -403,6 +422,7 @@ public class AdViewController {
         return mUrlGenerator
                 .withAdUnitId(mAdUnitId)
                 .withKeywords(mKeywords)
+                .withFacebookSupported(mFacebookSupportEnabled)
                 .withLocation(mLocation)
                 .generateUrlString(getServerHostname());
     }

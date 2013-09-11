@@ -3,15 +3,13 @@ package com.mopub.mobileads.util;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 
+import java.text.NumberFormat;
+import java.util.Locale;
+
 public class HttpResponses {
     public static String extractHeader(HttpResponse response, String headerName) {
         Header header = response.getFirstHeader(headerName);
         return header != null ? header.getValue() : null;
-    }
-
-    public static int extractIntHeader(HttpResponse response, String headerName) {
-        String headerValue = extractHeader(response, headerName);
-        return (headerValue != null) ? Integer.parseInt(headerValue.trim()) : 0;
     }
 
     public static boolean extractBooleanHeader(HttpResponse response, String headerName, boolean defaultValue) {
@@ -20,5 +18,27 @@ public class HttpResponses {
             return defaultValue;
         }
         return header.equals("1");
+    }
+
+    public static Integer extractIntegerHeader(HttpResponse response, String headerName) {
+        NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
+        numberFormat.setParseIntegerOnly(true);
+
+        String headerValue = extractHeader(response, headerName);
+        try {
+            Number value = numberFormat.parse(headerValue.trim());
+            return value.intValue();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static int extractIntHeader(HttpResponse response, String headerName, int defaultValue) {
+        Integer headerValue = extractIntegerHeader(response, headerName);
+        if (headerValue == null) {
+            return defaultValue;
+        }
+
+        return headerValue;
     }
 }

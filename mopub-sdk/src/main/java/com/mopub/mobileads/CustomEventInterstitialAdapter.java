@@ -14,8 +14,9 @@ import static com.mopub.mobileads.MoPubErrorCode.NETWORK_TIMEOUT;
 import static com.mopub.mobileads.MoPubErrorCode.UNSPECIFIED;
 
 public class CustomEventInterstitialAdapter implements CustomEventInterstitialListener {
-    public static final int TIMEOUT_DELAY = 30000;
+    public static final int DEFAULT_INTERSTITIAL_TIMEOUT_DELAY = 30000;
 
+    private final MoPubInterstitial mMoPubInterstitial;
     private boolean mInvalidated;
     private CustomEventInterstitialAdapterListener mCustomEventInterstitialAdapterListener;
     private CustomEventInterstitial mCustomEventInterstitial;
@@ -27,6 +28,7 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
 
     public CustomEventInterstitialAdapter(MoPubInterstitial moPubInterstitial, String className, String jsonParams) {
         mHandler = new Handler();
+        mMoPubInterstitial = moPubInterstitial;
         mServerExtras = new HashMap<String, String>();
         mLocalExtras = new HashMap<String, Object>();
         mContext = moPubInterstitial.getActivity();
@@ -59,10 +61,14 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
     }
     
     void loadInterstitial() {
-        if (isInvalidated() || mCustomEventInterstitial == null) return;
-
-        mHandler.postDelayed(mTimeout, TIMEOUT_DELAY);
+        if (isInvalidated() || mCustomEventInterstitial == null) {
+            return;
+        }
         mCustomEventInterstitial.loadInterstitial(mContext, this, mLocalExtras, mServerExtras);
+
+        if (getTimeoutDelayMilliseconds() > 0) {
+            mHandler.postDelayed(mTimeout, getTimeoutDelayMilliseconds());
+        }
     }
     
     void showInterstitial() {
@@ -95,6 +101,16 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
 
     private boolean shouldTrackImpressions() {
         return !(mCustomEventInterstitial instanceof HtmlInterstitial);
+    }
+
+    private int getTimeoutDelayMilliseconds() {
+        if (mMoPubInterstitial == null
+                || mMoPubInterstitial.getAdTimeoutDelay() == null
+                || mMoPubInterstitial.getAdTimeoutDelay() < 0) {
+            return DEFAULT_INTERSTITIAL_TIMEOUT_DELAY;
+        }
+
+        return mMoPubInterstitial.getAdTimeoutDelay() * 1000;
     }
 
     interface CustomEventInterstitialAdapterListener {

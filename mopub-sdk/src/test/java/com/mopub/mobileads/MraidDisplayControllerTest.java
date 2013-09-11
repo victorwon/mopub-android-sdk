@@ -56,6 +56,7 @@ public class MraidDisplayControllerTest {
     private static final int TIME_TO_PAUSE_FOR_NETWORK = 300;
     private static final String VIDEO_URL = "http://video";
     public static final String FAKE_IMAGE_DATA = "imageFileData";
+    //XXX: Robolectric or JUNIT doesn't support the correct suffix ZZZZZ in the parse pattern, so replacing xx:xx with xxxx for time.
     public static final String CALENDAR_START_TIME = "2013-08-14T20:00:00-0000";
 
     private MraidView mraidView;
@@ -479,6 +480,23 @@ public class MraidDisplayControllerTest {
     @Test
     public void createCalendarEvent_withMinimumValidParams_onICS_shouldCreateEventIntent() throws Exception {
         setupCalendarParams();
+
+        subject.createCalendarEvent(params);
+
+        verify(mraidView, never()).fireErrorEvent(eq(MRAID_JAVASCRIPT_COMMAND_CREATE_CALENDAR_EVENT), any(String.class));
+
+        Intent intent = Robolectric.getShadowApplication().getNextStartedActivity();
+
+        assertThat(intent.getType()).isEqualTo(ANDROID_CALENDAR_CONTENT_TYPE);
+        assertThat(intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK).isNotEqualTo(0);
+        assertThat(intent.getStringExtra(CalendarContract.Events.TITLE)).isNotNull();
+        assertThat(intent.getLongExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, -1)).isNotEqualTo(-1);
+    }
+
+    @Test
+    public void createCalendarEvent_withoutSecondsOnStartDate_onICS_shouldCreateEventIntent() throws Exception {
+        setupCalendarParams();
+        params.put("start", "2012-12-21T00:00-0500");
 
         subject.createCalendarEvent(params);
 

@@ -37,6 +37,8 @@ public class CustomEventBannerAdapterTest {
     @Before
     public void setUp() throws Exception {
         moPubView = mock(MoPubView.class);
+        stub(moPubView.getAdTimeoutDelay()).toReturn(null);
+
         subject = new CustomEventBannerAdapter(moPubView, CLASS_NAME, JSON_PARAMS);
 
         expectedLocalExtras = new HashMap<String, Object>();
@@ -46,10 +48,40 @@ public class CustomEventBannerAdapterTest {
     }
 
     @Test
-    public void timeout_shouldSignalFailureAndInvalidate() throws Exception {
+    public void timeout_shouldSignalFailureAndInvalidateWithDefaultDelay() throws Exception {
         subject.loadAd();
 
-        Robolectric.idleMainLooper(CustomEventBannerAdapter.TIMEOUT_DELAY - 1);
+        Robolectric.idleMainLooper(CustomEventBannerAdapter.DEFAULT_BANNER_TIMEOUT_DELAY - 1);
+        verify(moPubView, never()).loadFailUrl(eq(NETWORK_TIMEOUT));
+        assertThat(subject.isInvalidated()).isFalse();
+
+        Robolectric.idleMainLooper(1);
+        verify(moPubView).loadFailUrl(eq(NETWORK_TIMEOUT));
+        assertThat(subject.isInvalidated()).isTrue();
+    }
+
+    @Test
+    public void timeout_withNegativeAdTimeoutDelay_shouldSignalFailureAndInvalidateWithDefaultDelay() throws Exception {
+        stub(moPubView.getAdTimeoutDelay()).toReturn(-1);
+
+        subject.loadAd();
+
+        Robolectric.idleMainLooper(CustomEventBannerAdapter.DEFAULT_BANNER_TIMEOUT_DELAY - 1);
+        verify(moPubView, never()).loadFailUrl(eq(NETWORK_TIMEOUT));
+        assertThat(subject.isInvalidated()).isFalse();
+
+        Robolectric.idleMainLooper(1);
+        verify(moPubView).loadFailUrl(eq(NETWORK_TIMEOUT));
+        assertThat(subject.isInvalidated()).isTrue();
+    }
+
+    @Test
+    public void timeout_withNonNullAdTimeoutDelay_shouldSignalFailureAndInvalidateWithCustomDelay() throws Exception {
+        stub(moPubView.getAdTimeoutDelay()).toReturn(77);
+
+        subject.loadAd();
+
+        Robolectric.idleMainLooper(77000 - 1);
         verify(moPubView, never()).loadFailUrl(eq(NETWORK_TIMEOUT));
         assertThat(subject.isInvalidated()).isFalse();
 
