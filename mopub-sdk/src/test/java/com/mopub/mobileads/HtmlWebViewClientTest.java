@@ -200,6 +200,18 @@ public class HtmlWebViewClientTest {
     }
 
     @Test
+    public void shouldOverrideUrlLoading_withNativeBrowserScheme_butOpaqueUri_shouldNotBeHandledByNativeBrowser() throws Exception {
+        String opaqueNativeBrowserUriString = "mopubnativebrowser:navigate?url=http://mopub.com";
+        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
+        subject.shouldOverrideUrlLoading(htmlWebView, opaqueNativeBrowserUriString);
+
+        Intent startedActivity = assertActivityStarted();
+        assertThat(startedActivity.getComponent().getClassName()).isEqualTo("com.mopub.mobileads.MraidBrowser");
+        assertThat(startedActivity.getStringExtra(URL_EXTRA)).isEqualTo(opaqueNativeBrowserUriString);
+        assertThat(startedActivity.getData()).isNull();
+    }
+
+    @Test
     public void shouldOverrideUrlLoading_withNativeBrowserScheme_withInvalidHostSchemeUrl_shouldNotInvokeNativeBrowser() throws Exception {
         subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
         subject.shouldOverrideUrlLoading(htmlWebView, "something://blah?url=invalid");

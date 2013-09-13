@@ -28,6 +28,9 @@ To allow users to play videos using the native video player:
   - Fixed MRAID 2.0 `storePicture` command's messaging when a picture either fails to download or fails to save to device 
   - Expanded MRAID 2.0 `createCalendarEvent` command to support both minute- and second-level granularity  
  
+### Version 1.15.2.1 (Sep 13, 2013)
+  - Made the SDK more resilient to creatives that improperly use the `mopubnativebrowser://` scheme; fixes [GitHub issue #36](https://github.com/mopub/mopub-android-sdk/issues/36)
+ 
 ### Version 1.15.1 (Aug 27, 2013)
   - Updated documentation to remove the requirement for certain AndroidManifest permissions
   - Fixed minor bug with MRAID 2.0 `storePicture` command where the user sees a false download completed message

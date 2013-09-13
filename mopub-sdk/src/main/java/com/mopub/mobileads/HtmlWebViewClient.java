@@ -69,13 +69,13 @@ class HtmlWebViewClient extends WebViewClient {
         Uri uri = Uri.parse(url);
         String host = uri.getHost();
 
-        if (host.equals("finishLoad")) {
+        if ("finishLoad".equals(host)) {
             mHtmlWebViewListener.onLoaded(mHtmlWebView);
-        } else if (host.equals("close")) {
+        } else if ("close".equals(host)) {
             mHtmlWebViewListener.onCollapsed();
-        } else if (host.equals("failLoad")) {
+        } else if ("failLoad".equals(host)) {
             mHtmlWebViewListener.onFailed(UNSPECIFIED);
-        } else if (host.equals("custom")) {
+        } else if ("custom".equals(host)) {
             handleCustomIntentFromUri(uri);
         }
 
@@ -98,23 +98,34 @@ class HtmlWebViewClient extends WebViewClient {
         return true;
     }
 
-    private boolean handleNativeBrowserScheme(String url){
+    private boolean handleNativeBrowserScheme(String url) {
+        if (!url.startsWith("mopubnativebrowser://")) {
+            return false;
+        }
+
         Uri uri = Uri.parse(url);
-        String urlToOpenInNativeBrowser = uri.getQueryParameter("url");
-        if (!"mopubnativebrowser".equals(uri.getScheme()) || !"navigate".equals(uri.getHost())
-                || urlToOpenInNativeBrowser == null) return false;
+
+        String urlToOpenInNativeBrowser;
+        try {
+            urlToOpenInNativeBrowser = uri.getQueryParameter("url");
+        } catch (UnsupportedOperationException e) {
+            Log.w("MoPub", "Could not handle url: " + url);
+            return false;
+        }
+
+        if (!"navigate".equals(uri.getHost()) || urlToOpenInNativeBrowser == null) {
+            return false;
+        }
 
         Uri intentUri = Uri.parse(urlToOpenInNativeBrowser);
 
-        if (intentUri == null) { return false; }
-
-        try{
-            Intent iNativeBrowser = new Intent(Intent.ACTION_VIEW, intentUri);
-            iNativeBrowser.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            mContext.startActivity(iNativeBrowser);
+        try {
+            Intent nativeBrowserIntent = new Intent(Intent.ACTION_VIEW, intentUri);
+            nativeBrowserIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            mContext.startActivity(nativeBrowserIntent);
             mHtmlWebViewListener.onClicked();
-        } catch (ActivityNotFoundException e){
-            Log.w("MoPub", "Could not handle intent with URI: " + url + ". Is this intent unsupported on your phone?");
+        } catch (ActivityNotFoundException e) {
+            Log.w("MoPub", "Could not handle intent with URI: " + url + ". Is this intent supported on your phone?");
         }
 
         return true;
@@ -194,8 +205,17 @@ class HtmlWebViewClient extends WebViewClient {
 
     private void handleCustomIntentFromUri(Uri uri) {
         mHtmlWebViewListener.onClicked();
-        String action = uri.getQueryParameter("fnc");
-        String adData = uri.getQueryParameter("data");
+
+        String action;
+        String adData;
+        try {
+            action = uri.getQueryParameter("fnc");
+            adData = uri.getQueryParameter("data");
+        } catch (UnsupportedOperationException e) {
+            Log.w("MoPub", "Could not handle custom intent with uri: " + uri);
+            return;
+        }
+
         Intent customIntent = new Intent(action);
         customIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         customIntent.putExtra(HtmlBannerWebView.EXTRA_AD_CLICK_DATA, adData);
