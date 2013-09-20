@@ -10,6 +10,10 @@ import static com.mopub.mobileads.util.VersionCode.ICE_CREAM_SANDWICH;
 import static com.mopub.mobileads.util.VersionCode.currentApiLevel;
 
 public class BaseHtmlWebView extends BaseWebView {
+    private enum TouchState { UNSET, CLICKED }
+
+    private TouchState mTouchState = TouchState.UNSET;
+
     public BaseHtmlWebView(Context context) {
         super(context);
 
@@ -23,7 +27,7 @@ public class BaseHtmlWebView extends BaseWebView {
     }
 
     public void init(boolean isScrollable) {
-        setWebViewScrollingEnabled(isScrollable);
+        initializeOnTouchListener(isScrollable);
     }
 
     @Override
@@ -48,15 +52,24 @@ public class BaseHtmlWebView extends BaseWebView {
         loadDataWithBaseURL("http://ads.mopub.com/", htmlResponse, "text/html", "utf-8", null);
     }
 
-    void setWebViewScrollingEnabled(boolean isScrollable) {
-        if (isScrollable) {
-            setOnTouchListener(null);
-        } else {
-            setOnTouchListener(new View.OnTouchListener() {
-                public boolean onTouch(View v, MotionEvent event) {
-                    return (event.getAction() == MotionEvent.ACTION_MOVE);
+    void initializeOnTouchListener(final boolean isScrollable) {
+        setOnTouchListener(new View.OnTouchListener() {
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    mTouchState = TouchState.CLICKED;
                 }
-            });
-        }
+
+                // We're not handling events if the current action is ACTION_MOVE
+                return (event.getAction() == MotionEvent.ACTION_MOVE) && !isScrollable;
+            }
+        });
+    }
+
+    boolean hasUserClicked() {
+        return mTouchState == TouchState.CLICKED;
+    }
+
+    void resetUserClicked() {
+        mTouchState = TouchState.UNSET;
     }
 }

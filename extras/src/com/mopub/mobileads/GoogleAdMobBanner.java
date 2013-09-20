@@ -38,7 +38,7 @@ import android.location.Location;
 import android.util.Log;
 import com.google.ads.*;
 import com.google.ads.AdRequest.ErrorCode;
-import com.google.ads.AdView;
+import com.mopub.mobileads.util.Views;
 
 import java.util.Map;
 
@@ -107,6 +107,7 @@ class GoogleAdMobBanner extends CustomEventBanner implements AdListener {
     @Override
     protected void onInvalidate() {
         mAdMobView.setAdListener(null);
+        Views.removeFromParent(mAdMobView);
         mAdMobView.destroy();
     }
 

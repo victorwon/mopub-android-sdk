@@ -29,6 +29,7 @@ import static com.mopub.mobileads.AdViewController.DEFAULT_REFRESH_TIME_MILLISEC
 import static com.mopub.mobileads.AdViewController.MINIMUM_REFRESH_TIME_MILLISECONDS;
 import static com.mopub.mobileads.MoPubErrorCode.INTERNAL_ERROR;
 import static com.mopub.mobileads.MoPubErrorCode.NO_FILL;
+import static com.mopub.mobileads.util.Reflection.MethodBuilder;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.fest.assertions.api.Fail.fail;
 import static org.mockito.Matchers.any;
@@ -209,7 +210,7 @@ public class AdViewControllerTest {
 
         ClientConnectionManager connectionManager = httpClient.getConnectionManager();
         try {
-            Utils.invokeInstanceMethod(connectionManager, "assertStillUp");
+            new MethodBuilder(connectionManager, "assertStillUp").setAccessible().execute();
             fail("should have thrown an exception");
         } catch (InvocationTargetException expected) {
             assertThat(expected.getCause()).isInstanceOf(IllegalStateException.class);
@@ -247,7 +248,7 @@ public class AdViewControllerTest {
 
         ClientConnectionManager connectionManager = httpClient.getConnectionManager();
         try {
-            Utils.invokeInstanceMethod(connectionManager, "assertStillUp");
+            new MethodBuilder(connectionManager, "assertStillUp").setAccessible().execute();
             fail("should have thrown an exception");
         } catch (InvocationTargetException expected) {
             assertThat(expected.getCause()).isInstanceOf(IllegalStateException.class);

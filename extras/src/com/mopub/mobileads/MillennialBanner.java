@@ -129,7 +129,6 @@ class MillennialBanner extends CustomEventBanner {
             mBannerListener.onBannerClicked();
         }
 
-
         void register(Context context) {
             mContext = context;
             context.registerReceiver(this, MMBroadcastReceiver.createIntentFilter());

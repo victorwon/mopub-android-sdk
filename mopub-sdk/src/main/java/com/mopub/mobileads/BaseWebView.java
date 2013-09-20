@@ -7,6 +7,8 @@ import com.mopub.mobileads.util.VersionCode;
 
 import java.lang.reflect.Method;
 
+import static com.mopub.mobileads.util.Reflection.MethodBuilder;
+
 public class BaseWebView extends WebView {
     public BaseWebView(Context context) {
         /*
@@ -24,8 +26,16 @@ public class BaseWebView extends WebView {
         }
 
         if (VersionCode.currentApiLevel().isBelow(VersionCode.FROYO)) {
-            getSettings().setPluginsEnabled(enabled);
+            MethodBuilder methodBuilder = new MethodBuilder(getSettings(), "setPluginsEnabled");
+            methodBuilder.addParam(boolean.class, enabled);
+
+            try {
+                methodBuilder.execute();
+            } catch (Exception e) {
+                Log.d("MoPub", "Unable to " + (enabled ? "enable" : "disable") + "WebSettings plugins for BaseWebView.");
+            }
         } else {
+
             try {
                 Class<Enum> pluginStateClass = (Class<Enum>) Class.forName("android.webkit.WebSettings$PluginState");
 
