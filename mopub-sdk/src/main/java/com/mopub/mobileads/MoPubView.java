@@ -1,19 +1,19 @@
 /*
- * Copyright (c) 2010, MoPub Inc.
+ * Copyright (c) 2010-2013, MoPub Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
  *
- * * Redistributions of source code must retain the above copyright
+ *  Redistributions of source code must retain the above copyright
  *   notice, this list of conditions and the following disclaimer.
  *
- * * Redistributions in binary form must reproduce the above copyright
+ *  Redistributions in binary form must reproduce the above copyright
  *   notice, this list of conditions and the following disclaimer in the
  *   documentation and/or other materials provided with the distribution.
  *
- * * Neither the name of 'MoPub Inc.' nor the names of its contributors
+ *  Neither the name of 'MoPub Inc.' nor the names of its contributors
  *   may be used to endorse or promote products derived from this software
  *   without specific prior written permission.
  *
@@ -46,12 +46,11 @@ import android.widget.FrameLayout;
 import com.mopub.mobileads.factories.AdViewControllerFactory;
 import com.mopub.mobileads.factories.CustomEventBannerAdapterFactory;
 
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 
-import static com.mopub.mobileads.AdFetcher.CUSTOM_EVENT_DATA_HEADER;
-import static com.mopub.mobileads.AdFetcher.CUSTOM_EVENT_NAME_HEADER;
 import static com.mopub.mobileads.MoPubErrorCode.ADAPTER_NOT_FOUND;
+import static com.mopub.mobileads.util.ResponseHeader.CUSTOM_EVENT_DATA;
+import static com.mopub.mobileads.util.ResponseHeader.CUSTOM_EVENT_NAME;
 
 public class MoPubView extends FrameLayout {
 
@@ -79,7 +78,6 @@ public class MoPubView extends FrameLayout {
     private BroadcastReceiver mScreenStateReceiver;
     private boolean mIsInForeground;
     private LocationAwareness mLocationAwareness;
-    private int mLocationPrecision;
     private boolean mPreviousAutorefreshSetting = false;
     
     private BannerAdListener mBannerAdListener;
@@ -101,8 +99,7 @@ public class MoPubView extends FrameLayout {
         mContext = context;
         mIsInForeground = (getVisibility() == VISIBLE);
         mLocationAwareness = LocationAwareness.LOCATION_AWARENESS_NORMAL;
-        mLocationPrecision = DEFAULT_LOCATION_PRECISION;
-        
+
         setHorizontalScrollBarEnabled(false);
         setVerticalScrollBarEnabled(false);
 
@@ -118,8 +115,7 @@ public class MoPubView extends FrameLayout {
             return;
         }
 
-        mAdViewController = AdViewControllerFactory.
-                create(context, this);
+        mAdViewController = AdViewControllerFactory.create(context, this);
         registerScreenStateBroadcastReceiver();
     }
 
@@ -210,8 +206,8 @@ public class MoPubView extends FrameLayout {
 
         mCustomEventBannerAdapter = CustomEventBannerAdapterFactory.create(
                 this,
-                paramsMap.get(CUSTOM_EVENT_NAME_HEADER),
-                paramsMap.get(CUSTOM_EVENT_DATA_HEADER));
+                paramsMap.get(CUSTOM_EVENT_NAME.getKey()),
+                paramsMap.get(CUSTOM_EVENT_DATA.getKey()));
         mCustomEventBannerAdapter.loadAd();
     }
 
@@ -298,6 +294,10 @@ public class MoPubView extends FrameLayout {
         if (mAdViewController != null) mAdViewController.setAdUnitId(adUnitId);
     }
 
+    public String getAdUnitId() {
+        return (mAdViewController != null) ? mAdViewController.getAdUnitId() : null;
+    }
+
     public void setKeywords(String keywords) {
         if (mAdViewController != null) mAdViewController.setKeywords(keywords);
     }
@@ -367,11 +367,13 @@ public class MoPubView extends FrameLayout {
     }
 
     public void setLocationPrecision(int precision) {
-        mLocationPrecision = (precision >= 0) ? precision : 0;
+        if (mAdViewController != null) {
+            mAdViewController.setLocationPrecision(precision);
+        }
     }
 
     public int getLocationPrecision() {
-        return mLocationPrecision;
+        return (mAdViewController != null) ? mAdViewController.getLocationPrecision() : 0;
     }
 
     public void setLocalExtras(Map<String, Object> localExtras) {
@@ -420,6 +422,10 @@ public class MoPubView extends FrameLayout {
         }
 
         if (mAdViewController != null) mAdViewController.forceRefresh();
+    }
+
+    AdViewController getAdViewController() {
+        return mAdViewController;
     }
 
     @Deprecated

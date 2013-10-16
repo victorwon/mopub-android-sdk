@@ -1,3 +1,17 @@
+## Version 1.16 (Oct 16, 2013)
+
+  - Improved creative controls
+    - Creative flagging
+      - Allows users to report certain inappropriate ad experiences directly to MoPub with a special gesture
+      - User must swipe back and forth at least four times in the ad view to flag a creative
+      - Swipes must cover more than 1/3 of the ad width and should be completely horizontal
+      - Only enabled for direct sold, Marketplace, and server-to-server networks ads
+    - Creatives that attempt to auto-redirect are now blocked; ads cannot redirect without user interaction
+    - Javascript alert, confirm, and prompt dialogs are blocked
+  - Improved responsiveness of `showInterstitial()` for `HtmlInterstitial`s and `MraidInterstitial`s by pre-rendering HTML content
+  - Simplified internal construction and handling of `WebView`s by removing `WebViewPool` and its subclasses
+  - Updated mraid.getVersion() to return 2.0
+
 ## Version 1.15 (Aug 21, 2013)
 
 Includes support for ads in the MRAID 2.0 format. MRAID 2.0 allows advertisers to create ads with rich media functionality, including adding calendar events, storing pictures and playing videos in the native video player. To learn more about MRAID 2.0, read our [help article](http://j.mp/16MKSci).
@@ -34,7 +48,7 @@ To allow users to play videos using the native video player:
 ###### Version 1.15.2.2 (Sep 20, 2013)
   - Removed `WebSettings.setPluginsEnabled()` so the SDK builds against Android API 18; fixes [GitHub issue #28](https://github.com/mopub/mopub-android-sdk/issues/28)
   - AdMob banners are now removed from the view hierarchy before they are destroyed; fixes the reopened [GitHub issue #23](https://github.com/mopub/mopub-android-sdk/issues/23)
-  - Prevent ads from launching system features, such as a browser view, until the user has interacted with the ad
+  - Prevent ads from launching system features, such as a browser view, until the user has interacted with the ad.
  
 ### Version 1.15.1 (Aug 27, 2013)
   - Updated documentation to remove the requirement for certain AndroidManifest permissions

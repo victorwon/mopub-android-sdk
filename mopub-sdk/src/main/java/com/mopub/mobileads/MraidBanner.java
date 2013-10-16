@@ -1,19 +1,19 @@
 /*
- * Copyright (c) 2011, MoPub Inc.
+ * Copyright (c) 2010-2013, MoPub Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
  *
- * * Redistributions of source code must retain the above copyright
+ *  Redistributions of source code must retain the above copyright
  *   notice, this list of conditions and the following disclaimer.
  *
- * * Redistributions in binary form must reproduce the above copyright
+ *  Redistributions in binary form must reproduce the above copyright
  *   notice, this list of conditions and the following disclaimer in the
  *   documentation and/or other materials provided with the distribution.
  *
- * * Neither the name of 'MoPub Inc.' nor the names of its contributors
+ *  Neither the name of 'MoPub Inc.' nor the names of its contributors
  *   may be used to endorse or promote products derived from this software
  *   without specific prior written permission.
  *
@@ -37,7 +37,7 @@ import android.net.Uri;
 import com.mopub.mobileads.MraidView.ViewState;
 import com.mopub.mobileads.factories.MraidViewFactory;
 
-import java.util.Map;
+import java.util.*;
 
 import static com.mopub.mobileads.AdFetcher.HTML_RESPONSE_BODY_KEY;
 import static com.mopub.mobileads.MoPubErrorCode.MRAID_LOAD_ERROR;
@@ -62,7 +62,8 @@ class MraidBanner extends CustomEventBanner {
             return;
         }
 
-        mMraidView = MraidViewFactory.create(context);
+        AdConfiguration adConfiguration = AdConfiguration.extractFromMap(localExtras);
+        mMraidView = MraidViewFactory.create(context, adConfiguration);
         mMraidView.loadHtmlData(htmlData);
         initMraidListener();
     }

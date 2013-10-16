@@ -1,8 +1,45 @@
+/*
+ * Copyright (c) 2010-2013, MoPub Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *  Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ *
+ *  Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ *
+ *  Neither the name of 'MoPub Inc.' nor the names of its contributors
+ *   may be used to endorse or promote products derived from this software
+ *   without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.mopub.mobileads;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.*;
+import android.content.ActivityNotFoundException;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.graphics.Rect;
@@ -14,11 +51,20 @@ import android.os.Handler;
 import android.provider.CalendarContract;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.*;
+import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.URLUtil;
-import android.widget.*;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.Toast;
 import com.mopub.mobileads.MraidView.ExpansionStyle;
 import com.mopub.mobileads.MraidView.NativeCloseButtonStyle;
 import com.mopub.mobileads.MraidView.PlacementType;
@@ -32,24 +78,29 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-import static com.mopub.mobileads.MraidCommandRegistry.*;
+import static com.mopub.mobileads.MraidCommandRegistry.MRAID_JAVASCRIPT_COMMAND_CREATE_CALENDAR_EVENT;
+import static com.mopub.mobileads.MraidCommandRegistry.MRAID_JAVASCRIPT_COMMAND_GET_CURRENT_POSITION;
+import static com.mopub.mobileads.MraidCommandRegistry.MRAID_JAVASCRIPT_COMMAND_GET_DEFAULT_POSITION;
+import static com.mopub.mobileads.MraidCommandRegistry.MRAID_JAVASCRIPT_COMMAND_GET_MAX_SIZE;
+import static com.mopub.mobileads.MraidCommandRegistry.MRAID_JAVASCRIPT_COMMAND_GET_SCREEN_SIZE;
+import static com.mopub.mobileads.MraidCommandRegistry.MRAID_JAVASCRIPT_COMMAND_STORE_PICTURE;
 import static com.mopub.mobileads.MraidCommandStorePicture.MIME_TYPE_HEADER;
 import static com.mopub.mobileads.MraidView.BaseMraidListener;
 import static com.mopub.mobileads.resource.Drawables.INTERSTITIAL_CLOSE_BUTTON_NORMAL;
 import static com.mopub.mobileads.resource.Drawables.INTERSTITIAL_CLOSE_BUTTON_PRESSED;
-import static com.mopub.mobileads.util.MraidUtils.*;
+import static com.mopub.mobileads.util.MraidUtils.ANDROID_CALENDAR_CONTENT_TYPE;
+import static com.mopub.mobileads.util.MraidUtils.isCalendarAvailable;
+import static com.mopub.mobileads.util.MraidUtils.isInlineVideoAvailable;
+import static com.mopub.mobileads.util.MraidUtils.isSmsAvailable;
+import static com.mopub.mobileads.util.MraidUtils.isStorePictureSupported;
+import static com.mopub.mobileads.util.MraidUtils.isTelAvailable;
+import static com.mopub.mobileads.util.ResponseHeader.LOCATION;
 
 class MraidDisplayController extends MraidAbstractController {
     private static final String LOGTAG = "MraidDisplayController";
@@ -269,7 +320,7 @@ class MraidDisplayController extends MraidAbstractController {
 
         View expansionContentView = getMraidView();
         if (url != null) {
-            mTwoPartExpansionView = new MraidView(getContext(), ExpansionStyle.DISABLED,
+            mTwoPartExpansionView = new MraidView(getContext(), getMraidView().getAdConfiguration(), ExpansionStyle.DISABLED,
                     NativeCloseButtonStyle.AD_CONTROLLED, PlacementType.INLINE);
             mTwoPartExpansionView.setMraidListener(new BaseMraidListener() {
                 public void onClose(MraidView view, ViewState newViewState) {
@@ -341,7 +392,7 @@ class MraidDisplayController extends MraidAbstractController {
                     HttpResponse httpResponse = httpClient.execute(httpGet);
                     pictureInputStream = httpResponse.getEntity().getContent();
 
-                    String redirectLocation = HttpResponses.extractHeader(httpResponse, "Location");
+                    String redirectLocation = HttpResponses.extractHeader(httpResponse, LOCATION);
                     if (redirectLocation != null) {
                         uri = URI.create(redirectLocation);
                     }

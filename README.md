@@ -25,15 +25,17 @@ Integration instructions are available on the [wiki](https://github.com/mopub/mo
 
 ## New in this Version
 
-This release of the Android SDK includes support for ads in the MRAID 2.0 format. We will now allow advertisers to serve ads with rich media functionality, including adding calendar events, storing pictures to the user's devices and playing videos in the native player. To learn more about MRAID 2.0 and our update, read our [help article](http://j.mp/16MKSci). 
-
-To correctly display ads that ask the user to save a picture (storePicture ads), you need to make the following change to AndroidManifest.xml:  
-* Add the`WRITE_EXTERNAL_STORAGE` permission. Note: **Adding the permission is optional**. If the permission is not added, we will not deliver any store picture ads to the users' devices. All other features will remain functional without the new permission. 
-
-To allow users to play videos using the native video player:
-* Declare activity `com.mopub.mobileads.MraidVideoPlayerActivity` This activity is required to support playing videos in the native player and we strongly recommend adding it.
-
 Please view the [changelog](https://github.com/mopub/mopub-android-sdk/blob/master/CHANGELOG.md) for details. 
+
+- Improved creative controls
+  - Creative flagging
+    - Allows users to report certain inappropriate ad experiences directly to MoPub with a special gesture
+    - User must swipe back and forth at least four times in the ad view to flag a creative
+    - Swipes must cover more than 1/3 of the ad width and should be completely horizontal
+    - Only enabled for direct sold, Marketplace, and server-to-server networks ads
+  - Creatives that attempt to auto-redirect are now blocked; ads cannot redirect without user interaction
+  - Javascript alert, confirm, and prompt dialogs are blocked
+- Improved responsiveness of `showInterstitial()` for `HtmlInterstitial`s and `MraidInterstitial`s by pre-rendering HTML content
 
 ## Requirements
 

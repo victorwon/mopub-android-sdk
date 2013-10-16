@@ -1,3 +1,35 @@
+/*
+ * Copyright (c) 2010-2013, MoPub Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *  Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ *
+ *  Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ *
+ *  Neither the name of 'MoPub Inc.' nor the names of its contributors
+ *   may be used to endorse or promote products derived from this software
+ *   without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.mopub.mobileads;
 
 import android.app.Activity;
@@ -7,10 +39,11 @@ import android.view.Gravity;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
-import com.mopub.mobileads.factories.HtmlBannerWebViewFactory;
-import com.mopub.mobileads.factories.HtmlInterstitialWebViewFactory;
 import com.mopub.mobileads.factories.HttpClientFactory;
-import com.mopub.mobileads.test.support.*;
+import com.mopub.mobileads.test.support.SdkTestRunner;
+import com.mopub.mobileads.test.support.TestAdFetcherFactory;
+import com.mopub.mobileads.test.support.TestHttpResponseWithHeaders;
+import com.mopub.mobileads.test.support.ThreadUtils;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -26,7 +59,6 @@ import java.lang.reflect.InvocationTargetException;
 
 import static android.Manifest.permission.ACCESS_NETWORK_STATE;
 import static com.mopub.mobileads.AdViewController.DEFAULT_REFRESH_TIME_MILLISECONDS;
-import static com.mopub.mobileads.AdViewController.MINIMUM_REFRESH_TIME_MILLISECONDS;
 import static com.mopub.mobileads.MoPubErrorCode.INTERNAL_ERROR;
 import static com.mopub.mobileads.MoPubErrorCode.NO_FILL;
 import static com.mopub.mobileads.util.Reflection.MethodBuilder;
@@ -38,6 +70,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
 import static org.robolectric.Robolectric.application;
 import static org.robolectric.Robolectric.shadowOf;
@@ -49,88 +82,18 @@ public class AdViewControllerTest {
     private HttpResponse response;
     private HttpClient httpClient;
     private AdFetcher adFetcher;
+    private Activity context;
 
     @Before
     public void setup() {
         moPubView = mock(MoPubView.class);
+        stub(moPubView.getContext()).toReturn(new Activity());
         httpClient = HttpClientFactory.create();
-        Activity context = new Activity();
+        context = new Activity();
         shadowOf(context).grantPermissions(ACCESS_NETWORK_STATE);
         subject = new AdViewController(context, moPubView);
         response = new TestHttpResponseWithHeaders(200, "I ain't got no-body");
         adFetcher = TestAdFetcherFactory.getSingletonMock();
-    }
-
-    @Test
-    public void initialization_shouldInitializeWebViewFactories() throws Exception {
-        new HtmlBannerWebViewFactory().internalCreate(null, false, "", "");
-        new HtmlInterstitialWebViewFactory().internalCreate(null, false, "", "");
-
-        // pass
-    }
-
-    @Test
-    public void configureUsingHttpResponse_shouldSetFields() throws Exception {
-        response.addHeader("X-Launchpage", "redirect url");
-        response.addHeader("X-Clickthrough", "clickthrough url");
-        response.addHeader("X-Width", "320  ");
-        response.addHeader("X-Height", "  50");
-        response.addHeader("X-AdTimeout", "  12  ");
-        response.addHeader("X-Refreshtime", "70");
-
-        subject.configureUsingHttpResponse(response);
-
-        assertThat(subject.getRedirectUrl()).isEqualTo("redirect url");
-        assertThat(subject.getClickthroughUrl()).isEqualTo("clickthrough url");
-        assertThat(subject.getAdWidth()).isEqualTo(320);
-        assertThat(subject.getAdHeight()).isEqualTo(50);
-        assertThat(subject.getAdTimeoutDelay()).isEqualTo(12);
-        assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(70000);
-    }
-
-    @Test
-    public void configureUsingHttpResponse_withFloatTimeoutDelay_shouldTruncateTimeoutDelay() throws Exception {
-        response.addHeader("X-AdTimeout", "3.14");
-        subject.configureUsingHttpResponse(response);
-        assertThat(subject.getAdTimeoutDelay()).isEqualTo(3);
-
-        response = new TestHttpResponseWithHeaders(200, "I ain't got no-body");
-        response.addHeader("X-AdTimeout", "-3.14");
-        subject.configureUsingHttpResponse(response);
-        assertThat(subject.getAdTimeoutDelay()).isEqualTo(-3);
-    }
-
-    @Test
-    public void configureUsingHttpResponse_withInvalidTimeoutDelay_shouldSetAdTimeoutDelayToNull() throws Exception {
-        // no X-AdTimeout header
-        subject.configureUsingHttpResponse(response);
-        assertThat(subject.getAdTimeoutDelay()).isNull();
-
-        response = new TestHttpResponseWithHeaders(200, "I ain't got no-body");
-        response.addHeader("X-AdTimeout", "not a number, i promise");
-        subject.configureUsingHttpResponse(response);
-        assertThat(subject.getAdTimeoutDelay()).isNull();
-    }
-
-    @Test
-    public void configureUsingHttpResponse_shouldSetRefreshTimeToMinimumOf10Seconds() throws Exception {
-        response.addHeader("X-Refreshtime", "0");
-
-        subject.configureUsingHttpResponse(response);
-        assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(MINIMUM_REFRESH_TIME_MILLISECONDS);
-    }
-
-    @Test
-    public void configureUsingHttpResponse_whenRefreshTimeNotSpecified_shouldResetRefreshTimeTo0Seconds() throws Exception {
-        response.addHeader("X-Refreshtime", "5");
-        subject.configureUsingHttpResponse(response);
-
-        assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(MINIMUM_REFRESH_TIME_MILLISECONDS);
-        response = new TestHttpResponseWithHeaders(200, "I ain't got no-body");
-        // no X-Refreshtime header
-        subject.configureUsingHttpResponse(response);
-
-        assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(0);
     }
 
     @Test
@@ -153,6 +116,7 @@ public class AdViewControllerTest {
     public void scheduleRefreshTimer_shouldNotScheduleRefreshIfAutorefreshIsOff() throws Exception {
         response.addHeader("X-Refreshtime", "30");
         subject.configureUsingHttpResponse(response);
+
         Robolectric.pauseMainLooper();
         assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(0);
 
@@ -195,7 +159,7 @@ public class AdViewControllerTest {
     public void trackImpression_shouldHttpGetTheImpressionUrl() throws Exception {
         response.addHeader("X-Imptracker", "http://trackingUrl");
         subject.configureUsingHttpResponse(response);
-        String expectedUserAgent = new WebView(subject.getContext()).getSettings().getUserAgentString();
+        String expectedUserAgent = new WebView(context).getSettings().getUserAgentString();
         FakeHttpLayer fakeHttpLayer = Robolectric.getFakeHttpLayer();
         fakeHttpLayer.addPendingHttpResponse(200, "");
 
@@ -233,7 +197,7 @@ public class AdViewControllerTest {
     public void registerClick_shouldHttpGetTheClickthroughUrl() throws Exception {
         response.addHeader("X-Clickthrough", "http://clickUrl");
         subject.configureUsingHttpResponse(response);
-        String expectedUserAgent = new WebView(subject.getContext()).getSettings().getUserAgentString();
+        String expectedUserAgent = new WebView(context).getSettings().getUserAgentString();
         FakeHttpLayer fakeHttpLayer = Robolectric.getFakeHttpLayer();
         fakeHttpLayer.addPendingHttpResponse(200, "");
 
@@ -384,20 +348,6 @@ public class AdViewControllerTest {
         verify(adFetcher, never()).fetchAdForUrl(anyString());
     }
 
-    @Test(expected = NullPointerException.class)
-    public void cleanup_shouldCleanupHtmlBannerWebViewFactory() throws Exception {
-        subject.cleanup();
-
-        new HtmlBannerWebViewFactory().internalCreate(null, false, "", "");
-    }
-
-    @Test(expected = NullPointerException.class)
-    public void cleanup_shouldCleanupHtmlInterstitialWebViewFactory() throws Exception {
-        subject.cleanup();
-
-        new HtmlInterstitialWebViewFactory().internalCreate(null, false, "", "");
-    }
-
     @Test
     public void setAdContentView_whenCalledFromWrongUiThread_shouldStillSetContentView() throws Exception {
         response.addHeader("X-Width", "320");
@@ -502,28 +452,5 @@ public class AdViewControllerTest {
         assertThat(layoutParams.width).isEqualTo(FrameLayout.LayoutParams.WRAP_CONTENT);
         assertThat(layoutParams.height).isEqualTo(FrameLayout.LayoutParams.WRAP_CONTENT);
         assertThat(layoutParams.gravity).isEqualTo(Gravity.CENTER);
-    }
-
-    @Test
-    public void cleanup_whenOtherAdViewControllersAreActive_shouldNotDisableTheWebViewPool() throws Exception {
-        AdViewController anotherAdViewController = new AdViewController(new Activity(), moPubView);
-        subject.cleanup();
-
-        assertThat(TestHtmlBannerWebViewFactory.getWebViewPool().getNextHtmlWebView(null, true, "", "")).isNotNull();
-        assertThat(TestHtmlInterstitialWebViewFactory.getWebViewPool().getNextHtmlWebView(null, true, "", "")).isNotNull();
-
-        anotherAdViewController.cleanup();
-        try {
-            TestHtmlBannerWebViewFactory.getWebViewPool().getNextHtmlWebView(null, true, "", "");
-            fail("Expected getNextHtmlWebView to fail");
-        } catch(NullPointerException e) {
-            // success!
-        }
-        try {
-            TestHtmlInterstitialWebViewFactory.getWebViewPool().getNextHtmlWebView(null, true, "", "");
-            fail("Expected getNextHtmlWebView to fail");
-        } catch(NullPointerException e) {
-            // success!
-        }
     }
 }

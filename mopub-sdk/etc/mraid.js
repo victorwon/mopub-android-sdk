@@ -126,7 +126,7 @@
 
   // Constants. ////////////////////////////////////////////////////////////////////////////////////
 
-  var VERSION = mraid.VERSION = '1.0';
+  var VERSION = mraid.VERSION = '2.0';
 
   var STATES = mraid.STATES = {
     LOADING: 'loading',     // Initial state.

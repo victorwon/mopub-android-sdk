@@ -1,19 +1,19 @@
 /*
- * Copyright (c) 2010, MoPub Inc.
+ * Copyright (c) 2010-2013, MoPub Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
  *
- * * Redistributions of source code must retain the above copyright
+ *  Redistributions of source code must retain the above copyright
  *   notice, this list of conditions and the following disclaimer.
  *
- * * Redistributions in binary form must reproduce the above copyright
+ *  Redistributions in binary form must reproduce the above copyright
  *   notice, this list of conditions and the following disclaimer in the
  *   documentation and/or other materials provided with the distribution.
  *
- * * Neither the name of 'MoPub Inc.' nor the names of its contributors
+ *  Neither the name of 'MoPub Inc.' nor the names of its contributors
  *   may be used to endorse or promote products derived from this software
  *   without specific prior written permission.
  *
@@ -41,10 +41,7 @@ import org.json.JSONTokener;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Utils {
     private Utils() {
