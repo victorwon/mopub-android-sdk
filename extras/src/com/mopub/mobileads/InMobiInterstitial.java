@@ -1,19 +1,20 @@
 package com.mopub.mobileads;
 
-import java.util.Map;
-
 import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
-
 import com.inmobi.androidsdk.IMAdInterstitial;
 import com.inmobi.androidsdk.IMAdInterstitialListener;
+import com.inmobi.androidsdk.IMAdRequest;
 import com.inmobi.androidsdk.IMAdRequest.ErrorCode;
 import com.mopub.mobileads.CustomEventInterstitial;
 import com.mopub.mobileads.MoPubErrorCode;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /*
- * Tested with InMobi SDK 3.6.2.
+ * Tested with InMobi SDK 3.7.0.
  */
 class InMobiInterstitial extends CustomEventInterstitial implements IMAdInterstitialListener {
     public static final String APP_ID_KEY = "appId";
@@ -26,16 +27,16 @@ class InMobiInterstitial extends CustomEventInterstitial implements IMAdIntersti
      */
     @Override
     protected void loadInterstitial(Context context, CustomEventInterstitialListener interstitialListener,
-                                    Map<String, Object> localExtras, Map<String, String> serverExtras) {
+            Map<String, Object> localExtras, Map<String, String> serverExtras) {
         mInterstitialListener = interstitialListener;
-
+        
         Activity activity = null;
         if (context instanceof Activity) {
             activity = (Activity) context;
         } else {
             // You may also pass in an Activity Context in the localExtras map and retrieve it here.
         }
-
+        
         if (activity == null) {
             mInterstitialListener.onInterstitialFailed(MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR);
             return;
@@ -47,11 +48,17 @@ class InMobiInterstitial extends CustomEventInterstitial implements IMAdIntersti
          */
         String inMobiAppId = serverExtras.get(APP_ID_KEY);
         mInMobiInterstitial = new IMAdInterstitial(activity, inMobiAppId);
-
+        
         mInMobiInterstitial.setIMAdInterstitialListener(this);
-        mInMobiInterstitial.loadNewAd();
-    }
 
+        IMAdRequest imAdRequest = new IMAdRequest();
+        Map<String, String> requestParameters = new HashMap<String, String>();
+        requestParameters.put("tp", "c_mopub");
+        imAdRequest.setRequestParams(requestParameters);
+
+        mInMobiInterstitial.loadNewAd(imAdRequest);
+    }
+    
     @Override
     protected void showInterstitial() {
         Log.d("MoPub", "Showing InMobi interstitial ad.");
@@ -71,7 +78,7 @@ class InMobiInterstitial extends CustomEventInterstitial implements IMAdIntersti
         Log.d("MoPub", "InMobi interstitial ad loaded successfully.");
         mInterstitialListener.onInterstitialLoaded();
     }
-
+    
     @Override
     public void onAdRequestFailed(IMAdInterstitial adInterstitial, ErrorCode errorCode) {
         Log.d("MoPub", "InMobi interstitial ad failed to load.");
@@ -82,7 +89,7 @@ class InMobiInterstitial extends CustomEventInterstitial implements IMAdIntersti
     public void onShowAdScreen(IMAdInterstitial adInterstitial) {
         mInterstitialListener.onInterstitialShown();
     }
-
+    
     @Override
     public void onLeaveApplication(IMAdInterstitial adInterstitial) {
         /*

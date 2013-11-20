@@ -1,19 +1,19 @@
 /*
- * Copyright (c) 2010, MoPub Inc.
+ * Copyright (c) 2010-2013, MoPub Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
  *
- * * Redistributions of source code must retain the above copyright
+ *  Redistributions of source code must retain the above copyright
  *   notice, this list of conditions and the following disclaimer.
  *
- * * Redistributions in binary form must reproduce the above copyright
+ *  Redistributions in binary form must reproduce the above copyright
  *   notice, this list of conditions and the following disclaimer in the
  *   documentation and/or other materials provided with the distribution.
  *
- * * Neither the name of 'MoPub Inc.' nor the names of its contributors
+ *  Neither the name of 'MoPub Inc.' nor the names of its contributors
  *   may be used to endorse or promote products derived from this software
  *   without specific prior written permission.
  *
@@ -37,11 +37,10 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.TabHost;
 import android.widget.Toast;
-import com.mopub.mobileads.MoPubActivity;
 import com.mopub.mobileads.MoPubConversionTracker;
 
 public class SimpleAdsDemo extends TabActivity {
-    private final int   INTERSTITIAL_AD_REQUEST = 0;
+    private final int INTERSTITIAL_AD_REQUEST = 0;
 
     /** Called when the activity is first created. */
     @Override
@@ -74,12 +73,6 @@ public class SimpleAdsDemo extends TabActivity {
 
         // Conversion tracking
         new MoPubConversionTracker().reportAppOpen(this);
-    }
-
-    public void showInterstitialAd() {
-        Intent i = new Intent(this, MoPubActivity.class);
-        i.putExtra("com.mopub.mobileads.AdUnitId", "agltb3B1Yi1pbmNyDAsSBFNpdGUY6tERDA");
-        startActivityForResult(i, INTERSTITIAL_AD_REQUEST);
     }
 
     // Listen for results from the interstitial ad

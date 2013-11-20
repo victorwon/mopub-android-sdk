@@ -1,3 +1,35 @@
+/*
+ * Copyright (c) 2010-2013, MoPub Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *  Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ *
+ *  Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ *
+ *  Neither the name of 'MoPub Inc.' nor the names of its contributors
+ *   may be used to endorse or promote products derived from this software
+ *   without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.mopub.mobileads;
 
 import android.app.Activity;
@@ -8,15 +40,26 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 
-import java.io.IOException;
+import java.io.*;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-import static com.mopub.mobileads.AdFetcher.*;
+import static com.mopub.mobileads.AdFetcher.CLICKTHROUGH_URL_KEY;
+import static com.mopub.mobileads.AdFetcher.HTML_RESPONSE_BODY_KEY;
+import static com.mopub.mobileads.AdFetcher.REDIRECT_URL_KEY;
+import static com.mopub.mobileads.AdFetcher.SCROLLABLE_KEY;
 import static com.mopub.mobileads.util.HttpResponses.extractBooleanHeader;
 import static com.mopub.mobileads.util.HttpResponses.extractHeader;
+import static com.mopub.mobileads.util.ResponseHeader.AD_TYPE;
+import static com.mopub.mobileads.util.ResponseHeader.CLICKTHROUGH_URL;
+import static com.mopub.mobileads.util.ResponseHeader.CUSTOM_EVENT_DATA;
+import static com.mopub.mobileads.util.ResponseHeader.CUSTOM_EVENT_NAME;
+import static com.mopub.mobileads.util.ResponseHeader.CUSTOM_SELECTOR;
+import static com.mopub.mobileads.util.ResponseHeader.FULL_AD_TYPE;
+import static com.mopub.mobileads.util.ResponseHeader.NATIVE_PARAMS;
+import static com.mopub.mobileads.util.ResponseHeader.REDIRECT_URL;
+import static com.mopub.mobileads.util.ResponseHeader.SCROLLABLE;
 
 abstract class AdLoadTask {
     WeakReference<AdViewController> mWeakAdViewController;
@@ -50,8 +93,10 @@ abstract class AdLoadTask {
         }
 
         AdLoadTask extract() throws IOException {
-            adType = extractHeader(response, AD_TYPE_HEADER);
-            fullAdType = extractHeader(response, FULL_AD_TYPE_HEADER);
+            adType = extractHeader(response, AD_TYPE);
+            fullAdType = extractHeader(response, FULL_AD_TYPE);
+
+            Log.d("MoPub", "Loading ad type: " + AdTypeTranslator.getAdNetworkType(adType, fullAdType));
 
             adTypeCustomEventName = AdTypeTranslator.getCustomEventNameForAdType(
                     adViewController.getMoPubView(), adType, fullAdType);
@@ -69,23 +114,25 @@ abstract class AdLoadTask {
             Log.i("MoPub", "Performing custom event.");
 
             // If applicable, try to invoke the new custom event system (which uses custom classes)
-            adTypeCustomEventName = extractHeader(response, CUSTOM_EVENT_NAME_HEADER);
+            adTypeCustomEventName = extractHeader(response, CUSTOM_EVENT_NAME);
             if (adTypeCustomEventName != null) {
-                String customEventData = extractHeader(response, CUSTOM_EVENT_DATA_HEADER);
+                String customEventData = extractHeader(response, CUSTOM_EVENT_DATA);
                 return createCustomEventAdLoadTask(customEventData);
             }
 
-            // Otherwise, use the (deprecated) legacy custom event system for older clients
-            Header oldCustomEventHeader = response.getFirstHeader(CUSTOM_SELECTOR_HEADER);
+            Header oldCustomEventHeader = response.getFirstHeader(CUSTOM_SELECTOR.getKey());
             return new AdLoadTask.LegacyCustomEventAdLoadTask(adViewController, oldCustomEventHeader);
         }
 
         private AdLoadTask extractCustomEventAdLoadTaskFromResponseBody() throws IOException {
             HttpEntity entity = response.getEntity();
             String htmlData = entity != null ? Strings.fromStream(entity.getContent()) : "";
-            String redirectUrl = extractHeader(response, REDIRECT_URL_HEADER);
-            String clickthroughUrl = extractHeader(response, CLICKTHROUGH_URL_HEADER);
-            boolean scrollingEnabled = extractBooleanHeader(response, SCROLLABLE_HEADER);
+
+            adViewController.getAdConfiguration().setResponseString(htmlData);
+
+            String redirectUrl = extractHeader(response, REDIRECT_URL);
+            String clickthroughUrl = extractHeader(response, CLICKTHROUGH_URL);
+            boolean scrollingEnabled = extractBooleanHeader(response, SCROLLABLE, false);
 
             Map<String, String> eventDataMap = new HashMap<String, String>();
             eventDataMap.put(HTML_RESPONSE_BODY_KEY, Uri.encode(htmlData));
@@ -102,17 +149,17 @@ abstract class AdLoadTask {
         }
 
         private AdLoadTask extractCustomEventAdLoadTaskFromNativeParams() throws IOException {
-            String eventData = extractHeader(response, AdFetcher.NATIVE_PARAMS_HEADER);
+            String eventData = extractHeader(response, NATIVE_PARAMS);
 
             return createCustomEventAdLoadTask(eventData);
         }
 
         private AdLoadTask createCustomEventAdLoadTask(String customEventData) {
             Map<String, String> paramsMap = new HashMap<String, String>();
-            paramsMap.put(CUSTOM_EVENT_NAME_HEADER, adTypeCustomEventName);
+            paramsMap.put(CUSTOM_EVENT_NAME.getKey(), adTypeCustomEventName);
 
             if (customEventData != null) {
-                paramsMap.put(CUSTOM_EVENT_DATA_HEADER, customEventData);
+                paramsMap.put(CUSTOM_EVENT_DATA.getKey(), customEventData);
             }
 
             return new AdLoadTask.CustomEventAdLoadTask(adViewController, paramsMap);
@@ -124,7 +171,7 @@ abstract class AdLoadTask {
     }
 
     /*
-     * This is the new way of performing Custom Events. This will  be invoked on new clients when
+     * This is the new way of performing Custom Events. This will be invoked on new clients when
      * X-Adtype is "custom" and the X-Custom-Event-Class-Name header is specified.
      */
     static class CustomEventAdLoadTask extends AdLoadTask {

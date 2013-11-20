@@ -1,19 +1,19 @@
 /*
- * Copyright (c) 2011, MoPub Inc.
+ * Copyright (c) 2010-2013, MoPub Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
  *
- * * Redistributions of source code must retain the above copyright
+ *  Redistributions of source code must retain the above copyright
  *   notice, this list of conditions and the following disclaimer.
  *
- * * Redistributions in binary form must reproduce the above copyright
+ *  Redistributions in binary form must reproduce the above copyright
  *   notice, this list of conditions and the following disclaimer in the
  *   documentation and/or other materials provided with the distribution.
  *
- * * Neither the name of 'MoPub Inc.' nor the names of its contributors
+ *  Neither the name of 'MoPub Inc.' nor the names of its contributors
  *   may be used to endorse or promote products derived from this software
  *   without specific prior written permission.
  *
@@ -39,11 +39,11 @@ import android.util.Log;
 import com.mopub.mobileads.MoPubView.LocationAwareness;
 import com.mopub.mobileads.factories.CustomEventInterstitialAdapterFactory;
 
-import java.util.Map;
+import java.util.*;
 
-import static com.mopub.mobileads.AdFetcher.CUSTOM_EVENT_DATA_HEADER;
-import static com.mopub.mobileads.AdFetcher.CUSTOM_EVENT_NAME_HEADER;
 import static com.mopub.mobileads.MoPubErrorCode.ADAPTER_NOT_FOUND;
+import static com.mopub.mobileads.util.ResponseHeader.CUSTOM_EVENT_DATA;
+import static com.mopub.mobileads.util.ResponseHeader.CUSTOM_EVENT_NAME;
 
 public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomEventInterstitialAdapterListener {
 
@@ -133,6 +133,14 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
         if (mCustomEventInterstitialAdapter != null) mCustomEventInterstitialAdapter.showInterstitial();
     }
 
+    Integer getAdTimeoutDelay() {
+        return mInterstitialView.getAdTimeoutDelay();
+    }
+
+    MoPubInterstitialView getMoPubInterstitialView() {
+        return mInterstitialView;
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     public void setKeywords(String keywords) {
@@ -141,6 +149,14 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
 
     public String getKeywords() {
         return mInterstitialView.getKeywords();
+    }
+
+    public void setFacebookSupported(boolean enabled) {
+        mInterstitialView.setFacebookSupported(enabled);
+    }
+
+    public boolean isFacebookSupported() {
+        return mInterstitialView.isFacebookSupported();
     }
 
     public Activity getActivity() {
@@ -202,7 +218,7 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
     public Map<String, Object> getLocalExtras() {
         return mInterstitialView.getLocalExtras();
     }
-    
+
     /*
      * Implements CustomEventInterstitialAdapter.CustomEventInterstitialListener
      */
@@ -229,12 +245,10 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
     }
 
     @Override
-    public void onCustomEventInterstitialShown(boolean shouldTrackImpressions) {
+    public void onCustomEventInterstitialShown() {
         if (isDestroyed()) return;
 
-        if (shouldTrackImpressions) {
-            mInterstitialView.trackImpression();
-        }
+        mInterstitialView.trackImpression();
 
         if (mInterstitialAdListener != null) {
             mInterstitialAdListener.onInterstitialShown(this);
@@ -288,8 +302,8 @@ public class MoPubInterstitial implements CustomEventInterstitialAdapter.CustomE
 
             mCustomEventInterstitialAdapter = CustomEventInterstitialAdapterFactory.create(
                     MoPubInterstitial.this,
-                    paramsMap.get(CUSTOM_EVENT_NAME_HEADER),
-                    paramsMap.get(CUSTOM_EVENT_DATA_HEADER));
+                    paramsMap.get(CUSTOM_EVENT_NAME.getKey()),
+                    paramsMap.get(CUSTOM_EVENT_DATA.getKey()));
             mCustomEventInterstitialAdapter.setAdapterListener(MoPubInterstitial.this);
             mCustomEventInterstitialAdapter.loadInterstitial();
         }

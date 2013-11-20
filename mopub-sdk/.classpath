@@ -13,6 +13,6 @@
 	<classpathentry exported="true" kind="lib" path="libs/libadapterinmobi.jar"/>
 	<classpathentry exported="true" kind="lib" path="libs/applovin-sdk-5.1.0.jar"/>
 	<classpathentry exported="true" kind="lib" path="libs/heyzap-ads-sdk.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/revmob-6.3.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="libs/revmob-6.7.0.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

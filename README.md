@@ -25,8 +25,17 @@ Integration instructions are available on the [wiki](https://github.com/mopub/mo
 
 ## New in this Version
 
-Please view the [changelog](https://github.com/mopub/mopub-android-sdk/blob/master/CHANGELOG.md) for details.
+Please view the [changelog](https://github.com/mopub/mopub-android-sdk/blob/master/CHANGELOG.md) for details. 
 
+- Improved creative controls
+  - Creative flagging
+    - Allows users to report certain inappropriate ad experiences directly to MoPub with a special gesture
+    - User must swipe back and forth at least four times in the ad view to flag a creative
+    - Swipes must cover more than 1/3 of the ad width and should be completely horizontal
+    - Only enabled for direct sold, Marketplace, and server-to-server networks ads
+  - Creatives that attempt to auto-redirect are now blocked; ads cannot redirect without user interaction
+  - Javascript alert, confirm, and prompt dialogs are blocked
+- Improved responsiveness of `showInterstitial()` for `HtmlInterstitial`s and `MraidInterstitial`s by pre-rendering HTML content
 
 ## Requirements
 

@@ -13,7 +13,7 @@ import com.mopub.mobileads.CustomEventBanner;
 import com.mopub.mobileads.MoPubErrorCode;
 
 /*
- * Tested with Greystripe SDK 2.1.
+ * Tested with Greystripe SDK 2.3.0.
  */
 class GreystripeBanner extends CustomEventBanner implements GSAdListener {
     private CustomEventBannerListener mBannerListener;

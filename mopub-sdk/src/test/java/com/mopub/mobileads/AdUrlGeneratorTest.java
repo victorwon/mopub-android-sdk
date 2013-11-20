@@ -1,3 +1,35 @@
+/*
+ * Copyright (c) 2010-2013, MoPub Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *  Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ *
+ *  Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ *
+ *  Neither the name of 'MoPub Inc.' nor the names of its contributors
+ *   may be used to endorse or promote products derived from this software
+ *   without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.mopub.mobileads;
 
 import android.app.Activity;
@@ -17,7 +49,14 @@ import org.robolectric.shadows.ShadowNetworkInfo;
 import org.robolectric.shadows.ShadowTelephonyManager;
 
 import static android.Manifest.permission.ACCESS_NETWORK_STATE;
-import static android.net.ConnectivityManager.*;
+import static android.net.ConnectivityManager.TYPE_DUMMY;
+import static android.net.ConnectivityManager.TYPE_ETHERNET;
+import static android.net.ConnectivityManager.TYPE_MOBILE;
+import static android.net.ConnectivityManager.TYPE_MOBILE_DUN;
+import static android.net.ConnectivityManager.TYPE_MOBILE_HIPRI;
+import static android.net.ConnectivityManager.TYPE_MOBILE_MMS;
+import static android.net.ConnectivityManager.TYPE_MOBILE_SUPL;
+import static android.net.ConnectivityManager.TYPE_WIFI;
 import static android.telephony.TelephonyManager.NETWORK_TYPE_UNKNOWN;
 import static com.mopub.mobileads.AdUrlGenerator.MoPubNetworkType;
 import static com.mopub.mobileads.util.Strings.isEmpty;
@@ -69,7 +108,7 @@ public class AdUrlGeneratorTest {
 
     @Test
     public void generateAdUrl_shouldIncludeAllFields() throws Exception {
-        String expectedAdUrl = new AdUrlBuilder(expectedUdidSha)
+        final String expectedAdUrl = new AdUrlBuilder(expectedUdidSha)
                 .withAdUnitId("adUnitId")
                 .withQuery("key%3Avalue")
                 .withLatLon("20.1%2C30.0", "1")
@@ -77,6 +116,7 @@ public class AdUrlGeneratorTest {
                 .withMnc("456")
                 .withCountryIso("expected%20country")
                 .withCarrierName("expected%20carrier")
+                .withExternalStoragePermission(false)
                 .build();
 
         shadowTelephonyManager.setNetworkOperator("123456");
@@ -236,6 +276,7 @@ public class AdUrlGeneratorTest {
         private String countryIso = "";
         private String carrierName = "";
         private MoPubNetworkType networkType = MoPubNetworkType.MOBILE;
+        private int externalStoragePermission;
 
         public AdUrlBuilder(String expectedUdidSha) {
             this.expectedUdidSha = expectedUdidSha;
@@ -258,7 +299,8 @@ public class AdUrlGeneratorTest {
                     paramIfNotEmpty("iso", countryIso) +
                     paramIfNotEmpty("cn", carrierName) +
                     "&ct=" + networkType +
-                    "&av=1.0";
+                    "&av=1.0" +
+                    "&android_perms_ext_storage=" + externalStoragePermission;
         }
 
         public AdUrlBuilder withAdUnitId(String adUnitId) {
@@ -299,6 +341,11 @@ public class AdUrlGeneratorTest {
 
         public AdUrlBuilder withNetworkType(MoPubNetworkType networkType) {
             this.networkType = networkType;
+            return this;
+        }
+
+        public AdUrlBuilder withExternalStoragePermission(boolean enabled) {
+            this.externalStoragePermission = enabled ? 1 : 0;
             return this;
         }
 

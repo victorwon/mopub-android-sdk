@@ -40,7 +40,7 @@ import com.millennialmedia.android.*;
 import java.util.Map;
 
 /**
- * Compatible with version 5.0.1 of the Millennial Media SDK.
+ * Compatible with version 5.1.0 of the Millennial Media SDK.
  */
 
 class MillennialBanner extends CustomEventBanner {
@@ -129,8 +129,6 @@ class MillennialBanner extends CustomEventBanner {
             mBannerListener.onBannerClicked();
         }
 
-
-        // todo test (un)register
         void register(Context context) {
             mContext = context;
             context.registerReceiver(this, MMBroadcastReceiver.createIntentFilter());

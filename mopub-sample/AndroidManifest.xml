@@ -8,7 +8,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    
+
+    <!-- For MRAID 2 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
     <application android:icon="@drawable/icon" android:label="@string/app_name"
             android:debuggable="true">
 	    <activity android:name="com.mopub.simpleadsdemo.SimpleAdsDemo"
@@ -23,6 +26,8 @@
         <activity android:name="com.mopub.mobileads.MraidActivity"
                 android:configChanges="keyboardHidden|orientation"/>
         <activity android:name="com.mopub.mobileads.MraidBrowser"
+                android:configChanges="keyboardHidden|orientation"/>
+        <activity android:name="com.mopub.mobileads.MraidVideoPlayerActivity"
                 android:configChanges="keyboardHidden|orientation"/>
         <activity android:name="com.mopub.simpleadsdemo.BannersTab" />
         <activity android:name="com.mopub.simpleadsdemo.InterstitialsTab" />

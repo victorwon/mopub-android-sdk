@@ -1,3 +1,35 @@
+/*
+ * Copyright (c) 2010-2013, MoPub Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *  Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ *
+ *  Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ *
+ *  Neither the name of 'MoPub Inc.' nor the names of its contributors
+ *   may be used to endorse or promote products derived from this software
+ *   without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.mopub.mobileads;
 
 import android.os.AsyncTask;
@@ -13,8 +45,11 @@ import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 
 import static com.mopub.mobileads.util.HttpResponses.extractHeader;
+import static com.mopub.mobileads.util.ResponseHeader.AD_TYPE;
+import static com.mopub.mobileads.util.ResponseHeader.USER_AGENT;
+import static com.mopub.mobileads.util.ResponseHeader.WARMUP;
 
-class AdFetchTask extends AsyncTask<String, Void, AdLoadTask> {
+public class AdFetchTask extends AsyncTask<String, Void, AdLoadTask> {
     private TaskTracker mTaskTracker;
     private AdViewController mAdViewController;
     private Exception mException;
@@ -26,7 +61,7 @@ class AdFetchTask extends AsyncTask<String, Void, AdLoadTask> {
     private static final int MAXIMUM_REFRESH_TIME_MILLISECONDS = 600000;
     private static final double EXPONENTIAL_BACKOFF_FACTOR = 1.5;
 
-    AdFetchTask(TaskTracker taskTracker, AdViewController adViewController, String userAgent, int timeoutMilliseconds) {
+    public AdFetchTask(TaskTracker taskTracker, AdViewController adViewController, String userAgent, int timeoutMilliseconds) {
         mTaskTracker = taskTracker;
 
         mAdViewController = adViewController;
@@ -50,7 +85,7 @@ class AdFetchTask extends AsyncTask<String, Void, AdLoadTask> {
 
     private AdLoadTask fetch(String url) throws Exception {
         HttpGet httpget = new HttpGet(url);
-        httpget.addHeader(AdFetcher.USER_AGENT_HEADER, mUserAgent);
+        httpget.addHeader(USER_AGENT.getKey(), mUserAgent);
 
         if (!isStateValid()) return null;
 
@@ -67,7 +102,7 @@ class AdFetchTask extends AsyncTask<String, Void, AdLoadTask> {
 
     private boolean responseContainsContent(HttpResponse response) {
         // Ensure that the ad is not warming up.
-        if ("1".equals(extractHeader(response, AdFetcher.WARMUP_HEADER))) {
+        if ("1".equals(extractHeader(response, WARMUP))) {
             Log.d("MoPub", "Ad Unit (" + mAdViewController.getAdUnitId() + ") is still warming up. " +
                     "Please try again in a few minutes.");
             mFetchStatus = AdFetcher.FetchStatus.AD_WARMING_UP;
@@ -75,7 +110,7 @@ class AdFetchTask extends AsyncTask<String, Void, AdLoadTask> {
         }
 
         // Ensure that the ad type header is valid and not "clear".
-        String adType = extractHeader(response, AdFetcher.AD_TYPE_HEADER);
+        String adType = extractHeader(response, AD_TYPE);
         if ("clear".equals(adType)) {
             Log.d("MoPub", "No inventory found for adunit (" + mAdViewController.getAdUnitId() + ").");
             mFetchStatus = AdFetcher.FetchStatus.CLEAR_AD_TYPE;

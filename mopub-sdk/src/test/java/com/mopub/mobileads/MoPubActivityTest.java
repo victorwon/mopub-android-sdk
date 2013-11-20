@@ -1,9 +1,42 @@
+/*
+ * Copyright (c) 2010-2013, MoPub Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *  Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ *
+ *  Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ *
+ *  Neither the name of 'MoPub Inc.' nor the names of its contributors
+ *   may be used to endorse or promote products derived from this software
+ *   without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.mopub.mobileads;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.view.View;
+import android.webkit.WebViewClient;
 import android.widget.RelativeLayout;
 import com.mopub.mobileads.test.support.SdkTestRunner;
 import com.mopub.mobileads.test.support.TestHtmlInterstitialWebViewFactory;
@@ -20,12 +53,14 @@ import static com.mopub.mobileads.AdFetcher.HTML_RESPONSE_BODY_KEY;
 import static com.mopub.mobileads.AdFetcher.REDIRECT_URL_KEY;
 import static com.mopub.mobileads.AdFetcher.SCROLLABLE_KEY;
 import static com.mopub.mobileads.BaseInterstitialActivity.ACTION_INTERSTITIAL_FAIL;
-import static com.mopub.mobileads.BaseInterstitialActivity.ACTION_INTERSTITIAL_SHOW;
 import static com.mopub.mobileads.BaseInterstitialActivity.HTML_INTERSTITIAL_INTENT_FILTER;
+import static com.mopub.mobileads.CustomEventInterstitial.CustomEventInterstitialListener;
 import static com.mopub.mobileads.MoPubErrorCode.UNSPECIFIED;
 import static org.fest.assertions.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.robolectric.Robolectric.shadowOf;
@@ -38,16 +73,46 @@ public class MoPubActivityTest extends BaseInterstitialActivityTest {
     public static final String EXPECTED_CLICKTHROUGH_URL = "http://expected_url";
 
     private HtmlInterstitialWebView htmlInterstitialWebView;
+    private Activity context;
+    private CustomEventInterstitialListener customEventInterstitialListener;
 
     @Before
     public void setUp() throws Exception {
         super.setup();
-        Intent moPubActivityIntent = createMoPubActivityIntent(EXPECTED_HTML_DATA, EXPECTED_IS_SCROLLABLE, EXPECTED_REDIRECT_URL, EXPECTED_CLICKTHROUGH_URL);
+        Intent moPubActivityIntent = createMoPubActivityIntent(EXPECTED_HTML_DATA, EXPECTED_IS_SCROLLABLE, EXPECTED_REDIRECT_URL, EXPECTED_CLICKTHROUGH_URL, adConfiguration);
         htmlInterstitialWebView = TestHtmlInterstitialWebViewFactory.getSingletonMock();
         resetMockedView(htmlInterstitialWebView);
         subject = Robolectric.buildActivity(MoPubActivity.class).withIntent(moPubActivityIntent).create().get();
+
+        context = new Activity();
+        customEventInterstitialListener = mock(CustomEventInterstitialListener.class);
+
         reset(htmlInterstitialWebView);
         resetMockedView(htmlInterstitialWebView);
+    }
+
+    @Test
+    public void renderHtml_shouldPreloadTheHtml() throws Exception {
+        String htmlData = "this is nonsense";
+        MoPubActivity.preRenderHtml(context, customEventInterstitialListener, htmlData);
+
+        verify(htmlInterstitialWebView).enablePlugins(eq(false));
+        verify(htmlInterstitialWebView).addMoPubUriJavascriptInterface(any(HtmlInterstitialWebView.MoPubUriJavascriptFireFinishLoadListener.class));
+        verify(htmlInterstitialWebView).loadHtmlResponse(htmlData);
+    }
+
+    @Test
+    public void renderHtml_shouldHaveAWebViewClientThatForwardsFinishLoad() throws Exception {
+        MoPubActivity.preRenderHtml(context, customEventInterstitialListener, null);
+
+        ArgumentCaptor<WebViewClient> webViewClientCaptor = ArgumentCaptor.forClass(WebViewClient.class);
+        verify(htmlInterstitialWebView).setWebViewClient(webViewClientCaptor.capture());
+        WebViewClient webViewClient = webViewClientCaptor.getValue();
+
+        webViewClient.shouldOverrideUrlLoading(null, "mopub://finishLoad");
+
+        verify(customEventInterstitialListener).onInterstitialLoaded();
+        verify(customEventInterstitialListener, never()).onInterstitialFailed(any(MoPubErrorCode.class));
     }
 
     @Test
@@ -86,7 +151,7 @@ public class MoPubActivityTest extends BaseInterstitialActivityTest {
 
     @Test
     public void start_shouldStartMoPubActivityWithCorrectParameters() throws Exception {
-        MoPubActivity.start(subject, "expectedResponse", true, "redirectUrl", "clickthroughUrl");
+        MoPubActivity.start(subject, "expectedResponse", true, "redirectUrl", "clickthroughUrl", adConfiguration);
 
         Intent nextStartedActivity = Robolectric.getShadowApplication().getNextStartedActivity();
         assertThat(nextStartedActivity.getStringExtra(HTML_RESPONSE_BODY_KEY)).isEqualTo("expectedResponse");
@@ -138,23 +203,8 @@ public class MoPubActivityTest extends BaseInterstitialActivityTest {
         assertThat(shadowOf(subject).isFinishing()).isTrue();
     }
 
-
-    @Test
-    public void getAdView_shouldSetUpForBroadcastingShow() throws Exception {
-        subject.getAdView();
-        BroadcastReceiver broadcastReceiver = mock(BroadcastReceiver.class);
-        ShadowLocalBroadcastManager.getInstance(subject).registerReceiver(broadcastReceiver, HTML_INTERSTITIAL_INTENT_FILTER);
-
-        TestHtmlInterstitialWebViewFactory.getLatestListener().onInterstitialShown();
-
-        ArgumentCaptor<Intent> intentCaptor = ArgumentCaptor.forClass(Intent.class);
-        verify(broadcastReceiver).onReceive(eq(subject), intentCaptor.capture());
-        Intent intent = intentCaptor.getValue();
-        assertThat(intent.getAction()).isEqualTo(ACTION_INTERSTITIAL_SHOW);
-    }
-
-    private Intent createMoPubActivityIntent(String htmlData, boolean isScrollable, String redirectUrl, String clickthroughUrl) {
-        return MoPubActivity.createIntent(new Activity(), htmlData, isScrollable, redirectUrl, clickthroughUrl);
+    private Intent createMoPubActivityIntent(String htmlData, boolean isScrollable, String redirectUrl, String clickthroughUrl, AdConfiguration adConfiguration) {
+        return MoPubActivity.createIntent(new Activity(), htmlData, isScrollable, redirectUrl, clickthroughUrl, adConfiguration);
     }
 
     private void assertOnlyOneRuleSet(LayoutParams layoutParams, int desiredRule) {

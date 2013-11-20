@@ -1,21 +1,56 @@
+/*
+ * Copyright (c) 2010-2013, MoPub Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *  Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ *
+ *  Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ *
+ *  Neither the name of 'MoPub Inc.' nor the names of its contributors
+ *   may be used to endorse or promote products derived from this software
+ *   without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.mopub.mobileads;
 
 import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
+
 import com.mopub.mobileads.CustomEventInterstitial.CustomEventInterstitialListener;
 import com.mopub.mobileads.factories.CustomEventInterstitialFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.mopub.mobileads.AdFetcher.AD_CONFIGURATION_KEY;
 import static com.mopub.mobileads.MoPubErrorCode.ADAPTER_NOT_FOUND;
 import static com.mopub.mobileads.MoPubErrorCode.NETWORK_TIMEOUT;
 import static com.mopub.mobileads.MoPubErrorCode.UNSPECIFIED;
 
 public class CustomEventInterstitialAdapter implements CustomEventInterstitialListener {
-    public static final int TIMEOUT_DELAY = 30000;
+    public static final int DEFAULT_INTERSTITIAL_TIMEOUT_DELAY = 30000;
 
+    private final MoPubInterstitial mMoPubInterstitial;
     private boolean mInvalidated;
     private CustomEventInterstitialAdapterListener mCustomEventInterstitialAdapterListener;
     private CustomEventInterstitial mCustomEventInterstitial;
@@ -27,6 +62,7 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
 
     public CustomEventInterstitialAdapter(MoPubInterstitial moPubInterstitial, String className, String jsonParams) {
         mHandler = new Handler();
+        mMoPubInterstitial = moPubInterstitial;
         mServerExtras = new HashMap<String, String>();
         mLocalExtras = new HashMap<String, Object>();
         mContext = moPubInterstitial.getActivity();
@@ -55,14 +91,25 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
         }
         
         mLocalExtras = moPubInterstitial.getLocalExtras();
-        if (moPubInterstitial.getLocation() != null) mLocalExtras.put("location", moPubInterstitial.getLocation());
+        if (moPubInterstitial.getLocation() != null) {
+            mLocalExtras.put("location", moPubInterstitial.getLocation());
+        }
+
+        AdViewController adViewController = moPubInterstitial.getMoPubInterstitialView().getAdViewController();
+        if (adViewController != null) {
+            mLocalExtras.put(AD_CONFIGURATION_KEY, adViewController.getAdConfiguration());
+        }
     }
     
     void loadInterstitial() {
-        if (isInvalidated() || mCustomEventInterstitial == null) return;
-
-        mHandler.postDelayed(mTimeout, TIMEOUT_DELAY);
+        if (isInvalidated() || mCustomEventInterstitial == null) {
+            return;
+        }
         mCustomEventInterstitial.loadInterstitial(mContext, this, mLocalExtras, mServerExtras);
+
+        if (getTimeoutDelayMilliseconds() > 0) {
+            mHandler.postDelayed(mTimeout, getTimeoutDelayMilliseconds());
+        }
     }
     
     void showInterstitial() {
@@ -93,14 +140,20 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
         mHandler.removeCallbacks(mTimeout);
     }
 
-    private boolean shouldTrackImpressions() {
-        return !(mCustomEventInterstitial instanceof HtmlInterstitial);
+    private int getTimeoutDelayMilliseconds() {
+        if (mMoPubInterstitial == null
+                || mMoPubInterstitial.getAdTimeoutDelay() == null
+                || mMoPubInterstitial.getAdTimeoutDelay() < 0) {
+            return DEFAULT_INTERSTITIAL_TIMEOUT_DELAY;
+        }
+
+        return mMoPubInterstitial.getAdTimeoutDelay() * 1000;
     }
 
     interface CustomEventInterstitialAdapterListener {
         void onCustomEventInterstitialLoaded();
         void onCustomEventInterstitialFailed(MoPubErrorCode errorCode);
-        void onCustomEventInterstitialShown(boolean shouldTrackImpressions);
+        void onCustomEventInterstitialShown();
         void onCustomEventInterstitialClicked();
         void onCustomEventInterstitialDismissed();
     }
@@ -110,7 +163,9 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
      */
     @Override
     public void onInterstitialLoaded() {
-        if (isInvalidated()) return;
+        if (isInvalidated()) {
+            return;
+        }
 
         if (mCustomEventInterstitialAdapterListener != null) {
             cancelTimeout();
@@ -120,7 +175,9 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
 
     @Override
     public void onInterstitialFailed(MoPubErrorCode errorCode) {
-        if (isInvalidated()) return;
+        if (isInvalidated()) {
+            return;
+        }
 
         if (mCustomEventInterstitialAdapterListener != null) {
             if (errorCode == null) {
@@ -133,16 +190,24 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
 
     @Override
     public void onInterstitialShown() {
-        if (isInvalidated()) return;
+        if (isInvalidated()) {
+            return;
+        }
 
-        if (mCustomEventInterstitialAdapterListener != null) mCustomEventInterstitialAdapterListener.onCustomEventInterstitialShown(shouldTrackImpressions());
+        if (mCustomEventInterstitialAdapterListener != null) {
+            mCustomEventInterstitialAdapterListener.onCustomEventInterstitialShown();
+        }
     }
 
     @Override
     public void onInterstitialClicked() {
-        if (isInvalidated()) return;
+        if (isInvalidated()) {
+            return;
+        }
 
-        if (mCustomEventInterstitialAdapterListener != null) mCustomEventInterstitialAdapterListener.onCustomEventInterstitialClicked();
+        if (mCustomEventInterstitialAdapterListener != null) {
+            mCustomEventInterstitialAdapterListener.onCustomEventInterstitialClicked();
+        }
     }
 
     @Override
