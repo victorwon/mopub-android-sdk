@@ -60,7 +60,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
 
 @RunWith(SdkTestRunner.class)
-public class MraidUtilsTest {
+public class MraidsTest {
     Context context;
 
     @Before
@@ -72,28 +72,28 @@ public class MraidUtilsTest {
     public void isTelAvailable_whenCanAcceptIntent_shouldReturnTrue() throws Exception {
         context = createMockContextWithSpecificIntentData("tel", null, null, "android.intent.action.DIAL");
 
-        assertThat(MraidUtils.isTelAvailable(context)).isTrue();
+        assertThat(Mraids.isTelAvailable(context)).isTrue();
     }
 
     @Test
     public void isTelAvailable_whenCanNotAcceptIntent_shouldReturnFalse() throws Exception {
         context = createMockContextWithSpecificIntentData("", null, null, "android.intent.action.DIAL");
 
-        assertThat(MraidUtils.isTelAvailable(context)).isFalse();
+        assertThat(Mraids.isTelAvailable(context)).isFalse();
     }
 
     @Test
     public void isSmsAvailable_whenCanAcceptIntent_shouldReturnTrue() throws Exception {
         context = createMockContextWithSpecificIntentData("sms", null, null, "android.intent.action.VIEW");
 
-        assertThat(MraidUtils.isSmsAvailable(context)).isTrue();
+        assertThat(Mraids.isSmsAvailable(context)).isTrue();
     }
 
     @Test
     public void isSmsAvailable_whenCanNotAcceptIntent_shouldReturnFalse() throws Exception {
         context = createMockContextWithSpecificIntentData("", null, null, "android.intent.action.VIEW");
 
-        assertThat(MraidUtils.isSmsAvailable(context)).isFalse();
+        assertThat(Mraids.isSmsAvailable(context)).isFalse();
     }
 
     @Test
@@ -101,7 +101,7 @@ public class MraidUtilsTest {
         Robolectric.getShadowApplication().grantPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         ShadowEnvironment.setExternalStorageState(Environment.MEDIA_MOUNTED);
 
-        assertThat(MraidUtils.isStorePictureSupported(context)).isTrue();
+        assertThat(Mraids.isStorePictureSupported(context)).isTrue();
     }
 
     @Test
@@ -109,7 +109,7 @@ public class MraidUtilsTest {
         Robolectric.getShadowApplication().denyPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         ShadowEnvironment.setExternalStorageState(Environment.MEDIA_MOUNTED);
 
-        assertThat(MraidUtils.isStorePictureSupported(context)).isFalse();
+        assertThat(Mraids.isStorePictureSupported(context)).isFalse();
     }
 
     @Test
@@ -117,23 +117,23 @@ public class MraidUtilsTest {
         Robolectric.getShadowApplication().grantPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         ShadowEnvironment.setExternalStorageState(Environment.MEDIA_UNMOUNTED);
 
-        assertThat(MraidUtils.isStorePictureSupported(context)).isFalse();
+        assertThat(Mraids.isStorePictureSupported(context)).isFalse();
     }
 
     @Test
     public void isCalendarAvailable_whenApiLevelICS_shouldReturnTrue() throws Exception {
-        context = createMockContextWithSpecificIntentData(null, null, MraidUtils.ANDROID_CALENDAR_CONTENT_TYPE, "android.intent.action.INSERT");
+        context = createMockContextWithSpecificIntentData(null, null, Mraids.ANDROID_CALENDAR_CONTENT_TYPE, "android.intent.action.INSERT");
         Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", ICE_CREAM_SANDWICH.getApiLevel());
 
-        assertThat(MraidUtils.isCalendarAvailable(context)).isTrue();
+        assertThat(Mraids.isCalendarAvailable(context)).isTrue();
     }
 
     @Test
     public void isCalendarAvailable_whenApiLevelBelowICS_shouldReturnFalse() throws Exception {
-        context = createMockContextWithSpecificIntentData(null, null, MraidUtils.ANDROID_CALENDAR_CONTENT_TYPE, "android.intent.action.INSERT");
+        context = createMockContextWithSpecificIntentData(null, null, Mraids.ANDROID_CALENDAR_CONTENT_TYPE, "android.intent.action.INSERT");
         Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", HONEYCOMB_MR2.getApiLevel());
 
-        assertThat(MraidUtils.isCalendarAvailable(context)).isFalse();
+        assertThat(Mraids.isCalendarAvailable(context)).isFalse();
     }
 
     @Test
@@ -141,21 +141,21 @@ public class MraidUtilsTest {
         context = createMockContextWithSpecificIntentData(null, null, "vnd.android.cursor.item/NOPE", "android.intent.action.INSERT");
         Robolectric.Reflection.setFinalStaticField(Build.VERSION.class, "SDK_INT", ICE_CREAM_SANDWICH.getApiLevel());
 
-        assertThat(MraidUtils.isCalendarAvailable(context)).isFalse();
+        assertThat(Mraids.isCalendarAvailable(context)).isFalse();
     }
 
     @Test
     public void isInlineVideoAvailable_whenCanAcceptMraidVideoPlayerActivityIntent_shouldReturnTrue() throws Exception {
         context = createMockContextWithSpecificIntentData(null, "com.mopub.mobileads.MraidVideoPlayerActivity", null, null);
 
-        assertThat(MraidUtils.isInlineVideoAvailable(context)).isTrue();
+        assertThat(Mraids.isInlineVideoAvailable(context)).isTrue();
     }
 
     @Test
     public void isInlineVideoAvailable_whenCanNotAcceptMraidVideoPlayerActivityIntent_shouldReturnFalse() throws Exception {
         context = createMockContextWithSpecificIntentData(null, "com.mopub.mobileads.DO_NOT_ACCEPT", null, null);
 
-        assertThat(MraidUtils.isInlineVideoAvailable(context)).isFalse();
+        assertThat(Mraids.isInlineVideoAvailable(context)).isFalse();
     }
 
     public static Context createMockContextWithSpecificIntentData(final String scheme, final String componentName, final String type, final String action) {

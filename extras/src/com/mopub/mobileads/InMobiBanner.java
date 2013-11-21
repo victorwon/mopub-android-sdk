@@ -2,102 +2,130 @@ package com.mopub.simpleadsdemo;
 
 import android.app.Activity;
 import android.content.Context;
-import android.util.Log;
-import com.inmobi.androidsdk.IMAdListener;
-import com.inmobi.androidsdk.IMAdRequest;
-import com.inmobi.androidsdk.IMAdRequest.ErrorCode;
-import com.inmobi.androidsdk.IMAdView;
+import com.inmobi.commons.InMobi;
+import com.inmobi.commons.InMobi.LOG_LEVEL;
+import com.inmobi.mediation.adapter.inmobi.InMobiExtras;
+import com.inmobi.monetization.IMBanner;
+import com.inmobi.monetization.IMBannerListener;
+import com.inmobi.monetization.IMErrorCode;
 import com.mopub.mobileads.CustomEventBanner;
+import com.mopub.mobileads.MoPub;
 import com.mopub.mobileads.MoPubErrorCode;
+import com.mopub.mobileads.util.Views;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /*
- * Tested with InMobi SDK 3.7.0.
+ * Tested with InMobi SDK 4.0.0
  */
-class InMobiBanner extends CustomEventBanner implements IMAdListener {
-    private CustomEventBannerListener mBannerListener;
-    private IMAdView mInMobiBanner;
+public class InMobiBanner extends CustomEventBanner implements IMBannerListener {
 
-    /*
-     * Abstract methods from CustomEventBanner
-     */
-    @Override
-    protected void loadBanner(Context context, CustomEventBannerListener bannerListener,
-            Map<String, Object> localExtras, Map<String, String> serverExtras) {
-        mBannerListener = bannerListener;
-        
-        Activity activity = null;
-        if (context instanceof Activity) {
-            activity = (Activity) context;
-        } else {
-            // You may also pass in an Activity Context in the localExtras map and retrieve it here.
-        }
-        
-        if (activity == null) {
-            mBannerListener.onBannerFailed(MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR);
-            return;
-        }
-        
-        /*
-         * You may also pass this String down in the serverExtras Map by specifying Custom Event Data
-         * in MoPub's web interface.
-         */
-        String inMobiAppId = "YOUR_INMOBI_APP_ID";
-        mInMobiBanner = new IMAdView(activity, IMAdView.INMOBI_AD_UNIT_320X50, inMobiAppId);
-        
-        mInMobiBanner.setIMAdListener(this);
+	@Override
+	protected void loadBanner(Context context,
+			CustomEventBannerListener bannerListener,
+			Map<String, Object> localExtras, Map<String, String> serverExtras) {
+		mBannerListener = bannerListener;
+		String inMobiAppId = "YOUR_INMOBI_APP_ID";
 
-        IMAdRequest imAdRequest = new IMAdRequest();
-        Map<String, String> requestParameters = new HashMap<String, String>();
-        requestParameters.put("tp", "c_mopub");
-        imAdRequest.setRequestParams(requestParameters);
+		Activity activity = null;
+		if (context instanceof Activity) {
+			activity = (Activity) context;
+		} else {
+			// You may also pass in an Activity Context in the localExtras map
+			// and retrieve it here.
+		}
+		if (activity == null) {
+			mBannerListener.onBannerFailed(null);
+			return;
+		}
+		if (!isAppIntialize) {
+			InMobi.initialize(activity, inMobiAppId);
+			isAppIntialize = true;
+		}
 
-        mInMobiBanner.loadNewAd(imAdRequest);
-    }
+		/*
+		 * You may also pass this String down in the serverExtras Map by
+		 * specifying Custom Event Data in MoPub's web interface.
+		 */
+		iMBanner = new IMBanner(activity, inMobiAppId,
+				IMBanner.INMOBI_AD_UNIT_320X50);
 
-    @Override
-    protected void onInvalidate() {
-        mInMobiBanner.setIMAdListener(null);
-    }
+		Map<String, String> map = new HashMap<String, String>();
+		InMobiExtras extras = new InMobiExtras();
+		map.put("tp", "c_mopub");
+		map.put("tp-ver", MoPub.SDK_VERSION);
+		extras.setRequestParams(map);
+		iMBanner.addNetworkExtras(extras);
+		InMobi.setLogLevel(LOG_LEVEL.VERBOSE);
+		iMBanner.setIMBannerListener(this);
+		iMBanner.setRefreshInterval(-1);
+		iMBanner.loadBanner();
 
-    /*
-     * IMAdListener implementation
-     */
-    @Override
-    public void onAdRequestCompleted(IMAdView adView) {
-        if (mInMobiBanner != null) {
-            Log.d("MoPub", "InMobi banner ad loaded successfully. Showing ad...");
-            mBannerListener.onBannerLoaded(mInMobiBanner);
-        } else {
-            mBannerListener.onBannerFailed(MoPubErrorCode.NETWORK_INVALID_STATE);
-        }
-    }
+	}
 
-    @Override
-    public void onAdRequestFailed(IMAdView adView, ErrorCode errorCode) {
-        Log.d("MoPub", "InMobi banner ad failed to load.");
-        mBannerListener.onBannerFailed(MoPubErrorCode.NETWORK_NO_FILL);
-    }
+	private CustomEventBannerListener mBannerListener;
+	private IMBanner iMBanner;
+	private static boolean isAppIntialize = false;
 
-    @Override
-    public void onDismissAdScreen(IMAdView adView) {
-        Log.d("MoPub", "InMobi banner ad modal dismissed.");
-    }
+	/*
+	 * Abstract methods from CustomEventBanner
+	 */
 
-    @Override
-    public void onLeaveApplication(IMAdView adView) {
-        /*
-         * Because InMobi does not have an onClick equivalent, we use onLeaveApplication
-         * as a click notification.
-         */
-        Log.d("MoPub", "InMobi banner ad leaving application.");
-        mBannerListener.onBannerClicked();
-    }
+	@Override
+	public void onInvalidate() {
+		iMBanner.setIMBannerListener(null);
+		if (iMBanner != null) {
+            Views.removeFromParent(iMBanner);
+            iMBanner.destroy();
+		}
+	}
 
-    @Override
-    public void onShowAdScreen(IMAdView adView) {
-        Log.d("MoPub", "InMobi banner ad modal shown.");
-    }
+	@Override
+	public void onBannerInteraction(IMBanner imBanner, Map<String, String> map) {
+		mBannerListener.onBannerClicked();
+	}
+
+	@Override
+	public void onBannerRequestFailed(IMBanner imBanner, IMErrorCode imErrorCode) {
+
+		if (imErrorCode == IMErrorCode.INTERNAL_ERROR) {
+			mBannerListener.onBannerFailed(MoPubErrorCode.INTERNAL_ERROR);
+		} else if (imErrorCode == IMErrorCode.INVALID_REQUEST) {
+			mBannerListener
+					.onBannerFailed(MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR);
+		} else if (imErrorCode == IMErrorCode.NETWORK_ERROR) {
+			mBannerListener
+					.onBannerFailed(MoPubErrorCode.NETWORK_INVALID_STATE);
+		} else if (imErrorCode == IMErrorCode.NO_FILL) {
+			mBannerListener.onBannerFailed(MoPubErrorCode.NO_FILL);
+		} else {
+			mBannerListener.onBannerFailed(MoPubErrorCode.UNSPECIFIED);
+		}
+	}
+
+	@Override
+	public void onBannerRequestSucceeded(IMBanner imBanner) {
+		if (iMBanner != null) {
+			mBannerListener.onBannerLoaded(imBanner);
+
+		} else {
+			mBannerListener.onBannerFailed(null);
+		}
+	}
+
+	@Override
+	public void onDismissBannerScreen(IMBanner imBanner) {
+		mBannerListener.onBannerCollapsed();
+	}
+
+	@Override
+	public void onLeaveApplication(IMBanner imBanner) {
+
+	}
+
+	@Override
+	public void onShowBannerScreen(IMBanner imBanner) {
+		mBannerListener.onBannerExpanded();
+	}
+
 }

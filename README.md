@@ -25,17 +25,15 @@ Integration instructions are available on the [wiki](https://github.com/mopub/mo
 
 ## New in this Version
 
-Please view the [changelog](https://github.com/mopub/mopub-android-sdk/blob/master/CHANGELOG.md) for details. 
+Please view the [changelog](https://github.com/mopub/mopub-android-sdk/blob/master/CHANGELOG.md) for details.
 
-- Improved creative controls
-  - Creative flagging
-    - Allows users to report certain inappropriate ad experiences directly to MoPub with a special gesture
-    - User must swipe back and forth at least four times in the ad view to flag a creative
-    - Swipes must cover more than 1/3 of the ad width and should be completely horizontal
-    - Only enabled for direct sold, Marketplace, and server-to-server networks ads
-  - Creatives that attempt to auto-redirect are now blocked; ads cannot redirect without user interaction
-  - Javascript alert, confirm, and prompt dialogs are blocked
-- Improved responsiveness of `showInterstitial()` for `HtmlInterstitial`s and `MraidInterstitial`s by pre-rendering HTML content
+  - Support for VAST 2.0 video playback via MoPub Marketplace
+    - Short videos (less than 15 seconds) autoplay and and are unskippable
+    - Longer videos autoplay and are skippable after 5 seconds
+  - Updated InMobi custom event support to 4.0.0
+  - Added custom events for video ad network mediation, which can be found in the extras directory of the SDK (`/extras/src/com/mopub/mobileads/`)
+    - Added the `AdColonyInterstitial` custom event
+    - Added the `VungleInterstitial` custom event
 
 ## Requirements
 

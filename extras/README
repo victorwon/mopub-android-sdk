@@ -1,8 +1,3 @@
-HTML5 AdView
-============
-Note that this class utilizes methods that require API Level 7 (Android 2.1) or higher. When adding 
-this file to your project, please update your project's build target accordingly.
-
 Google AdSense SDK
 ==================
 Although the AdSense SDK for Android is deprecated, you can support it by doing the following:

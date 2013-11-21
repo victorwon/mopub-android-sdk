@@ -85,6 +85,20 @@ public abstract class BaseUrlGenerator {
         addParam("android_perms_ext_storage", isExternalStoragePermissionGranted ? "1" : "0");
     }
 
+    protected void setDeviceInfo(String... info) {
+        StringBuilder result = new StringBuilder();
+        if (info == null || info.length < 1) {
+            return;
+        }
+
+        for (int i=0; i<info.length-1; i++) {
+            result.append(info[i]).append(",");
+        }
+        result.append(info[info.length-1]);
+
+        addParam("dn", result.toString());
+    }
+
     protected void setUdid(String udid) {
         String udidDigest = (udid == null) ? "" : Utils.sha1(udid);
         addParam("udid", "sha:" + udidDigest);

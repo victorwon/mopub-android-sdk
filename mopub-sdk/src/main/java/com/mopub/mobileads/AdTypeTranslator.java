@@ -43,6 +43,7 @@ public class AdTypeTranslator {
     public static final String MRAID_INTERSTITIAL = "com.mopub.mobileads.MraidInterstitial";
     public static final String HTML_BANNER = "com.mopub.mobileads.HtmlBanner";
     public static final String HTML_INTERSTITIAL = "com.mopub.mobileads.HtmlInterstitial";
+    public static final String VAST_VIDEO_INTERSTITIAL = "com.mopub.mobileads.VastVideoInterstitial";
     private static Map<String, String> customEventNameForAdType = new HashMap<String, String>();
 
     static {
@@ -54,6 +55,7 @@ public class AdTypeTranslator {
         customEventNameForAdType.put("mraid_interstitial", MRAID_INTERSTITIAL);
         customEventNameForAdType.put("html_banner", HTML_BANNER);
         customEventNameForAdType.put("html_interstitial", HTML_INTERSTITIAL);
+        customEventNameForAdType.put("vast_interstitial", VAST_VIDEO_INTERSTITIAL);
     }
 
     static String getAdNetworkType(String adType, String fullAdType) {

@@ -38,6 +38,7 @@ import com.mopub.mobileads.AdViewController;
 public class AdFetcherFactory {
     protected static AdFetcherFactory instance = new AdFetcherFactory();
 
+    @Deprecated // for testing
     public static void setInstance(AdFetcherFactory factory) {
         instance = factory;
     }

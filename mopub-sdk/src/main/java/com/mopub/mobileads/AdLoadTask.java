@@ -35,6 +35,7 @@ package com.mopub.mobileads;
 import android.app.Activity;
 import android.net.Uri;
 import android.util.Log;
+import com.mopub.mobileads.util.Json;
 import com.mopub.mobileads.util.Strings;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -120,6 +121,7 @@ abstract class AdLoadTask {
                 return createCustomEventAdLoadTask(customEventData);
             }
 
+            // Otherwise, use the (deprecated) legacy custom event system for older clients
             Header oldCustomEventHeader = response.getFirstHeader(CUSTOM_SELECTOR.getKey());
             return new AdLoadTask.LegacyCustomEventAdLoadTask(adViewController, oldCustomEventHeader);
         }
@@ -144,7 +146,7 @@ abstract class AdLoadTask {
                 eventDataMap.put(CLICKTHROUGH_URL_KEY, clickthroughUrl);
             }
 
-            String eventData = Utils.mapToJsonString(eventDataMap);
+            String eventData = Json.mapToJsonString(eventDataMap);
             return createCustomEventAdLoadTask(eventData);
         }
 
@@ -166,7 +168,8 @@ abstract class AdLoadTask {
         }
 
         private boolean eventDataIsInResponseBody(String adType) {
-            return "mraid".equals(this.adType) || "html".equals(adType);
+            // XXX Hack
+            return "mraid".equals(adType) || "html".equals(adType) || ("interstitial".equals(adType) && "vast".equals(fullAdType));
         }
     }
 

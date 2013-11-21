@@ -56,8 +56,7 @@ import static org.mockito.Mockito.verify;
 import static org.robolectric.Robolectric.shadowOf_;
 
 @RunWith(SdkTestRunner.class)
-public class MraidInterstitialTest {
-    private MraidInterstitial subject;
+public class MraidInterstitialTest extends ResponseBodyInterstitialTest {
     private CustomEventInterstitialListener customEventInterstitialListener;
     private Map<String,Object> localExtras;
     private Map<String,String> serverExtras;

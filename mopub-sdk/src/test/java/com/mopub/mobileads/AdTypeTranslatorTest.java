@@ -111,6 +111,13 @@ public class AdTypeTranslatorTest {
     }
 
     @Test
+    public void getVastInterstitial() throws Exception {
+        customEventName = AdTypeTranslator.getCustomEventNameForAdType(moPubInterstitialView, "interstitial", "vast");
+
+        assertThat(customEventName).isEqualTo(AdTypeTranslator.VAST_VIDEO_INTERSTITIAL);
+    }
+
+    @Test
     public void getCustomEventNameForAdType_whenSendingNonsense_shouldReturnNull() throws Exception {
         customEventName = AdTypeTranslator.getCustomEventNameForAdType(null, null, null);
 

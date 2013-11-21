@@ -139,15 +139,15 @@ public class AdAlertReporterTest {
         emailIntent = subject.getEmailIntent();
         String emailSubject = emailIntent.getStringExtra(Intent.EXTRA_TEXT);
         String bodyParts[] = emailSubject.split("\n=================\n");
-        String imageString = bodyParts[0];
-        String parameters = bodyParts[1];
-        String response = bodyParts[2];
+        String parameters = bodyParts[0];
+        String response = bodyParts[1];
+        String imageString = bodyParts[2];
 
         assertThat(bodyParts.length).isEqualTo(3);
         //this string is the JPEG encoded version
-        assertThat(imageString).isEqualTo("Qml0bWFwICgxMCB4IDEwKSBjcmVhdGVkIGZyb20gQml0bWFwIG9iamVjdCBjb21wcmVzc2VkIGFz\nIEpQRUcgd2l0aCBxdWFsaXR5IDI1\n");
         assertThat(parameters).isEqualTo(subject.getParameters());
         assertThat(response).isEqualTo(subject.getResponse());
+        assertThat(imageString).isEqualTo("Qml0bWFwICgxMCB4IDEwKSBjcmVhdGVkIGZyb20gQml0bWFwIG9iamVjdCBjb21wcmVzc2VkIGFz\nIEpQRUcgd2l0aCBxdWFsaXR5IDI1\n");
     }
 
     @Test

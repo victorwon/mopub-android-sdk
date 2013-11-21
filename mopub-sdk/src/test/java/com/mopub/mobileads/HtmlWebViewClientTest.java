@@ -75,9 +75,7 @@ public class HtmlWebViewClientTest {
     }
 
     @Test
-    public void shouldOverrideUrlLoading_withMoPubFinishLoad_withUserClick_shouldCallAdDidLoad() throws Exception {
-        stub(htmlWebView.wasClicked()).toReturn(true);
-
+    public void shouldOverrideUrlLoading_withMoPubFinishLoad_shouldCallAdDidLoad() throws Exception {
         boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, "mopub://finishLoad");
 
         assertThat(didOverrideUrl).isTrue();
@@ -85,29 +83,7 @@ public class HtmlWebViewClientTest {
     }
 
     @Test
-    public void shouldOverrideUrlLoading_withMoPubFinishLoad_whenUserNotClicked_shouldCallAdDidLoad() throws Exception {
-        stub(htmlWebView.wasClicked()).toReturn(false);
-
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, "mopub://finishLoad");
-
-        assertThat(didOverrideUrl).isTrue();
-        verify(htmlWebViewListener).onLoaded(eq(htmlWebView));
-    }
-
-    @Test
-    public void shouldOverrideUrlLoading_withMoPubClose_withUserClick_shouldCallAdDidClose() throws Exception {
-        stub(htmlWebView.wasClicked()).toReturn(true);
-
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, "mopub://close");
-
-        assertThat(didOverrideUrl).isTrue();
-        verify(htmlWebViewListener).onCollapsed();
-    }
-
-    @Test
-    public void shouldOverrideUrlLoading_withMoPubClose_withoutUserClick_shouldCallAdDidClose() throws Exception {
-        stub(htmlWebView.wasClicked()).toReturn(false);
-
+    public void shouldOverrideUrlLoading_withMoPubClose_shouldCallAdDidClose() throws Exception {
         boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, "mopub://close");
 
         assertThat(didOverrideUrl).isTrue();
@@ -116,8 +92,6 @@ public class HtmlWebViewClientTest {
 
     @Test
     public void shouldOverrideUrlLoading_withMoPubFailLoad_shouldCallLoadFailUrl() throws Exception {
-        stub(htmlWebView.wasClicked()).toReturn(true);
-
         boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, "mopub://failLoad");
 
         assertThat(didOverrideUrl).isTrue();
@@ -189,122 +163,51 @@ public class HtmlWebViewClientTest {
     }
 
     @Test
-    public void shouldOverrideUrlLoading_withValidMarketIntent_withUserClick_shouldOpenPlayStore() throws Exception {
+    public void shouldOverrideUrlLoading_withCustomApplicationIntent_withUserClick_andCanHandleCustomIntent_shouldTryToLaunchCustomIntent() throws Exception {
+        String customUrl = "myintent://something";
         stub(htmlWebView.wasClicked()).toReturn(true);
-
         subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
-        String validMarketUrl = "market://somethingValid";
-        Robolectric.packageManager.addResolveInfoForIntent(new Intent(Intent.ACTION_VIEW, Uri.parse(validMarketUrl)), new ResolveInfo());
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, validMarketUrl);
+        Robolectric.packageManager.addResolveInfoForIntent(new Intent(Intent.ACTION_VIEW, Uri.parse(customUrl)), new ResolveInfo());
+
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, customUrl);
 
         assertThat(didOverrideUrl).isTrue();
         verify(htmlWebViewListener).onClicked();
-
-        Intent startedActivity = assertActivityStarted();
-        assertThat(startedActivity.getAction()).isEqualTo(Intent.ACTION_VIEW);
-        assertThat(startedActivity.getData().toString()).isEqualTo(validMarketUrl);
+        assertActivityStarted();
     }
 
     @Test
-    public void shouldOverrideUrlLoading_withValidMarketIntent_withoutUserClick_shouldNotOpenPlayStore() throws Exception {
+    public void shouldOverrideUrlLoading_withCustomApplicationIntent_withoutUserClick_shouldNotTryToLaunchIntent() throws Exception {
+        String customUrl = "myintent://something";
         stub(htmlWebView.wasClicked()).toReturn(false);
-
         subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
-        String validMarketUrl = "market://somethingValid";
-        Robolectric.packageManager.addResolveInfoForIntent(new Intent(Intent.ACTION_VIEW, Uri.parse(validMarketUrl)), new ResolveInfo());
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, validMarketUrl);
+
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, customUrl);
 
         assertThat(didOverrideUrl).isTrue();
         verify(htmlWebViewListener, never()).onClicked();
-
         assertThat(Robolectric.getShadowApplication().getNextStartedActivity()).isNull();
     }
 
     @Test
-    public void shouldOverrideUrlLoading_withUnhandleableMarketIntent_withUserClick_shouldNotOpenBrowser() throws Exception {
-        String invalidMarketUrl = "market://somethingInvalid";
+    public void shouldOverrideUrlLoading_withCustomApplicationIntent_withUserClick_butCanNotHandleCustomIntent_shouldDefaultToMraidBrowser() throws Exception {
+        String customUrl = "myintent://something";
         stub(htmlWebView.wasClicked()).toReturn(true);
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, invalidMarketUrl);
-
-        assertThat(didOverrideUrl).isTrue();
-        verify(htmlWebViewListener, never()).onClicked();
-
-        assertThat(Robolectric.getShadowApplication().getNextStartedActivity()).isNull();
-    }
-
-    @Test
-    public void shouldOverrideUrlLoading_withUnhandleableMarketIntent_withoutUserClick_shouldNotOpenBrowser() throws Exception {
-        String invalidMarketUrl = "market://somethingInvalid";
-        stub(htmlWebView.wasClicked()).toReturn(false);
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, invalidMarketUrl);
-
-        assertThat(didOverrideUrl).isTrue();
-        verify(htmlWebViewListener, never()).onClicked();
-
-        assertThat(Robolectric.getShadowApplication().getNextStartedActivity()).isNull();
-    }
-
-    @Test
-    public void shouldOverrideUrlLoading_withAmazonIntentAndAmazonPresent_withUserClick_shouldOpenAmazonMarket() throws Exception {
-        stub(htmlWebView.wasClicked()).toReturn(true);
-
         subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
-        String validAmazonUrl = "amzn://somethingValid";
-        Robolectric.packageManager.addResolveInfoForIntent(new Intent(Intent.ACTION_VIEW, Uri.parse(validAmazonUrl)), new ResolveInfo());
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, validAmazonUrl);
+
+        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, customUrl);
 
         assertThat(didOverrideUrl).isTrue();
         verify(htmlWebViewListener).onClicked();
-
-        Intent startedActivity = assertActivityStarted();
-        assertThat(startedActivity.getAction()).isEqualTo(Intent.ACTION_VIEW);
-        assertThat(startedActivity.getData().toString()).isEqualTo(validAmazonUrl);
-    }
-
-    @Test
-    public void shouldOverrideUrlLoading_withAmazonIntentAndAmazonPresent_withoutUserClick_shouldNotOpenAmazonMarket() throws Exception {
-        stub(htmlWebView.wasClicked()).toReturn(false);
-
-        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
-        String validAmazonUrl = "amzn://somethingValid";
-        Robolectric.packageManager.addResolveInfoForIntent(new Intent(Intent.ACTION_VIEW, Uri.parse(validAmazonUrl)), new ResolveInfo());
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, validAmazonUrl);
-
-        assertThat(didOverrideUrl).isTrue();
-        verify(htmlWebViewListener, never()).onClicked();
-
-        assertThat(Robolectric.getShadowApplication().getNextStartedActivity()).isNull();
-    }
-
-    @Test
-    public void shouldOverrideUrlLoading_withAmazonIntentAndNoAmazon_withUserClick_shouldNotTryToOpenAmazonMarket() throws Exception {
-        String invalidAmazonUrl = "amzn://somethingValid";
-        stub(htmlWebView.wasClicked()).toReturn(true);
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, invalidAmazonUrl);
-
-        assertThat(didOverrideUrl).isTrue();
-        verify(htmlWebViewListener, never()).onClicked();
-
-        Intent startedActivity = Robolectric.getShadowApplication().getNextStartedActivity();
-        assertThat(startedActivity).isNull();
-    }
-
-    @Test
-    public void shouldOverrideUrlLoading_withAmazonIntentAndNoAmazon_withoutUserClick_shouldNotTryToOpenAmazonMarket() throws Exception {
-        String invalidAmazonUrl = "amzn://somethingValid";
-        stub(htmlWebView.wasClicked()).toReturn(false);
-        boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, invalidAmazonUrl);
-
-        assertThat(didOverrideUrl).isTrue();
-        verify(htmlWebViewListener, never()).onClicked();
-
-        assertThat(Robolectric.getShadowApplication().getNextStartedActivity()).isNull();
+        Intent startedIntent = Robolectric.getShadowApplication().getNextStartedActivity();
+        assertThat(startedIntent).isNotNull();
+        assertThat(startedIntent.getComponent().getClassName()).isEqualTo("com.mopub.mobileads.MraidBrowser");
     }
 
     @Test
     public void shouldOverrideUrlLoading_withHttpUrl_withUserClick_shouldOpenBrowser() throws Exception {
-        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
         stub(htmlWebView.wasClicked()).toReturn(true);
+        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
         String validUrl = "http://www.mopub.com";
         boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, validUrl);
 
@@ -319,8 +222,8 @@ public class HtmlWebViewClientTest {
 
     @Test
     public void shouldOverrideUrlLoading_withHttpUrl_withoutUserClick_shouldNotOpenBrowser() throws Exception {
-        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
         stub(htmlWebView.wasClicked()).toReturn(false);
+        subject = new HtmlWebViewClient(htmlWebViewListener, htmlWebView, null, null);
         String validUrl = "http://www.mopub.com";
         boolean didOverrideUrl = subject.shouldOverrideUrlLoading(htmlWebView, validUrl);
 

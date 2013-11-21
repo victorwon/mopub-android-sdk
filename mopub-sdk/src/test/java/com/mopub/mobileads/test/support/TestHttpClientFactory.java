@@ -39,7 +39,7 @@ public class TestHttpClientFactory extends HttpClientFactory {
     private DefaultHttpClient instance = new DefaultHttpClient();
 
     @Override
-    protected DefaultHttpClient internalCreate() {
+    protected DefaultHttpClient internalCreate(int timeout) {
         return instance;
     }
 }

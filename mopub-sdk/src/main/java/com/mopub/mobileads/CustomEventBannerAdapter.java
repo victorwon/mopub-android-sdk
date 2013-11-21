@@ -38,6 +38,7 @@ import android.util.Log;
 import android.view.View;
 import com.mopub.mobileads.CustomEventBanner.CustomEventBannerListener;
 import com.mopub.mobileads.factories.CustomEventBannerFactory;
+import com.mopub.mobileads.util.Json;
 
 import java.util.*;
 
@@ -85,7 +86,7 @@ public class CustomEventBannerAdapter implements CustomEventBannerListener {
 
         // Attempt to load the JSON extras into mServerExtras.
         try {
-            mServerExtras = Utils.jsonStringToMap(classData);
+            mServerExtras = Json.jsonStringToMap(classData);
         } catch (Exception exception) {
             Log.d("MoPub", "Failed to create Map from JSON: " + classData + exception.toString());
         }

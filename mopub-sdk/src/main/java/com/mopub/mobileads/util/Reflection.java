@@ -36,7 +36,6 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 public class Reflection {
-
     public static class MethodBuilder {
         private final Object mInstance;
         private final String mMethodName;
@@ -73,7 +72,7 @@ public class Reflection {
             Class<?>[] classArray = new Class<?>[mParameterClasses.size()];
             Class<?>[] parameterTypes = mParameterClasses.toArray(classArray);
 
-            Method method = mClass.getDeclaredMethod(mMethodName, parameterTypes);
+            Method method = getDeclaredMethodWithTraversal(mClass, mMethodName, parameterTypes);
 
             if (mIsAccessible) {
                 method.setAccessible(true);
@@ -82,5 +81,21 @@ public class Reflection {
             Object[] parameters = mParameters.toArray();
             return method.invoke(mInstance, parameters);
         }
+    }
+
+    public static Method getDeclaredMethodWithTraversal(Class<?> clazz, String methodName, Class<?>... parameterTypes)
+            throws NoSuchMethodException {
+        Class<?> currentClass = clazz;
+
+        while (currentClass != null) {
+            try {
+                Method method = currentClass.getDeclaredMethod(methodName, parameterTypes);
+                return method;
+            } catch (NoSuchMethodException e) {
+                currentClass = currentClass.getSuperclass();
+            }
+        }
+
+        throw new NoSuchMethodException();
     }
 }

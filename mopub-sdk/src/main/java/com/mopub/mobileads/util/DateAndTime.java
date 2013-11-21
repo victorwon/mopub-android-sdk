@@ -37,6 +37,7 @@ import java.util.*;
 public class DateAndTime {
     protected static DateAndTime instance = new DateAndTime();
 
+    @Deprecated // for testing
     public static void setInstance(DateAndTime newInstance) {
         instance = newInstance;
     }

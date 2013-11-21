@@ -6,13 +6,15 @@ import android.util.Log;
 import com.chartboost.sdk.Chartboost;
 import com.chartboost.sdk.ChartboostDelegate;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /*
  * Tested with Chartboost SDK 3.1.5.
  */
 class ChartboostInterstitial extends CustomEventInterstitial {
+    /*
+     * These keys are intended for MoPub internal use. Do not modify.
+     */
     public static final String APP_ID_KEY = "appId";
     public static final String APP_SIGNATURE_KEY = "appSignature";
     public static final String LOCATION_KEY = "location";

@@ -83,10 +83,10 @@ public class AdAlertReporter {
         mResponse = getResponseString();
 
         addEmailSubject();
-        addEmailBody(new String[]{screenShotString, mParameters, mResponse});
-        addImageAttachment(SCREEN_SHOT_FILENAME, screenShot);
+        addEmailBody( new String[]{ mParameters, mResponse, screenShotString });
         addTextAttachment(PARAMETERS_FILENAME, mParameters);
         addTextAttachment(MARKUP_FILENAME, mResponse);
+        addImageAttachment(SCREEN_SHOT_FILENAME, screenShot);
     }
 
     public void send() {

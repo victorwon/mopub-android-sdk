@@ -44,7 +44,9 @@ public enum MoPubErrorCode {
     NETWORK_NO_FILL("Third-party network failed to provide inventory."),
     NETWORK_INVALID_STATE("Third-party network failed due to invalid internal state."),
     MRAID_LOAD_ERROR("Error loading MRAID ad."),
-    
+    VIDEO_CACHE_ERROR("Error creating a cache to store downloaded videos."),
+    VIDEO_DOWNLOAD_ERROR("Error downloading video."),
+
     UNSPECIFIED("Unspecified error.");
     
     private final String message;

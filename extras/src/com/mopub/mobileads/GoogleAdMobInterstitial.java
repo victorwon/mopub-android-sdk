@@ -42,7 +42,7 @@ import com.google.ads.AdRequest;
 import com.google.ads.AdRequest.ErrorCode;
 import com.google.ads.InterstitialAd;
 
-import java.util.Map;
+import java.util.*;
 
 import static com.mopub.mobileads.MoPubErrorCode.ADAPTER_CONFIGURATION_ERROR;
 import static com.mopub.mobileads.MoPubErrorCode.NETWORK_NO_FILL;
@@ -52,6 +52,9 @@ import static com.mopub.mobileads.MoPubErrorCode.NETWORK_NO_FILL;
  */
 
 class GoogleAdMobInterstitial extends CustomEventInterstitial implements AdListener {
+    /*
+     * These keys are intended for MoPub internal use. Do not modify.
+     */
     public static final String AD_UNIT_ID_KEY = "adUnitID";
     public static final String LOCATION_KEY = "location";
 

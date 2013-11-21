@@ -35,6 +35,7 @@ package com.mopub.mobileads;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
+import com.mopub.mobileads.factories.HttpClientFactory;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -96,7 +97,7 @@ public class MoPubConversionTracker {
             String url = new ConversionUrlGenerator().generateUrlString(TRACK_HOST);
             Log.d("MoPub", "Conversion track: " + url);
 
-            DefaultHttpClient httpClient = new DefaultHttpClient();
+            DefaultHttpClient httpClient = HttpClientFactory.create();
             HttpResponse response;
             try {
                 HttpGet httpget = new HttpGet(url);

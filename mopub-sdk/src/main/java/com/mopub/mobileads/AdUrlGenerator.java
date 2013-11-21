@@ -37,6 +37,7 @@ import android.content.res.Configuration;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.telephony.TelephonyManager;
 import com.mopub.mobileads.util.DateAndTime;
 
@@ -56,7 +57,7 @@ import static com.mopub.mobileads.AdUrlGenerator.MoPubNetworkType.ETHERNET;
 import static com.mopub.mobileads.AdUrlGenerator.MoPubNetworkType.MOBILE;
 import static com.mopub.mobileads.AdUrlGenerator.MoPubNetworkType.UNKNOWN;
 import static com.mopub.mobileads.AdUrlGenerator.MoPubNetworkType.WIFI;
-import static com.mopub.mobileads.util.MraidUtils.isStorePictureSupported;
+import static com.mopub.mobileads.util.Mraids.isStorePictureSupported;
 
 public class AdUrlGenerator extends BaseUrlGenerator {
     public static final String DEVICE_ORIENTATION_PORTRAIT = "p";
@@ -119,6 +120,8 @@ public class AdUrlGenerator extends BaseUrlGenerator {
         setAdUnitId(mAdUnitId);
 
         setSdkVersion(MoPub.SDK_VERSION);
+
+        setDeviceInfo(Build.MANUFACTURER, Build.MODEL, Build.PRODUCT);
 
         setUdid(getUdidFromContext(mContext));
 

@@ -52,9 +52,11 @@ import static com.mopub.mobileads.AdFetcher.CLICKTHROUGH_URL_KEY;
 import static com.mopub.mobileads.AdFetcher.HTML_RESPONSE_BODY_KEY;
 import static com.mopub.mobileads.AdFetcher.REDIRECT_URL_KEY;
 import static com.mopub.mobileads.AdFetcher.SCROLLABLE_KEY;
+import static com.mopub.mobileads.BaseInterstitialActivity.ACTION_INTERSTITIAL_CLICK;
 import static com.mopub.mobileads.BaseInterstitialActivity.ACTION_INTERSTITIAL_FAIL;
 import static com.mopub.mobileads.BaseInterstitialActivity.HTML_INTERSTITIAL_INTENT_FILTER;
 import static com.mopub.mobileads.CustomEventInterstitial.CustomEventInterstitialListener;
+import static com.mopub.mobileads.HtmlInterstitialWebView.MoPubUriJavascriptFireFinishLoadListener;
 import static com.mopub.mobileads.MoPubErrorCode.UNSPECIFIED;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
@@ -92,17 +94,17 @@ public class MoPubActivityTest extends BaseInterstitialActivityTest {
     }
 
     @Test
-    public void renderHtml_shouldPreloadTheHtml() throws Exception {
+    public void preRenderHtml_shouldPreloadTheHtml() throws Exception {
         String htmlData = "this is nonsense";
         MoPubActivity.preRenderHtml(context, customEventInterstitialListener, htmlData);
 
         verify(htmlInterstitialWebView).enablePlugins(eq(false));
-        verify(htmlInterstitialWebView).addMoPubUriJavascriptInterface(any(HtmlInterstitialWebView.MoPubUriJavascriptFireFinishLoadListener.class));
+        verify(htmlInterstitialWebView).addMoPubUriJavascriptInterface(any(MoPubUriJavascriptFireFinishLoadListener.class));
         verify(htmlInterstitialWebView).loadHtmlResponse(htmlData);
     }
 
     @Test
-    public void renderHtml_shouldHaveAWebViewClientThatForwardsFinishLoad() throws Exception {
+    public void preRenderHtml_shouldHaveAWebViewClientThatForwardsFinishLoad() throws Exception {
         MoPubActivity.preRenderHtml(context, customEventInterstitialListener, null);
 
         ArgumentCaptor<WebViewClient> webViewClientCaptor = ArgumentCaptor.forClass(WebViewClient.class);
@@ -113,6 +115,33 @@ public class MoPubActivityTest extends BaseInterstitialActivityTest {
 
         verify(customEventInterstitialListener).onInterstitialLoaded();
         verify(customEventInterstitialListener, never()).onInterstitialFailed(any(MoPubErrorCode.class));
+    }
+
+    @Test
+    public void preRenderHtml_shouldHaveAWebViewClientThatForwardsFailLoad() throws Exception {
+        MoPubActivity.preRenderHtml(context, customEventInterstitialListener, null);
+
+        ArgumentCaptor<WebViewClient> webViewClientCaptor = ArgumentCaptor.forClass(WebViewClient.class);
+        verify(htmlInterstitialWebView).setWebViewClient(webViewClientCaptor.capture());
+        WebViewClient webViewClient = webViewClientCaptor.getValue();
+
+        webViewClient.shouldOverrideUrlLoading(null, "mopub://failLoad");
+
+        verify(customEventInterstitialListener, never()).onInterstitialLoaded();
+        verify(customEventInterstitialListener).onInterstitialFailed(any(MoPubErrorCode.class));
+    }
+
+    @Test
+    public void preRenderHtml_shouldHaveAMoPubUriInterfaceThatForwardsOnInterstitialLoaded() throws Exception {
+        MoPubActivity.preRenderHtml(context, customEventInterstitialListener, null);
+
+        ArgumentCaptor<MoPubUriJavascriptFireFinishLoadListener> moPubUriJavascriptFireFinishLoadListenerCaptor = ArgumentCaptor.forClass(MoPubUriJavascriptFireFinishLoadListener.class);
+        verify(htmlInterstitialWebView).addMoPubUriJavascriptInterface(moPubUriJavascriptFireFinishLoadListenerCaptor.capture());
+        MoPubUriJavascriptFireFinishLoadListener moPubUriJavascriptFireFinishLoadListener = moPubUriJavascriptFireFinishLoadListenerCaptor.getValue();
+
+        moPubUriJavascriptFireFinishLoadListener.onInterstitialLoaded();
+
+        verify(customEventInterstitialListener).onInterstitialLoaded();
     }
 
     @Test
@@ -147,6 +176,14 @@ public class MoPubActivityTest extends BaseInterstitialActivityTest {
 
         verify(htmlInterstitialWebView).destroy();
         assertThat(getContentView(subject).getChildCount()).isEqualTo(0);
+    }
+
+    @Test
+    public void onDestroy_shouldFireJavascriptWebviewDidClose() throws Exception {
+        subject.onCreate(null);
+        subject.onDestroy();
+
+        verify(htmlInterstitialWebView).loadUrl(eq("javascript:webviewDidClose();"));
     }
 
     @Test
@@ -201,6 +238,38 @@ public class MoPubActivityTest extends BaseInterstitialActivityTest {
         assertThat(intent.getAction()).isEqualTo(ACTION_INTERSTITIAL_FAIL);
 
         assertThat(shadowOf(subject).isFinishing()).isTrue();
+    }
+
+    @Test
+    public void broadcastingInterstitialListener_onInterstitialLoaded_shouldCallJavascriptWebViewDidAppear() throws Exception {
+        MoPubActivity.BroadcastingInterstitialListener broadcastingInterstitialListener = ((MoPubActivity) subject).new BroadcastingInterstitialListener();
+
+        broadcastingInterstitialListener.onInterstitialLoaded();
+
+        verify(htmlInterstitialWebView).loadUrl(eq("javascript:webviewDidAppear();"));
+    }
+
+    @Test
+    public void broadcastingInterstitialListener_onInterstitialFailed_shouldBroadcastFailAndFinish() throws Exception {
+        Intent expectedIntent = new Intent(ACTION_INTERSTITIAL_FAIL);
+        ShadowLocalBroadcastManager.getInstance(subject).registerReceiver(broadcastReceiver, HTML_INTERSTITIAL_INTENT_FILTER);
+
+        MoPubActivity.BroadcastingInterstitialListener broadcastingInterstitialListener = ((MoPubActivity) subject).new BroadcastingInterstitialListener();
+        broadcastingInterstitialListener.onInterstitialFailed(null);
+
+        verify(broadcastReceiver).onReceive(eq(subject), eq(expectedIntent));
+        assertThat(shadowOf(subject).isFinishing()).isTrue();
+    }
+
+    @Test
+    public void broadcastingInterstitialListener_onInterstitialClicked_shouldBroadcastClick() throws Exception {
+        Intent expectedIntent = new Intent(ACTION_INTERSTITIAL_CLICK);
+        ShadowLocalBroadcastManager.getInstance(subject).registerReceiver(broadcastReceiver, HTML_INTERSTITIAL_INTENT_FILTER);
+
+        MoPubActivity.BroadcastingInterstitialListener broadcastingInterstitialListener = ((MoPubActivity) subject).new BroadcastingInterstitialListener();
+        broadcastingInterstitialListener.onInterstitialClicked();
+
+        verify(broadcastReceiver).onReceive(eq(subject), eq(expectedIntent));
     }
 
     private Intent createMoPubActivityIntent(String htmlData, boolean isScrollable, String redirectUrl, String clickthroughUrl, AdConfiguration adConfiguration) {

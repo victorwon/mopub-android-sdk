@@ -35,6 +35,7 @@ package com.mopub.mobileads;
 import android.app.Activity;
 import android.content.Context;
 import android.net.ConnectivityManager;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.webkit.WebView;
@@ -236,6 +237,9 @@ public class AdViewControllerTest {
         String expectedAdUrl = "http://ads.mopub.com/m/ad" +
                 "?v=6" +
                 "&nv=" + MoPub.SDK_VERSION +
+                "&dn=" + Build.MANUFACTURER +
+                "%2C" + Build.MODEL +
+                "%2C" + Build.PRODUCT +
                 "&udid=sha%3A" +
                 "&z=-0700" +
                 "&o=u" +

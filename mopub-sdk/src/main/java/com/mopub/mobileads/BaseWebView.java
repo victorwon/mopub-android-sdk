@@ -36,6 +36,7 @@ import android.content.Context;
 import android.util.Log;
 import android.webkit.WebView;
 import com.mopub.mobileads.util.VersionCode;
+import com.mopub.mobileads.util.Views;
 import com.mopub.mobileads.util.WebViews;
 
 import java.lang.reflect.Method;
@@ -80,5 +81,11 @@ public class BaseWebView extends WebView {
                 Log.d("MoPub", "Unable to modify WebView plugin state.");
             }
         }
+    }
+
+    @Override
+    public void destroy() {
+        Views.removeFromParent(this);
+        super.destroy();
     }
 }
