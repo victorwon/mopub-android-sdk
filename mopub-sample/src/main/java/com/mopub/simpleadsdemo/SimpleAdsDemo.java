@@ -36,13 +36,10 @@ import android.app.TabActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.TabHost;
-import android.widget.Toast;
+
 import com.mopub.mobileads.MoPubConversionTracker;
 
 public class SimpleAdsDemo extends TabActivity {
-    private final int INTERSTITIAL_AD_REQUEST = 0;
-
-    /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,11 +58,6 @@ public class SimpleAdsDemo extends TabActivity {
                 .setContent(new Intent().setClass(this, InterstitialsTab.class));
         tabHost.addTab(spec);
 
-        spec = tabHost.newTabSpec("console")
-                .setIndicator("Console")
-                .setContent(new Intent().setClass(this, ConsoleTab.class));
-        tabHost.addTab(spec);
-
         spec = tabHost.newTabSpec("about")
                 .setIndicator("About")
                 .setContent(new Intent().setClass(this, AboutTab.class));
@@ -73,17 +65,5 @@ public class SimpleAdsDemo extends TabActivity {
 
         // Conversion tracking
         new MoPubConversionTracker().reportAppOpen(this);
-    }
-
-    // Listen for results from the interstitial ad
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch (requestCode) {
-        case INTERSTITIAL_AD_REQUEST:
-            // Handle interstitial closed result here if needed.
-            // This is called immediately before onResume()
-            if (resultCode == RESULT_CANCELED) {
-                Toast.makeText(this, "No ad available", Toast.LENGTH_SHORT).show();
-            }
-        }
     }
 }

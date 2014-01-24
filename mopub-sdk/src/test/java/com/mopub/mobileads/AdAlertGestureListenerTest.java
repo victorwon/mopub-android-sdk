@@ -35,6 +35,7 @@ package com.mopub.mobileads;
 import android.content.Context;
 import android.view.MotionEvent;
 import android.view.View;
+import com.mopub.mobileads.test.support.GestureUtils;
 import com.mopub.mobileads.test.support.SdkTestRunner;
 import org.junit.Before;
 import org.junit.Test;
@@ -74,7 +75,7 @@ public class AdAlertGestureListenerTest {
 
         savedX = INITIAL_X;
         savedY = INITIAL_Y;
-        actionDown = createActionDown(INITIAL_X, INITIAL_Y);
+        actionDown = GestureUtils.createActionDown(INITIAL_X, INITIAL_Y);
 
         threshold = subject.getMinimumDipsInZigZag();
     }
@@ -353,26 +354,26 @@ public class AdAlertGestureListenerTest {
         float y = savedY;
 
         if (areEqual(savedX, endX)) {
-            subject.onScroll(actionDown, createActionMove(x, y), 0, 0);
+            subject.onScroll(actionDown, GestureUtils.createActionMove(x, y), 0, 0);
         } else if (savedX < endX) {
             for (; x < endX; x += stepSizeX) {
-                subject.onScroll(actionDown, createActionMove(x, y), 0, 0);
+                subject.onScroll(actionDown, GestureUtils.createActionMove(x, y), 0, 0);
             }
         } else if (savedX > endX) {
             for (; x > endX; x += stepSizeX) {
-                subject.onScroll(actionDown, createActionMove(x, y), 0, 0);
+                subject.onScroll(actionDown, GestureUtils.createActionMove(x, y), 0, 0);
             }
         }
 
         if (areEqual(savedY, endY)) {
-            subject.onScroll(actionDown, createActionMove(x, y), 0, 0);
+            subject.onScroll(actionDown, GestureUtils.createActionMove(x, y), 0, 0);
         } else if (savedY < endY) {
             for (; y < endY; y += stepSizeY) {
-                subject.onScroll(actionDown, createActionMove(x, y), 0, 0);
+                subject.onScroll(actionDown, GestureUtils.createActionMove(x, y), 0, 0);
             }
         } else if (savedY > endY) {
             for (; y > endY; y += stepSizeY) {
-                subject.onScroll(actionDown, createActionMove(x, y), 0, 0);
+                subject.onScroll(actionDown, GestureUtils.createActionMove(x, y), 0, 0);
             }
         }
 
@@ -395,14 +396,6 @@ public class AdAlertGestureListenerTest {
 
     private boolean areEqual(float a, float b) {
         return (Math.abs(a - b) < 0.01f);
-    }
-
-    private MotionEvent createActionMove(float x, float y) {
-        return MotionEvent.obtain(0, 0, MotionEvent.ACTION_MOVE, x, y, 0);
-    }
-
-    private MotionEvent createActionDown(float x, float y) {
-        return MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, x, y, 0);
     }
 
     private void assertZigZagState(AdAlertGestureListener.ZigZagState state) {

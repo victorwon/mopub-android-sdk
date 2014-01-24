@@ -1,25 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:orientation="vertical"
-	android:padding="10dp"
-	android:layout_width="fill_parent"
-	android:layout_height="fill_parent">
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
 
-<TextView
-	android:layout_width="fill_parent"
-	android:layout_height="wrap_content"
-	android:text="Basic"/>
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
 
-<Button
-	android:id="@+id/load_interstitial"
-	android:layout_width="fill_parent"
-	android:layout_height="wrap_content"
-	android:text="Load Interstitial"/>
+        <EditText
+            android:id="@+id/interstitials_edit_text_interstitial"
+            android:hint="Ad Unit ID for interstitial"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text|textFilter|textShortMessage"
+            android:imeOptions="actionDone"
+            android:singleLine="true" />
 
-<Button
-	android:id="@+id/show_interstitial"
-	android:layout_width="fill_parent"
-	android:layout_height="wrap_content"
-	android:text="Show Interstitial"/>
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content">
 
-</LinearLayout>
+            <Button
+                android:id="@+id/interstitials_load_interstitial"
+                android:text="Load Interstitial"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+
+            <Button
+                android:id="@+id/interstitials_show_interstitial"
+                android:text="Show Interstitial"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

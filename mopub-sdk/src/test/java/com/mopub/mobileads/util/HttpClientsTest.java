@@ -1,13 +1,12 @@
 package com.mopub.mobileads.util;
 
 import com.mopub.mobileads.test.support.SdkTestRunner;
+import com.mopub.mobileads.test.support.ThreadUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ClientConnectionManager;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.robolectric.Robolectric;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -17,6 +16,7 @@ import static org.mockito.Mockito.verify;
 @RunWith(SdkTestRunner.class)
 public class HttpClientsTest {
 
+    public static final int HTTP_CLIENT_SHUTDOWN_TIME = 100;
     private HttpClient httpClient;
     private ClientConnectionManager clientConnectionManager;
 
@@ -27,12 +27,11 @@ public class HttpClientsTest {
         stub(httpClient.getConnectionManager()).toReturn(clientConnectionManager);
     }
 
-    @Ignore("pending")
     @Test
     public void safeShutdown_shouldShutdownHttpClient() throws Exception {
         HttpClients.safeShutdown(httpClient);
 
-        Robolectric.runBackgroundTasks();
+        ThreadUtils.pause(HTTP_CLIENT_SHUTDOWN_TIME);
 
         verify(clientConnectionManager).shutdown();
     }
@@ -41,7 +40,7 @@ public class HttpClientsTest {
     public void safeShutdown_withNullHttpClient_shouldNotBlowUp() throws Exception {
         HttpClients.safeShutdown(null);
 
-        Robolectric.runBackgroundTasks();
+        ThreadUtils.pause(HTTP_CLIENT_SHUTDOWN_TIME);
 
         verify(clientConnectionManager, never()).shutdown();
     }
@@ -51,7 +50,7 @@ public class HttpClientsTest {
         stub(httpClient.getConnectionManager()).toReturn(null);
         HttpClients.safeShutdown(httpClient);
 
-        Robolectric.runBackgroundTasks();
+        ThreadUtils.pause(HTTP_CLIENT_SHUTDOWN_TIME);
 
         verify(clientConnectionManager, never()).shutdown();
     }

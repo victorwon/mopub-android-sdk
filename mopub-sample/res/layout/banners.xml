@@ -1,46 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:orientation="vertical"
-	android:layout_width="fill_parent"
-	android:layout_height="fill_parent">
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+     android:layout_width="fill_parent"
+     android:layout_height="fill_parent">
 
-<RelativeLayout
-	android:id="@+id/toplayout"
-	android:orientation="vertical"
-	android:layout_width="fill_parent"
-	android:layout_height="wrap_content">
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
 
-	<Button
-		android:id="@+id/searchbutton"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:layout_alignParentRight="true"
-		android:layout_marginLeft="10dp"
-		android:layout_marginTop="20dp"
-		android:text="Load Ads" />
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
 
-	<EditText
-		android:id="@+id/searchtext"
-		android:hint="Keyword, try 'coffee'"
-		android:layout_width="fill_parent"
-		android:layout_height="wrap_content"
-		android:layout_toLeftOf="@id/searchbutton"
-		android:layout_alignTop="@id/searchbutton" />
+            <EditText
+                android:id="@+id/banner_adunit_field"
+                android:hint="Ad Unit ID for banner below"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="7"
+                android:inputType="text|textFilter|textShortMessage"
+                android:imeOptions="actionDone"
+                android:singleLine="true" />
 
-</RelativeLayout>
+            <Button
+                android:id="@+id/banner_load_button"
+                android:text="Load"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+        </LinearLayout>
 
-<com.mopub.mobileads.MoPubView
-	android:id="@+id/mrectview"
-	android:layout_height="250dp"
-	android:layout_width="300dp"
-	android:background="@drawable/spacer"
-	android:layout_gravity="center_horizontal"/>
+        <com.mopub.mobileads.MoPubView
+            android:id="@+id/banner_view"
+            android:layout_width="fill_parent"
+            android:layout_height="50dp"
+            android:background="@drawable/spacer" />
 
-<com.mopub.mobileads.MoPubView
-	android:id="@+id/bannerview"
-	android:background="@drawable/spacer"
-	android:layout_width="fill_parent"
-	android:layout_height="50dp"
-	android:layout_marginTop="10dp"/>
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="25dp">
 
-</LinearLayout>
+            <EditText
+                android:id="@+id/mrect_adunit_field"
+                android:hint="Ad Unit ID for mrect below"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="7"
+                android:inputType="text|textFilter|textShortMessage"
+                android:imeOptions="actionDone"
+                android:singleLine="true" />
+
+            <Button
+                android:id="@+id/mrect_load_button"
+                android:text="Load"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+        <com.mopub.mobileads.MoPubView
+            android:id="@+id/mrect_view"
+            android:layout_width="300dp"
+            android:layout_height="250dp"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/spacer" />
+
+        <EditText
+            android:id="@+id/keywords_field"
+            android:hint="Keywords, try 'coffee'"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text|textFilter|textShortMessage"
+            android:imeOptions="actionDone"
+            android:singleLine="true"
+            android:layout_marginTop="25dp" />
+    </LinearLayout>
+</ScrollView>

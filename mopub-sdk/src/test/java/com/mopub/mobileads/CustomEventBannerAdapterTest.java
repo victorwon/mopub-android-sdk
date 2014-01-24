@@ -41,6 +41,8 @@ import com.mopub.mobileads.test.support.SdkTestRunner;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.robolectric.Robolectric;
 
 import java.util.*;
@@ -53,6 +55,7 @@ import static com.mopub.mobileads.MoPubErrorCode.UNSPECIFIED;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -189,6 +192,61 @@ public class CustomEventBannerAdapterTest {
         assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(1);
 
         subject.onBannerFailed(null);
+        assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(0);
+    }
+
+    @Test
+    public void loadAd_shouldScheduleTimeoutRunnableBeforeCallingLoadBanner() throws Exception {
+        Robolectric.pauseMainLooper();
+
+        assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(0);
+
+        Answer assertTimeoutRunnableHasStarted = new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(1);
+                return null;
+            }
+        };
+
+        doAnswer(assertTimeoutRunnableHasStarted)
+                .when(banner)
+                .loadBanner(
+                        any(Context.class),
+                        any(CustomEventBannerListener.class),
+                        any(Map.class),
+                        any(Map.class)
+                );
+
+        subject.loadAd();
+    }
+
+
+    @Test
+    public void loadAd_whenCallingOnBannerFailed_shouldCancelExistingTimeoutRunnable() throws Exception {
+        Robolectric.pauseMainLooper();
+
+        Answer justCallOnBannerFailed = new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(1);
+                subject.onBannerFailed(null);
+                assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(0);
+                return null;
+            }
+        };
+
+        doAnswer(justCallOnBannerFailed)
+                .when(banner)
+                .loadBanner(
+                        any(Context.class),
+                        any(CustomEventBanner.CustomEventBannerListener.class),
+                        any(Map.class),
+                        any(Map.class)
+                );
+
+        assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(0);
+        subject.loadAd();
         assertThat(Robolectric.getUiThreadScheduler().enqueuedTaskCount()).isEqualTo(0);
     }
 

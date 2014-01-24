@@ -36,7 +36,6 @@ import android.net.Uri;
 import android.util.Log;
 import com.mopub.mobileads.factories.VastManagerFactory;
 import com.mopub.mobileads.factories.VastVideoDownloadTaskFactory;
-import com.mopub.mobileads.util.Lists;
 import com.mopub.mobileads.util.vast.VastManager;
 
 import java.util.*;
@@ -129,16 +128,16 @@ class VastVideoInterstitial extends ResponseBodyInterstitial implements VastMana
 
     @Override
     public void onDownloadSuccess() {
-        mVideoStartTrackers = Lists.asStringArrayList(mVastManager.getVideoStartTrackers());
-        mVideoFirstQuartileTrackers = Lists.asStringArrayList(mVastManager.getVideoFirstQuartileTrackers());
-        mVideoMidpointTrackers = Lists.asStringArrayList(mVastManager.getVideoMidpointTrackers());
-        mVideoThirdQuartileTrackers = Lists.asStringArrayList(mVastManager.getVideoThirdQuartileTrackers());
-        mVideoCompleteTrackers = Lists.asStringArrayList(mVastManager.getVideoCompleteTrackers());
+        mVideoStartTrackers = new ArrayList<String>(mVastManager.getVideoStartTrackers());
+        mVideoFirstQuartileTrackers = new ArrayList<String>(mVastManager.getVideoFirstQuartileTrackers());
+        mVideoMidpointTrackers = new ArrayList<String>(mVastManager.getVideoMidpointTrackers());
+        mVideoThirdQuartileTrackers = new ArrayList<String>(mVastManager.getVideoThirdQuartileTrackers());
+        mVideoCompleteTrackers = new ArrayList<String>(mVastManager.getVideoCompleteTrackers());
 
-        mImpressionTrackers = Lists.asStringArrayList(mVastManager.getImpressionTrackers());
+        mImpressionTrackers = new ArrayList<String>(mVastManager.getImpressionTrackers());
 
         mClickThroughUrl = mVastManager.getClickThroughUrl();
-        mClickTrackers = Lists.asStringArrayList(mVastManager.getClickTrackers());
+        mClickTrackers = new ArrayList<String>(mVastManager.getClickTrackers());
 
         mCustomEventInterstitialListener.onInterstitialLoaded();
     }

@@ -39,11 +39,12 @@ public class Reflection {
     public static class MethodBuilder {
         private final Object mInstance;
         private final String mMethodName;
-        private final Class<?> mClass;
+        private Class<?> mClass;
 
         private List<Class<?>> mParameterClasses;
         private List<Object> mParameters;
         private boolean mIsAccessible;
+        private boolean mIsStatic;
 
         public MethodBuilder(final Object instance, final String methodName) {
             mInstance = instance;
@@ -68,6 +69,13 @@ public class Reflection {
             return this;
         }
 
+        public MethodBuilder setStatic(Class<?> clazz) {
+            mIsStatic = true;
+            mClass = clazz;
+
+            return this;
+        }
+
         public Object execute() throws Exception {
             Class<?>[] classArray = new Class<?>[mParameterClasses.size()];
             Class<?>[] parameterTypes = mParameterClasses.toArray(classArray);
@@ -79,7 +87,12 @@ public class Reflection {
             }
 
             Object[] parameters = mParameters.toArray();
-            return method.invoke(mInstance, parameters);
+
+            if (mIsStatic) {
+                return method.invoke(null, parameters);
+            } else {
+                return method.invoke(mInstance, parameters);
+            }
         }
     }
 
@@ -89,8 +102,7 @@ public class Reflection {
 
         while (currentClass != null) {
             try {
-                Method method = currentClass.getDeclaredMethod(methodName, parameterTypes);
-                return method;
+                return currentClass.getDeclaredMethod(methodName, parameterTypes);
             } catch (NoSuchMethodException e) {
                 currentClass = currentClass.getSuperclass();
             }

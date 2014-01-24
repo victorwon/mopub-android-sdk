@@ -58,8 +58,7 @@ public class Utils {
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
             return "";
-        }
-        catch (NullPointerException e) {
+        } catch (NullPointerException e) {
             return "";
         }
     }

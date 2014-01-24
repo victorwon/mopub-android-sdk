@@ -169,4 +169,22 @@ public class ReflectionTest {
             // pass
         }
     }
+
+    @Test
+    public void execute_withStaticMethod_shouldPass() throws Exception {
+        methodBuilder = new MethodBuilder(null, "valueOf").setStatic(String.class).addParam(int.class, 20);
+
+        assertThat(methodBuilder.execute()).isEqualTo("20");
+    }
+
+//    @Test
+//    public void execute_withAccessibility_shouldRunPrivateMethods() throws Exception {
+//        methodBuilder = new MethodBuilder(string, "foldCase");
+//        methodBuilder.addParam(char.class, 'a');
+//        methodBuilder.setAccessible();
+//
+//        char result = (Character) methodBuilder.execute();
+//
+//        assertThat(result).isEqualTo('a');
+//    }
 }

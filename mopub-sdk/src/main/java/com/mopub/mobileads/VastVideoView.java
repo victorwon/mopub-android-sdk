@@ -62,7 +62,7 @@ class VastVideoView extends BaseVideoView {
     private static final long VIDEO_PROGRESS_TIMER_CHECKER_DELAY = 50;
 
     private static final ThreadPoolExecutor sThreadPoolExecutor = new ThreadPoolExecutor(10, 50, 1, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
-    public static final int MAX_VIDEO_DURATION_FOR_CLOSE_BUTTON = 15 * 1000;
+    public static final int MAX_VIDEO_DURATION_FOR_CLOSE_BUTTON = 16 * 1000;
     public static final int DEFAULT_VIDEO_DURATION_FOR_CLOSE_BUTTON = 5 * 1000;
     private final BaseVideoViewListener mBaseVideoViewListener;
 
@@ -80,6 +80,7 @@ class VastVideoView extends BaseVideoView {
     private boolean mIsVideoProgressShouldBeChecked;
     private int mShowCloseButtonDelay = DEFAULT_VIDEO_DURATION_FOR_CLOSE_BUTTON;
 
+    private boolean mShowCloseButtonEventFired;
     private boolean mIsFirstMarkHit;
     private boolean mIsSecondMarkHit;
     private boolean mIsThirdMarkHit;
@@ -104,10 +105,39 @@ class VastVideoView extends BaseVideoView {
         mClickThroughUrl = intent.getStringExtra(VIDEO_CLICK_THROUGH_URL);
         mClickThroughTrackers = intent.getStringArrayListExtra(VIDEO_CLICK_THROUGH_TRACKERS);
 
+        setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+            @Override
+            public void onPrepared(MediaPlayer mp) {
+                if (getDuration() < MAX_VIDEO_DURATION_FOR_CLOSE_BUTTON) {
+                    mShowCloseButtonDelay = getDuration();
+                }
+            }
+        });
+
+        setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_UP && shouldAllowClickThrough()) {
+                    pingOnBackgroundThread(mClickThroughTrackers);
+
+                    if (mBaseVideoViewListener != null) {
+                        mBaseVideoViewListener.videoClicked();
+                    }
+
+                    Intent mraidBrowserIntent = new Intent(context, MraidBrowser.class);
+                    mraidBrowserIntent.putExtra(MraidBrowser.URL_EXTRA, mClickThroughUrl);
+                    context.startActivity(mraidBrowserIntent);
+                }
+
+                return true;
+            }
+        });
+
         setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
                 stopProgressChecker();
+                fireShowCloseButtonEvent();
                 if (mBaseVideoViewListener != null) {
                     mBaseVideoViewListener.videoCompleted(false);
                 }
@@ -127,28 +157,6 @@ class VastVideoView extends BaseVideoView {
                 }
 
                 return false;
-            }
-        });
-
-        setVideoPath(mVideoUrl);
-        requestFocus();
-
-        setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
-                    pingOnBackgroundThread(mClickThroughTrackers);
-
-                    if (mBaseVideoViewListener != null) {
-                        mBaseVideoViewListener.videoClicked();
-                    }
-
-                    Intent mraidBrowserIntent = new Intent(context, MraidBrowser.class);
-                    mraidBrowserIntent.putExtra(MraidBrowser.URL_EXTRA, mClickThroughUrl);
-                    context.startActivity(mraidBrowserIntent);
-                }
-
-                return true;
             }
         });
 
@@ -174,10 +182,8 @@ class VastVideoView extends BaseVideoView {
                         pingOnBackgroundThread(mThirdQuarterTrackers);
                     }
 
-                    if (getCurrentPosition() > mShowCloseButtonDelay) {
-                        if (mBaseVideoViewListener != null) {
-                            mBaseVideoViewListener.showCloseButton();
-                        }
+                    if (shouldShowCloseButton()) {
+                        fireShowCloseButtonEvent();
                     }
                 }
 
@@ -187,19 +193,29 @@ class VastVideoView extends BaseVideoView {
             }
         };
 
-        setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            @Override
-            public void onPrepared(MediaPlayer mp) {
-                if(getDuration() < MAX_VIDEO_DURATION_FOR_CLOSE_BUTTON) {
-                    mShowCloseButtonDelay = getDuration();
-                }
-            }
-        });
+        setVideoPath(mVideoUrl);
+        requestFocus();
 
         pingOnBackgroundThread(mVideoStartTrackers);
         pingOnBackgroundThread(mImpressionTrackers);
 
         mHandler.post(mVideoProgressCheckerRunnable);
+    }
+
+    private void fireShowCloseButtonEvent() {
+        mShowCloseButtonEventFired = true;
+
+        if (mBaseVideoViewListener != null) {
+            mBaseVideoViewListener.showCloseButton();
+        }
+    }
+
+    private boolean shouldShowCloseButton() {
+        return !mShowCloseButtonEventFired && getCurrentPosition() > mShowCloseButtonDelay;
+    }
+
+    private boolean shouldAllowClickThrough(){
+        return mShowCloseButtonEventFired;
     }
 
     @Override
@@ -246,5 +262,20 @@ class VastVideoView extends BaseVideoView {
     private void stopProgressChecker() {
         mIsVideoProgressShouldBeChecked = false;
         mHandler.removeCallbacks(mVideoProgressCheckerRunnable);
+    }
+
+    @Deprecated // for testing
+    void setIsVideoProgressShouldBeChecked(boolean value) {
+        mIsVideoProgressShouldBeChecked = value;
+    }
+
+    @Deprecated // for testing
+    int getShowCloseButtonDelay() {
+        return mShowCloseButtonDelay;
+    }
+
+    @Deprecated // for testing
+    void setCloseButtonVisible(boolean visible) {
+        mShowCloseButtonEventFired = visible;
     }
 }

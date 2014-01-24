@@ -104,11 +104,12 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
         if (isInvalidated() || mCustomEventInterstitial == null) {
             return;
         }
-        mCustomEventInterstitial.loadInterstitial(mContext, this, mLocalExtras, mServerExtras);
 
         if (getTimeoutDelayMilliseconds() > 0) {
             mHandler.postDelayed(mTimeout, getTimeoutDelayMilliseconds());
         }
+
+        mCustomEventInterstitial.loadInterstitial(mContext, this, mLocalExtras, mServerExtras);
     }
     
     void showInterstitial() {
@@ -166,8 +167,9 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
             return;
         }
 
+        cancelTimeout();
+
         if (mCustomEventInterstitialAdapterListener != null) {
-            cancelTimeout();
             mCustomEventInterstitialAdapterListener.onCustomEventInterstitialLoaded();
         }
     }

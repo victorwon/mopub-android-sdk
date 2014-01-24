@@ -62,6 +62,7 @@ import static android.Manifest.permission.ACCESS_NETWORK_STATE;
 import static com.mopub.mobileads.AdViewController.DEFAULT_REFRESH_TIME_MILLISECONDS;
 import static com.mopub.mobileads.MoPubErrorCode.INTERNAL_ERROR;
 import static com.mopub.mobileads.MoPubErrorCode.NO_FILL;
+import static com.mopub.mobileads.test.support.ThreadUtils.NETWORK_DELAY;
 import static com.mopub.mobileads.util.Reflection.MethodBuilder;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.fest.assertions.api.Fail.fail;
@@ -167,7 +168,7 @@ public class AdViewControllerTest {
         assertThat(expectedUserAgent).isNotNull();
 
         subject.trackImpression();
-        Thread.sleep(300); // does this make the test flaky?
+        ThreadUtils.pause(NETWORK_DELAY); // does this make the test flaky?
 
         HttpRequest request = fakeHttpLayer.getLastSentHttpRequestInfo().getHttpRequest();
         assertThat(request.getFirstHeader("User-Agent").getValue()).isEqualTo(expectedUserAgent);

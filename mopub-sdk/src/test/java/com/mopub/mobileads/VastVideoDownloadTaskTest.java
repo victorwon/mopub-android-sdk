@@ -1,26 +1,25 @@
 package com.mopub.mobileads;
 
 import android.app.Activity;
+import android.net.Uri;
 import com.mopub.mobileads.test.support.SdkTestRunner;
 import com.mopub.mobileads.test.support.StreamUtils;
+import com.mopub.mobileads.test.support.TestHttpResponseWithHeaders;
+import com.mopub.mobileads.util.Streams;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
+import org.robolectric.Robolectric;
 
 import java.io.*;
 
 import static com.mopub.mobileads.VastVideoDownloadTask.OnDownloadCompleteListener;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
 
 @RunWith(SdkTestRunner.class)
@@ -29,44 +28,55 @@ public class VastVideoDownloadTaskTest {
     private DiskLruCache diskLruCache;
     private VastVideoDownloadTask subject;
     private String videoUrl;
-    private File cacheDirectory;
+    private TestHttpResponseWithHeaders response;
 
     @Before
     public void setUp() throws Exception {
         onDownloadCompleteListener = mock(OnDownloadCompleteListener.class);
-        diskLruCache = mock(DiskLruCache.class);
         Activity context = new Activity();
-
-        cacheDirectory = new File(context.getFilesDir(), "test_cache_directory");
-        cacheDirectory.mkdirs();
-        stub(diskLruCache.getCacheDirectory()).toReturn(cacheDirectory);
+        diskLruCache = new DiskLruCache(context, "test_cache_directory", 1000);
 
         videoUrl = "http://www.video.com";
+        response = new TestHttpResponseWithHeaders(200, "responseBody");
+        Robolectric.addPendingHttpResponse(response);
 
         subject = new VastVideoDownloadTask(onDownloadCompleteListener, diskLruCache);
     }
 
     @After
     public void tearDown() throws Exception {
-        cacheDirectory.delete();
+        diskLruCache.evictAll();
     }
 
-    @Ignore("pending")
     @Test
     public void execute_shouldAddToCacheAndSignalDownloadSuccess() throws Exception {
         subject.execute(videoUrl);
 
-        ArgumentCaptor<InputStream> inputStreamCaptor = ArgumentCaptor.forClass(InputStream.class);
-        verify(diskLruCache).putStream(eq(videoUrl), inputStreamCaptor.capture());
-        InputStream inputStream = inputStreamCaptor.getValue();
+        Uri uri = diskLruCache.getUri(videoUrl);
+        File file = new File(uri.toString());
 
-//        assertThat(inputStreamToString(inputStream)).isEqualTo("");
+        assertThat(file.exists()).isTrue();
+        assertThat(file.length()).isEqualTo("responseBody".length());
+
+        verify(onDownloadCompleteListener).onDownloadSuccess();
+        verify(onDownloadCompleteListener, never()).onDownloadFailed();
     }
 
-    @Ignore("pending")
     @Test
     public void execute_withMultipleUrls_shouldParseTheFirstOne() throws Exception {
-        subject.execute(videoUrl, "ignored");
+        String ignoredUrl = "ignored";
+        subject.execute(videoUrl, ignoredUrl);
+
+        Uri uri = diskLruCache.getUri(videoUrl);
+        File expectedFile = new File(uri.toString());
+        Uri ignoredUri = diskLruCache.getUri(ignoredUrl);
+
+        assertThat(expectedFile.exists()).isTrue();
+        assertThat(expectedFile.length()).isEqualTo("responseBody".length());
+        assertThat(ignoredUri).isNull();
+
+        verify(onDownloadCompleteListener).onDownloadSuccess();
+        verify(onDownloadCompleteListener, never()).onDownloadFailed();
     }
 
     @Test
@@ -95,14 +105,11 @@ public class VastVideoDownloadTaskTest {
         // pass
     }
 
-    @Ignore("pending")
     @Test
     public void connectToUrl_shouldReturnInputStreamFromHttpConnection() throws Exception {
         InputStream result = subject.connectToUrl(videoUrl);
 
-        String response = inputStreamToString(result);
-        assertThat(response).isNotNull();
-        assertThat(response).isNotEmpty();
+        assertThat(inputStreamToString(result)).isEqualTo("responseBody");
     }
 
     @Test
@@ -124,7 +131,7 @@ public class VastVideoDownloadTaskTest {
         assertThat(result.exists());
         assertThat(result.isFile());
         assertThat(result.getName()).matches("mopub-vast\\d+\\.tmp");
-        assertThat(result.getParentFile()).isEqualTo(cacheDirectory);
+        assertThat(result.getParentFile()).isEqualTo(diskLruCache.getCacheDirectory());
         assertThat(result.length()).isEqualTo(25 * 1000 * 1000 - 1);
 
         result.delete();
@@ -155,30 +162,41 @@ public class VastVideoDownloadTaskTest {
     @Test
     public void copyTempFileIntoCache_shouldReturnTrueOnSuccess() throws Exception {
         ByteArrayInputStream byteArrayInputStream = StreamUtils.createByteArrayInputStream(20);
-        stub(diskLruCache.putStream(anyString(), any(InputStream.class))).toReturn(true);
 
-        File tempFile = File.createTempFile("something", null, cacheDirectory);
-        new FileOutputStream(tempFile).write(byteArrayInputStream.read());
+        File tempFile = File.createTempFile("something", null, diskLruCache.getCacheDirectory());
+        FileOutputStream fileOutputStream = new FileOutputStream(tempFile);
+        fileOutputStream.write(byteArrayInputStream.read());
+        Streams.closeStream(fileOutputStream);
 
         boolean result = subject.copyTempFileIntoCache(videoUrl, tempFile);
 
         assertThat(result).isTrue();
-        verify(diskLruCache).putStream(eq(videoUrl), any(InputStream.class));
+        assertThat(diskLruCache.getUri(videoUrl)).isNotNull();
 
         tempFile.delete();
     }
 
+    @Ignore("pending")
     @Test
     public void copyTempFileIntoCache_whenUnableToPutInCache_shouldReturnFalse() throws Exception {
         ByteArrayInputStream byteArrayInputStream = StreamUtils.createByteArrayInputStream(20);
-        stub(diskLruCache.putStream(anyString(), any(InputStream.class))).toReturn(false);
 
-        File tempFile = File.createTempFile("something", null, cacheDirectory);
-        new FileOutputStream(tempFile).write(byteArrayInputStream.read());
+//        File tempFile = File.createTempFile("something", null, diskLruCache.getCacheDirectory());
+//        new FileOutputStream(tempFile).write(byteArrayInputStream.read());
+
+//        File tempFile = new File("/tmp/blah.mp4");
+//        tempFile.createNewFile();
+
+        File tempFile = File.createTempFile("mopub-vast", null, diskLruCache.getCacheDirectory());
+
+        diskLruCache.put(videoUrl, tempFile);
+        diskLruCache.put(Utils.sha1(videoUrl), tempFile);
+        diskLruCache.put(Utils.sha1(Utils.sha1(videoUrl)), tempFile);
 
         boolean result = subject.copyTempFileIntoCache(videoUrl, tempFile);
-
         assertThat(result).isFalse();
+
+        tempFile.delete();
     }
 
     @Test

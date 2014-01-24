@@ -36,16 +36,13 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-
 import com.mopub.mobileads.test.support.SdkTestRunner;
 import com.mopub.mobileads.test.support.TestHttpResponseWithHeaders;
 import com.mopub.mobileads.test.support.TestVastManagerFactory;
 import com.mopub.mobileads.test.support.TestVastVideoDownloadTaskFactory;
 import com.mopub.mobileads.util.vast.VastManager;
 import org.junit.After;
-
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
@@ -181,14 +178,14 @@ public class VastVideoInterstitialTest extends ResponseBodyInterstitialTest {
     public void showInterstitial_shouldStartVideoPlayerActivityWithAllValidTrackers() throws Exception {
         stub(vastManager.getMediaFileUrl()).toReturn(videoUrl);
 
-        stub(vastManager.getVideoStartTrackers()).toReturn(wrapInList("start"));
-        stub(vastManager.getVideoFirstQuartileTrackers()).toReturn(wrapInList("first"));
-        stub(vastManager.getVideoMidpointTrackers()).toReturn(wrapInList("mid"));
-        stub(vastManager.getVideoThirdQuartileTrackers()).toReturn(wrapInList("third"));
-        stub(vastManager.getVideoCompleteTrackers()).toReturn(wrapInList("complete"));
-        stub(vastManager.getImpressionTrackers()).toReturn(wrapInList("imp"));
+        stub(vastManager.getVideoStartTrackers()).toReturn(Arrays.asList("start"));
+        stub(vastManager.getVideoFirstQuartileTrackers()).toReturn(Arrays.asList("first"));
+        stub(vastManager.getVideoMidpointTrackers()).toReturn(Arrays.asList("mid"));
+        stub(vastManager.getVideoThirdQuartileTrackers()).toReturn(Arrays.asList("third"));
+        stub(vastManager.getVideoCompleteTrackers()).toReturn(Arrays.asList("complete"));
+        stub(vastManager.getImpressionTrackers()).toReturn(Arrays.asList("imp"));
         stub(vastManager.getClickThroughUrl()).toReturn("clickThrough");
-        stub(vastManager.getClickTrackers()).toReturn(wrapInList("click"));
+        stub(vastManager.getClickTrackers()).toReturn(Arrays.asList("click"));
 
         subject.loadInterstitial(context, customEventInterstitialListener, localExtras, serverExtras);
         ((VastVideoInterstitial) subject).onComplete(vastManager);
@@ -246,7 +243,6 @@ public class VastVideoInterstitialTest extends ResponseBodyInterstitialTest {
         verify(customEventInterstitialListener, never()).onInterstitialDismissed();
     }
 
-    @Ignore("pending")
     @Test
     public void onComplete_whenVideoCacheHit_shouldCallOnDownloadSuccess() throws Exception {
         subject.loadInterstitial(context, customEventInterstitialListener, localExtras, serverExtras);
@@ -261,7 +257,6 @@ public class VastVideoInterstitialTest extends ResponseBodyInterstitialTest {
         verify(vastVideoDownloadTask, never()).execute((String[])anyVararg());
     }
 
-    @Ignore("pending")
     @Test
     public void onComplete_whenVideoCacheMiss_shouldStartVastVideoDownloadTask() throws Exception {
         subject.loadInterstitial(context, customEventInterstitialListener, localExtras, serverExtras);
@@ -290,11 +285,5 @@ public class VastVideoInterstitialTest extends ResponseBodyInterstitialTest {
         ((VastVideoInterstitial) subject).onDownloadFailed();
 
         verify(customEventInterstitialListener).onInterstitialFailed(eq(VIDEO_DOWNLOAD_ERROR));
-    }
-
-    private <T> List<T> wrapInList(T object) {
-        List<T> result = new ArrayList<T>();
-        result.add(object);
-        return result;
     }
 }
