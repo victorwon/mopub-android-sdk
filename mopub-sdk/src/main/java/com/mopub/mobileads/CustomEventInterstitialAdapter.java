@@ -35,12 +35,11 @@ package com.mopub.mobileads;
 import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
-
 import com.mopub.mobileads.CustomEventInterstitial.CustomEventInterstitialListener;
 import com.mopub.mobileads.factories.CustomEventInterstitialFactory;
+import com.mopub.mobileads.util.Json;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static com.mopub.mobileads.AdFetcher.AD_CONFIGURATION_KEY;
 import static com.mopub.mobileads.MoPubErrorCode.ADAPTER_NOT_FOUND;
@@ -85,7 +84,7 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
         
         // Attempt to load the JSON extras into mServerExtras.
         try {
-            mServerExtras = Utils.jsonStringToMap(jsonParams);
+            mServerExtras = Json.jsonStringToMap(jsonParams);
         } catch (Exception exception) {
             Log.d("MoPub", "Failed to create Map from JSON: " + jsonParams);
         }
@@ -105,11 +104,12 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
         if (isInvalidated() || mCustomEventInterstitial == null) {
             return;
         }
-        mCustomEventInterstitial.loadInterstitial(mContext, this, mLocalExtras, mServerExtras);
 
         if (getTimeoutDelayMilliseconds() > 0) {
             mHandler.postDelayed(mTimeout, getTimeoutDelayMilliseconds());
         }
+
+        mCustomEventInterstitial.loadInterstitial(mContext, this, mLocalExtras, mServerExtras);
     }
     
     void showInterstitial() {
@@ -167,8 +167,9 @@ public class CustomEventInterstitialAdapter implements CustomEventInterstitialLi
             return;
         }
 
+        cancelTimeout();
+
         if (mCustomEventInterstitialAdapterListener != null) {
-            cancelTimeout();
             mCustomEventInterstitialAdapterListener.onCustomEventInterstitialLoaded();
         }
     }

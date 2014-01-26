@@ -31,7 +31,6 @@
                 android:configChanges="keyboardHidden|orientation"/>
         <activity android:name="com.mopub.simpleadsdemo.BannersTab" />
         <activity android:name="com.mopub.simpleadsdemo.InterstitialsTab" />
-        <activity android:name="com.mopub.simpleadsdemo.ConsoleTab" />
         <activity android:name="com.mopub.simpleadsdemo.AboutTab" />
     </application>
 

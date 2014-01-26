@@ -73,7 +73,9 @@ abstract class ResponseBodyInterstitial extends CustomEventInterstitial {
 
     @Override
     protected void onInvalidate() {
-        mBroadcastReceiver.unregister();
+        if (mBroadcastReceiver != null) {
+            mBroadcastReceiver.unregister();
+        }
     }
 
     private boolean extrasAreValid(Map<String,String> serverExtras) {

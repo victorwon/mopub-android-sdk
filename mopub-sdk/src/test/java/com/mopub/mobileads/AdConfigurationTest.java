@@ -1,40 +1,36 @@
 package com.mopub.mobileads;
 
 import android.app.Activity;
-import android.location.Location;
+import android.content.Context;
 import android.os.Build;
-
 import com.mopub.mobileads.test.support.SdkTestRunner;
 import com.mopub.mobileads.test.support.TestDateAndTime;
 import com.mopub.mobileads.test.support.TestHttpResponseWithHeaders;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 
-import java.util.HashMap;
+import java.util.*;
 
 import static com.mopub.mobileads.AdViewController.MINIMUM_REFRESH_TIME_MILLISECONDS;
+import static com.mopub.mobileads.util.ResponseHeader.AD_TIMEOUT;
+import static com.mopub.mobileads.util.ResponseHeader.AD_TYPE;
+import static com.mopub.mobileads.util.ResponseHeader.CLICKTHROUGH_URL;
+import static com.mopub.mobileads.util.ResponseHeader.DSP_CREATIVE_ID;
+import static com.mopub.mobileads.util.ResponseHeader.FAIL_URL;
+import static com.mopub.mobileads.util.ResponseHeader.HEIGHT;
+import static com.mopub.mobileads.util.ResponseHeader.IMPRESSION_URL;
+import static com.mopub.mobileads.util.ResponseHeader.NETWORK_TYPE;
+import static com.mopub.mobileads.util.ResponseHeader.REDIRECT_URL;
+import static com.mopub.mobileads.util.ResponseHeader.REFRESH_TIME;
+import static com.mopub.mobileads.util.ResponseHeader.WIDTH;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 @RunWith(SdkTestRunner.class)
 public class AdConfigurationTest {
-    private static final String AD_UNIT_ID = "adUnitId";
-    private static final String KEYWORDS = "keywords";
-    private static final Location LOCATION = new Location("");
-    private static final int WIDTH = 320;
-    private static final int HEIGHT = 50;
-    private static final String CLICK_THROUGH_URL = "clickThroughUrl";
-    private static final int LOCATION_PRECISION = 3;
-    private static final HashMap<String,Object> LOCAL_EXTRAS = new HashMap<String, Object>();
-    private static final String RESPONSE_STRING = "responseString";
-    private static final String USER_AGENT = "Mozilla/5.0 (Linux; U; Android 4.0.3; ko-kr; LG-L160L Build/IML74K) AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30";
-    private static final String DEVICE_MODEL = Build.MANUFACTURER + " " + Build.MODEL;
-    private static final String DEVICE_LOCALE = "en_US";
-    private static final String PLATFORM = "Android";
-
     private AdConfiguration subject;
-    private Activity context;
+    private Context context;
     private TestHttpResponseWithHeaders httpResponse;
 
     @Before
@@ -47,31 +43,120 @@ public class AdConfigurationTest {
     }
 
     @Test
-    public void constructor_shouldPopulateDeviceSpecificData() throws Exception {
-        assertThat(subject.getUserAgent()).isEqualTo(USER_AGENT);
+    public void constructor_shouldSetDefaults() throws Exception {
+        assertThat(subject.getAdUnitId()).isNull();
+        assertThat(subject.getResponseString()).isNull();
+        assertThat(subject.getAdType()).isNull();
+        assertThat(subject.getNetworkType()).isNull();
+        assertThat(subject.getRedirectUrl()).isNull();
+        assertThat(subject.getClickthroughUrl()).isNull();
+        assertThat(subject.getImpressionUrl()).isNull();
+        assertThat(subject.getTimeStamp()).isEqualTo(TestDateAndTime.now().getTime());
+        assertThat(subject.getWidth()).isEqualTo(0);
+        assertThat(subject.getHeight()).isEqualTo(0);
+        assertThat(subject.getAdTimeoutDelay()).isNull();
+        assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(60000);
+        assertThat(subject.getFailUrl()).isNull();
+        assertThat(subject.getDspCreativeId()).isNull();
+    }
+
+    @Test
+    public void constructor_shouldSetHashedUdid() throws Exception {
+        // this is sha1 of null
+        assertThat(subject.getHashedUdid()).isEqualTo("da39a3ee5e6b4b0d3255bfef95601890afd80709");
+    }
+
+    @Test
+    public void constructor_withNullContext_shouldNotSetHashedUdid() throws Exception {
+        subject = new AdConfiguration(null);
+
+        assertThat(subject.getHashedUdid()).isNull();
+    }
+
+    @Test
+    public void constructor_shouldSetUserAgent() throws Exception {
+        assertThat(subject.getUserAgent()).isEqualTo("Mozilla/5.0 (Linux; U; Android 4.0.3; ko-kr; LG-L160L Build/IML74K) AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30");
+    }
+
+    @Test
+    public void constructor_withNullContext_shouldSetUserAgent() throws Exception {
+        subject = new AdConfiguration(null);
+
+        assertThat(subject.getUserAgent()).isNull();
+    }
+
+    @Test
+    public void constructor_shouldDeviceLocale() throws Exception {
+        Robolectric.getShadowApplication().getResources().getConfiguration().locale = Locale.FRANCE;
+
+        subject = new AdConfiguration(context);
+
+        assertThat(subject.getDeviceLocale()).isEqualTo("fr_FR");
+    }
+
+    @Test
+    public void constructor_withNullContext_shouldNotSetDeviceLocale() throws Exception {
+        Robolectric.getShadowApplication().getResources().getConfiguration().locale = Locale.FRANCE;
+
+        subject = new AdConfiguration(null);
+
+        assertThat(subject.getDeviceLocale()).isNull();
+    }
+
+    @Test
+    public void constructor_shouldSetDeviceModelAndPlatformVersionAndSdkVersion() throws Exception {
+        assertThat(subject.getDeviceModel()).isNotNull();
         assertThat(subject.getPlatformVersion()).isEqualTo(Build.VERSION.SDK_INT);
-        assertThat(subject.getDeviceModel()).isEqualTo(DEVICE_MODEL);
-        assertThat(subject.getDeviceLocale()).isEqualTo(DEVICE_LOCALE);
-        assertThat(subject.getPlatform()).isEqualTo(PLATFORM);
+        assertThat(subject.getSdkVersion()).isEqualTo(MoPub.SDK_VERSION);
     }
 
     @Test
     public void addHttpResponse_shouldSetFields() throws Exception {
-        httpResponse.addHeader("X-Launchpage", "redirect url");
-        httpResponse.addHeader("X-Clickthrough", "clickthrough url");
-        httpResponse.addHeader("X-Width", "320  ");
-        httpResponse.addHeader("X-Height", "  50");
-        httpResponse.addHeader("X-AdTimeout", "  12  ");
-        httpResponse.addHeader("X-Refreshtime", "70");
+        Date now = new Date();
+        TestDateAndTime.getInstance().setNow(now);
+
+        httpResponse.addHeader(AD_TYPE.getKey(), "this is an ad type");
+        httpResponse.addHeader(NETWORK_TYPE.getKey(), "network type!");
+        httpResponse.addHeader(REDIRECT_URL.getKey(), "redirect url");
+        httpResponse.addHeader(CLICKTHROUGH_URL.getKey(), "clickthrough url");
+        httpResponse.addHeader(FAIL_URL.getKey(), "fail url");
+        httpResponse.addHeader(IMPRESSION_URL.getKey(), "impression url");
+        httpResponse.addHeader(WIDTH.getKey(), "320  ");
+        httpResponse.addHeader(HEIGHT.getKey(), "  50");
+        httpResponse.addHeader(AD_TIMEOUT.getKey(), "  12  ");
+        httpResponse.addHeader(REFRESH_TIME.getKey(), "70");
+        httpResponse.addHeader(DSP_CREATIVE_ID.getKey(), "1534363");
 
         subject.addHttpResponse(httpResponse);
 
+        assertThat(subject.getAdType()).isEqualTo("this is an ad type");
+        assertThat(subject.getNetworkType()).isEqualTo("network type!");
         assertThat(subject.getRedirectUrl()).isEqualTo("redirect url");
         assertThat(subject.getClickthroughUrl()).isEqualTo("clickthrough url");
+        assertThat(subject.getFailUrl()).isEqualTo("fail url");
+        assertThat(subject.getImpressionUrl()).isEqualTo("impression url");
+        assertThat(subject.getTimeStamp()).isEqualTo(now.getTime());
         assertThat(subject.getWidth()).isEqualTo(320);
         assertThat(subject.getHeight()).isEqualTo(50);
         assertThat(subject.getAdTimeoutDelay()).isEqualTo(12);
         assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(70000);
+        assertThat(subject.getDspCreativeId()).isEqualTo("1534363");
+    }
+
+    @Test
+    public void addHttpResponse_withMissingWidthHeader_shouldSetWidthTo0() throws Exception {
+        httpResponse.addHeader(HEIGHT.getKey(), "25");
+
+        subject.addHttpResponse(httpResponse);
+
+        assertThat(subject.getWidth()).isEqualTo(0);
+    }
+
+    @Test
+    public void addHttpResponse_withMissingHeightHeader_shouldSetHeightTo0() throws Exception {
+        subject.addHttpResponse(httpResponse);
+
+        assertThat(subject.getHeight()).isEqualTo(0);
     }
 
     @Test
@@ -120,14 +205,65 @@ public class AdConfigurationTest {
     }
 
     @Test
-    public void addHttpResponse_shouldUpdateTimeStamp() throws Exception {
-        long before = subject.getTimeStamp();
-        Thread.sleep(25);
+    public void cleanup_shouldClearAllFields() throws Exception {
+        Date now = new Date();
+        TestDateAndTime.getInstance().setNow(now);
+
+        httpResponse.addHeader(AD_TYPE.getKey(), "this is an ad type");
+        httpResponse.addHeader(NETWORK_TYPE.getKey(), "network type!");
+        httpResponse.addHeader(REDIRECT_URL.getKey(), "redirect url");
+        httpResponse.addHeader(CLICKTHROUGH_URL.getKey(), "clickthrough url");
+        httpResponse.addHeader(FAIL_URL.getKey(), "fail url");
+        httpResponse.addHeader(IMPRESSION_URL.getKey(), "impression url");
+        httpResponse.addHeader(WIDTH.getKey(), "320  ");
+        httpResponse.addHeader(HEIGHT.getKey(), "  50");
+        httpResponse.addHeader(AD_TIMEOUT.getKey(), "  12  ");
+        httpResponse.addHeader(REFRESH_TIME.getKey(), "70");
+        httpResponse.addHeader(DSP_CREATIVE_ID.getKey(), "1534363");
 
         subject.addHttpResponse(httpResponse);
+        subject.cleanup();
 
-        long after = subject.getTimeStamp();
+        assertThat(subject.getAdUnitId()).isNull();
+        assertThat(subject.getResponseString()).isNull();
+        assertThat(subject.getAdType()).isNull();
+        assertThat(subject.getNetworkType()).isNull();
+        assertThat(subject.getRedirectUrl()).isNull();
+        assertThat(subject.getClickthroughUrl()).isNull();
+        assertThat(subject.getImpressionUrl()).isNull();
+        assertThat(subject.getTimeStamp()).isEqualTo(TestDateAndTime.now().getTime());
+        assertThat(subject.getWidth()).isEqualTo(0);
+        assertThat(subject.getHeight()).isEqualTo(0);
+        assertThat(subject.getAdTimeoutDelay()).isNull();
+        assertThat(subject.getRefreshTimeMilliseconds()).isEqualTo(60000);
+        assertThat(subject.getFailUrl()).isNull();
+        assertThat(subject.getDspCreativeId()).isNull();
+    }
 
-        assertThat(after).isGreaterThanOrEqualTo(before);
+    @Test
+    public void extractFromMap_shouldReturnValidAdConfiguration() throws Exception {
+        Map<String, Object> map = new HashMap<String, Object>();
+        map.put(AdFetcher.AD_CONFIGURATION_KEY, subject);
+
+        AdConfiguration returnValue = AdConfiguration.extractFromMap(map);
+
+        assertThat(returnValue).isEqualTo(subject);
+    }
+
+    @Test
+    public void extractFromMap_withNullMap_shouldReturnNull() throws Exception {
+        AdConfiguration returnValue = AdConfiguration.extractFromMap(null);
+
+        assertThat(returnValue).isEqualTo(null);
+    }
+
+    @Test
+    public void extractFromMap_withNonAdConfigurationObjectInMap_shouldReturnNull() throws Exception {
+        Map<String, Object> map = new HashMap<String, Object>();
+        map.put(AdFetcher.AD_CONFIGURATION_KEY, "not_an_ad_configuration");
+
+        AdConfiguration returnValue = AdConfiguration.extractFromMap(map);
+
+        assertThat(returnValue).isEqualTo(null);
     }
 }

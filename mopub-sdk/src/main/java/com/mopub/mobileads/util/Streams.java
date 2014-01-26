@@ -35,15 +35,36 @@ package com.mopub.mobileads.util;
 import java.io.*;
 
 public class Streams {
-    public static void copyContent(InputStream in, OutputStream out) {
+    public static void copyContent(InputStream in, OutputStream out) throws IOException {
+        if (in == null || out == null) {
+            throw new IOException("Unable to copy from or to a null stream.");
+        }
+
         byte[] buffer = new byte[65536];
-        int len;
-        try {
-            while((len = in.read(buffer)) != -1){
-                out.write(buffer, 0, len);
+        int length;
+
+        while ((length = in.read(buffer)) != -1) {
+            out.write(buffer, 0, length);
+        }
+    }
+
+    public static void copyContent(InputStream in, OutputStream out, long maxBytes) throws IOException {
+        if (in == null || out == null) {
+            throw new IOException("Unable to copy from or to a null stream.");
+        }
+
+        byte[] buffer = new byte[65536];
+        int length;
+        long totalRead = 0;
+
+        while ((length = in.read(buffer)) != -1) {
+            totalRead += length;
+            if (totalRead >= maxBytes) {
+                throw new IOException("Error copying content: attempted to copy " +
+                        totalRead + " bytes, with " + maxBytes + " maximum.");
             }
-        } catch (IOException e) {
-            // too bad
+
+            out.write(buffer, 0, length);
         }
     }
 

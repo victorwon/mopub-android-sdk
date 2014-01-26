@@ -32,82 +32,115 @@
 
 package com.mopub.mobileads;
 
+import android.app.Activity;
+import android.content.Context;
 import com.mopub.mobileads.test.support.SdkTestRunner;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static com.mopub.mobileads.AdTypeTranslator.CustomEventType.ADMOB_BANNER;
+import static com.mopub.mobileads.AdTypeTranslator.CustomEventType.ADMOB_INTERSTITIAL;
+import static com.mopub.mobileads.AdTypeTranslator.CustomEventType.HTML_BANNER;
+import static com.mopub.mobileads.AdTypeTranslator.CustomEventType.HTML_INTERSTITIAL;
+import static com.mopub.mobileads.AdTypeTranslator.CustomEventType.MILLENNIAL_BANNER;
+import static com.mopub.mobileads.AdTypeTranslator.CustomEventType.MILLENNIAL_INTERSTITIAL;
+import static com.mopub.mobileads.AdTypeTranslator.CustomEventType.MRAID_BANNER;
+import static com.mopub.mobileads.AdTypeTranslator.CustomEventType.MRAID_INTERSTITIAL;
+import static com.mopub.mobileads.AdTypeTranslator.CustomEventType.VAST_VIDEO_INTERSTITIAL;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.stub;
 
 @RunWith(SdkTestRunner.class)
 public class AdTypeTranslatorTest {
-    private AdTypeTranslator subject;
     private String customEventName;
     private MoPubView moPubView;
     private MoPubInterstitial.MoPubInterstitialView moPubInterstitialView;
+    private Context context;
 
     @Before
     public void setUp() throws Exception {
-        subject = new AdTypeTranslator();
         moPubView = mock(MoPubView.class);
         moPubInterstitialView = mock(MoPubInterstitial.MoPubInterstitialView.class);
+
+        context = new Activity();
+        stub(moPubView.getContext()).toReturn(context);
+        stub(moPubInterstitialView.getContext()).toReturn(context);
     }
 
     @Test
     public void getAdMobBanner() throws Exception {
         customEventName = AdTypeTranslator.getCustomEventNameForAdType(moPubView, "admob_native", null);
 
-        assertThat(customEventName).isEqualTo(AdTypeTranslator.ADMOB_BANNER);
+        assertThat(customEventName).isEqualTo(ADMOB_BANNER.toString());
     }
 
     @Test
     public void getAdMobInterstitial() throws Exception {
         customEventName = AdTypeTranslator.getCustomEventNameForAdType(moPubInterstitialView, "interstitial", "admob_full");
 
-        assertThat(customEventName).isEqualTo(AdTypeTranslator.ADMOB_INTERSTITIAL);
+        assertThat(customEventName).isEqualTo(ADMOB_INTERSTITIAL.toString());
+    }
+
+    @Ignore("pending")
+    @Test
+    public void getGooglePlayServicesBanner() throws Exception {
+    }
+
+    @Ignore("pending")
+    @Test
+    public void getGooglePlayServicesInterstitial() throws Exception {
     }
 
     @Test
     public void getMillennialBanner() throws Exception {
         customEventName = AdTypeTranslator.getCustomEventNameForAdType(moPubView, "millennial_native", null);
 
-        assertThat(customEventName).isEqualTo(AdTypeTranslator.MILLENNIAL_BANNER);
+        assertThat(customEventName).isEqualTo(MILLENNIAL_BANNER.toString());
     }
 
     @Test
     public void getMillennnialInterstitial() throws Exception {
         customEventName = AdTypeTranslator.getCustomEventNameForAdType(moPubInterstitialView, "interstitial", "millennial_full");
 
-        assertThat(customEventName).isEqualTo(AdTypeTranslator.MILLENNIAL_INTERSTITIAL);
+        assertThat(customEventName).isEqualTo(MILLENNIAL_INTERSTITIAL.toString());
     }
 
     @Test
     public void getMraidBanner() throws Exception {
         customEventName = AdTypeTranslator.getCustomEventNameForAdType(moPubView, "mraid", null);
 
-        assertThat(customEventName).isEqualTo(AdTypeTranslator.MRAID_BANNER);
+        assertThat(customEventName).isEqualTo(MRAID_BANNER.toString());
     }
 
     @Test
     public void getMraidInterstitial() throws Exception {
         customEventName = AdTypeTranslator.getCustomEventNameForAdType(moPubInterstitialView, "mraid", null);
 
-        assertThat(customEventName).isEqualTo(AdTypeTranslator.MRAID_INTERSTITIAL);
+        assertThat(customEventName).isEqualTo(MRAID_INTERSTITIAL.toString());
     }
 
     @Test
     public void getHtmlBanner() throws Exception {
         customEventName = AdTypeTranslator.getCustomEventNameForAdType(moPubView, "html", null);
 
-        assertThat(customEventName).isEqualTo(AdTypeTranslator.HTML_BANNER);
+        assertThat(customEventName).isEqualTo(HTML_BANNER.toString());
     }
 
     @Test
     public void getHtmlInterstitial() throws Exception {
         customEventName = AdTypeTranslator.getCustomEventNameForAdType(moPubInterstitialView, "html", null);
 
-        assertThat(customEventName).isEqualTo(AdTypeTranslator.HTML_INTERSTITIAL);
+        assertThat(customEventName).isEqualTo(HTML_INTERSTITIAL.toString());
+    }
+
+    @Test
+    public void getVastInterstitial() throws Exception {
+        customEventName = AdTypeTranslator.getCustomEventNameForAdType(moPubInterstitialView, "interstitial", "vast");
+
+        assertThat(customEventName).isEqualTo(VAST_VIDEO_INTERSTITIAL.toString());
     }
 
     @Test

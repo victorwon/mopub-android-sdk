@@ -34,15 +34,11 @@ package com.mopub.mobileads;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.util.Log;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-
-import java.util.*;
 
 import static com.mopub.mobileads.MoPubErrorCode.UNSPECIFIED;
 
@@ -70,19 +66,17 @@ class HtmlWebViewClient extends WebViewClient {
             return true;
         }
 
-        if (isApplicationUrl(url) && !canHandleApplicationUrl(url)) {
-            return true;
-        }
-
         url = urlWithClickTrackingRedirect(url);
         Log.d("MoPub", "Ad clicked. Click URL: " + url);
 
-        if (isApplicationUrl(url)) {
-            launchApplicationUrl(url);
-            return true;
+        // this is added because http/s can also be intercepted
+        if (!isWebSiteUrl(url) && canHandleApplicationUrl(url)) {
+            if (launchApplicationUrl(url)) {
+                return true;
+            }
         }
 
-        showBrowserForUrl(url);
+        showMraidBrowserForUrl(url);
         return true;
     }
 
@@ -92,7 +86,7 @@ class HtmlWebViewClient extends WebViewClient {
         if (mRedirectUrl != null && url.startsWith(mRedirectUrl)) {
             url = urlWithClickTrackingRedirect(url);
             view.stopLoading();
-            showBrowserForUrl(url);
+            showMraidBrowserForUrl(url);
         }
     }
 
@@ -177,27 +171,16 @@ class HtmlWebViewClient extends WebViewClient {
         return true;
     }
 
-    private boolean isApplicationUrl(String url) {
-        return isMarketUrl(url) || isAmazonUrl(url);
-    }
-
-    private boolean isMarketUrl(String url) {
-        return url.startsWith("market://");
-    }
-
-    private boolean isAmazonUrl(String url) {
-        return url.startsWith("amzn://");
+    private boolean isWebSiteUrl(String url) {
+        return url.startsWith("http://") || url.startsWith("https://");
     }
 
     private boolean canHandleApplicationUrl(String url) {
-        // Determine which activities can handle the market intent
+        // Determine which activities can handle the intent
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-        PackageManager packageManager = mContext.getPackageManager();
-        List<ResolveInfo> activities = packageManager.queryIntentActivities(intent, 0);
 
         // If there are no relevant activities, don't follow the link
-        boolean isIntentSafe = activities.size() > 0;
-        if (!isIntentSafe) {
+        if (!Utils.deviceCanHandleIntent(mContext, intent)) {
             Log.w("MoPub", "Could not handle application specific action: " + url + ". " +
                     "You may be running in the emulator or another device which does not " +
                     "have the required application.");
@@ -216,16 +199,16 @@ class HtmlWebViewClient extends WebViewClient {
         }
     }
 
-    private void launchApplicationUrl(String url) {
+    private boolean launchApplicationUrl(String url) {
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-        String errorMessage = "Unable to open external app store.";
+        String errorMessage = "Unable to open intent.";
 
-        launchIntentForUserClick(mContext, intent, errorMessage);
+        return launchIntentForUserClick(mContext, intent, errorMessage);
     }
 
-    private void showBrowserForUrl(String url) {
+    private void showMraidBrowserForUrl(String url) {
         if (url == null || url.equals("")) url = "about:blank";
         Log.d("MoPub", "Final URI to show in browser: " + url);
         Intent intent = new Intent(mContext, MraidBrowser.class);

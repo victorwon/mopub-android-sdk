@@ -35,27 +35,75 @@ package com.mopub.mobileads;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.util.Log;
 
 class MraidBrowserController extends MraidAbstractController {
     private static final String LOGTAG = "MraidBrowserController";
-    
+    private Context mContext;
+
     MraidBrowserController(MraidView view) {
         super(view);
+        mContext = view.getContext();
     }
     
     protected void open(String url) {
-        Log.d(LOGTAG, "Opening in-app browser: " + url);
+        Log.d(LOGTAG, "Opening url: " + url);
         
         MraidView view = getMraidView();
         if (view.getOnOpenListener() != null) {
             view.getOnOpenListener().onOpen(view);
         }
-        
-        Context context = getMraidView().getContext();
-        Intent i = new Intent(context, MraidBrowser.class);
+
+        // this is added because http/s can also be intercepted
+        if (!isWebSiteUrl(url) && canHandleApplicationUrl(url)) {
+            launchApplicationUrl(url);
+            return;
+        }
+
+        Intent i = new Intent(mContext, MraidBrowser.class);
         i.putExtra(MraidBrowser.URL_EXTRA, url);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(i);
+        mContext.startActivity(i);
+    }
+
+    private boolean canHandleApplicationUrl(String url) {
+        // Determine which activities can handle the intent
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+
+        // If there are no relevant activities, don't follow the link
+        if (!Utils.deviceCanHandleIntent(mContext, intent)) {
+            Log.w("MoPub", "Could not handle application specific action: " + url + ". " +
+                    "You may be running in the emulator or another device which does not " +
+                    "have the required application.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean launchApplicationUrl(String url) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        String errorMessage = "Unable to open intent.";
+
+        return executeIntent(getMraidView().getContext(), intent, errorMessage);
+    }
+
+    private boolean executeIntent(Context context, Intent intent, String errorMessage) {
+        try {
+            context.startActivity(intent);
+        } catch (Exception e) {
+            Log.d("MoPub", (errorMessage != null)
+                    ? errorMessage
+                    : "Unable to start intent.");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isWebSiteUrl(String url) {
+        return url.startsWith("http://") || url.startsWith("https://");
     }
 }

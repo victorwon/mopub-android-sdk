@@ -35,11 +35,11 @@ package com.mopub.mobileads;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-
 import com.mopub.mobileads.factories.HtmlInterstitialWebViewFactory;
 
 import static com.mopub.mobileads.AdFetcher.AD_CONFIGURATION_KEY;
@@ -63,6 +63,17 @@ public class MoPubActivity extends BaseInterstitialActivity {
         } catch (ActivityNotFoundException anfe) {
             Log.d("MoPubActivity", "MoPubActivity not found - did you declare it in AndroidManifest.xml?");
         }
+    }
+
+    static Intent createIntent(Context context, String htmlData, boolean isScrollable, String redirectUrl, String clickthroughUrl, AdConfiguration adConfiguration) {
+        Intent intent = new Intent(context, MoPubActivity.class);
+        intent.putExtra(HTML_RESPONSE_BODY_KEY, htmlData);
+        intent.putExtra(SCROLLABLE_KEY, isScrollable);
+        intent.putExtra(CLICKTHROUGH_URL_KEY, clickthroughUrl);
+        intent.putExtra(REDIRECT_URL_KEY, redirectUrl);
+        intent.putExtra(AD_CONFIGURATION_KEY, adConfiguration);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        return intent;
     }
 
     static void preRenderHtml(final Context context, final CustomEventInterstitialListener customEventInterstitialListener, String htmlData) {
@@ -90,17 +101,6 @@ public class MoPubActivity extends BaseInterstitialActivity {
         dummyWebView.loadHtmlResponse(htmlData);
     }
 
-    static Intent createIntent(Context context, String htmlData, boolean isScrollable, String redirectUrl, String clickthroughUrl, AdConfiguration adConfiguration) {
-        Intent intent = new Intent(context, MoPubActivity.class);
-        intent.putExtra(HTML_RESPONSE_BODY_KEY, htmlData);
-        intent.putExtra(SCROLLABLE_KEY, isScrollable);
-        intent.putExtra(CLICKTHROUGH_URL_KEY, clickthroughUrl);
-        intent.putExtra(REDIRECT_URL_KEY, redirectUrl);
-        intent.putExtra(AD_CONFIGURATION_KEY, adConfiguration);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        return intent;
-    }
-
     @Override
     public View getAdView() {
         Intent intent = getIntent();
@@ -114,15 +114,22 @@ public class MoPubActivity extends BaseInterstitialActivity {
 
         return mHtmlInterstitialWebView;
     }
-    
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        broadcastInterstitialAction(ACTION_INTERSTITIAL_SHOW);
+    }
+
     @Override
     protected void onDestroy() {
         mHtmlInterstitialWebView.loadUrl(WEB_VIEW_DID_CLOSE.getUrl());
         mHtmlInterstitialWebView.destroy();
+        broadcastInterstitialAction(ACTION_INTERSTITIAL_DISMISS);
         super.onDestroy();
     }
 
-    private class BroadcastingInterstitialListener implements CustomEventInterstitialListener {
+    class BroadcastingInterstitialListener implements CustomEventInterstitialListener {
         @Override
         public void onInterstitialLoaded() {
             mHtmlInterstitialWebView.loadUrl(WEB_VIEW_DID_APPEAR.getUrl());

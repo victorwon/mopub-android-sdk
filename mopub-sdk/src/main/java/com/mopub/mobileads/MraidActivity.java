@@ -41,7 +41,6 @@ import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-
 import com.mopub.mobileads.MraidView.ExpansionStyle;
 import com.mopub.mobileads.MraidView.NativeCloseButtonStyle;
 import com.mopub.mobileads.MraidView.PlacementType;
@@ -114,23 +113,13 @@ public class MraidActivity extends BaseInterstitialActivity {
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (currentApiLevel().isAtLeast(ICE_CREAM_SANDWICH)) {
-            getWindow().setFlags(
-                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
-        }
-    }
-
-    @Override
     public View getAdView() {
         mMraidView = MraidViewFactory.create(this, getAdConfiguration(), ExpansionStyle.DISABLED, NativeCloseButtonStyle.AD_CONTROLLED, PlacementType.INTERSTITIAL);
 
         mMraidView.setMraidListener(new MraidView.BaseMraidListener(){
             public void onReady(MraidView view) {
-                showInterstitialCloseButton();
                 mMraidView.loadUrl(WEB_VIEW_DID_APPEAR.getUrl());
+                showInterstitialCloseButton();
             }
             public void onClose(MraidView view, ViewState newViewState) {
                 mMraidView.loadUrl(WEB_VIEW_DID_CLOSE.getUrl());
@@ -155,6 +144,18 @@ public class MraidActivity extends BaseInterstitialActivity {
     }
 
     @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        broadcastInterstitialAction(ACTION_INTERSTITIAL_SHOW);
+
+        if (currentApiLevel().isAtLeast(ICE_CREAM_SANDWICH)) {
+            getWindow().setFlags(
+                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
+        }
+    }
+
+    @Override
     protected void onPause() {
         super.onPause();
         WebViews.onPause(mMraidView);
@@ -169,6 +170,7 @@ public class MraidActivity extends BaseInterstitialActivity {
     @Override
     protected void onDestroy() {
         mMraidView.destroy();
+        broadcastInterstitialAction(ACTION_INTERSTITIAL_DISMISS);
         super.onDestroy();
     }
 }

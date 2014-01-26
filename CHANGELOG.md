@@ -1,3 +1,24 @@
+## Version 1.17 (Nov 20, 2013)
+
+  - Support for VAST 2.0 video playback via MoPub Marketplace
+    - Short videos (less than 15 seconds) autoplay and and are unskippable
+    - Longer videos autoplay and are skippable after 5 seconds
+    - **Note:** The video cache can use up to 100 MB of internal storage. For developers sensitive to storage constraints, this value may be changed in `VastVideoInterstitial.CACHE_MAX_SIZE`.
+  - Updated InMobi custom event support to 4.0.0
+  - Added custom events for video ad network mediation, which can be found in the extras directory of the SDK (`/extras/src/com/mopub/mobileads/`)
+    - Added the `AdColonyInterstitial` custom event
+    - Added the `VungleInterstitial` custom event
+    - **Note:** Virtual currency callbacks (v4vc) are not supported for the above ad networks
+  - Enabled deeplinking via custom URIs in ad creatives
+  - All `WebView`s are removed from their parents before `destroy()`; fixes [GitHub issue #38](https://github.com/mopub/mopub-android-sdk/issues/38)
+  - Removed previously-deprecated `HTML5AdView`
+  
+### Version 1.17.1 (Jan 23, 2014)
+
+  - Added custom events for Google Play Services. `GooglePlayServicesBanner` and `GooglePlayServicesInterstitial` can be found in the extras directory of the SDK (`/extras/src/com/mopub/mobileads`)
+  - Resolved issues with missing annotations on `addJavascriptInterface` when `targetSdkVersion` is set to API level 17 or above
+  - Updated MoPub sample application to allow in-app text entry of ad unit IDs
+
 ## Version 1.16 (Oct 16, 2013)
 
   - Improved creative controls

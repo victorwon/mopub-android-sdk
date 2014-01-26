@@ -34,14 +34,7 @@ package com.mopub.mobileads;
 
 import android.util.Log;
 import com.mopub.mobileads.factories.AdFetchTaskFactory;
-import com.mopub.mobileads.util.VersionCode;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.concurrent.*;
-
-import static com.mopub.mobileads.util.VersionCode.ICE_CREAM_SANDWICH;
+import com.mopub.mobileads.util.AsyncTasks;
 
 /*
  * AdFetcher is a delegate of an AdViewController that handles loading ad data over a
@@ -90,25 +83,10 @@ public class AdFetcher {
 
         mCurrentTask = AdFetchTaskFactory.create(mTaskTracker, mAdViewController, mUserAgent, mTimeoutMilliseconds);
 
-        if (VersionCode.currentApiLevel().isAtLeast(ICE_CREAM_SANDWICH)) {
-            Class<?> cls = AdFetchTask.class;
-            Class<?>[] parameterTypes = {Executor.class, Object[].class};
-
-            String[] parameters = {url};
-
-            try {
-                Method method = cls.getMethod("executeOnExecutor", parameterTypes);
-                Field field = cls.getField("THREAD_POOL_EXECUTOR");
-                method.invoke(mCurrentTask, field.get(cls), parameters);
-            } catch (NoSuchMethodException exception) {
-                Log.d("MoPub", "Error executing AdFetchTask on ICS+, method not found.");
-            } catch (InvocationTargetException exception) {
-                Log.d("MoPub", "Error executing AdFetchTask on ICS+, thrown by executeOnExecutor.");
-            } catch (Exception exception) {
-                Log.d("MoPub", "Error executing AdFetchTask on ICS+: " + exception.toString());
-            }
-        } else {
-            mCurrentTask.execute(url);
+        try {
+            AsyncTasks.safeExecuteOnExecutor(mCurrentTask, url);
+        } catch (Exception exception) {
+            Log.d("MoPub", "Error executing AdFetchTask", exception);
         }
     }
 

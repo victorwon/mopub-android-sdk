@@ -33,83 +33,122 @@
 package com.mopub.simpleadsdemo;
 
 import android.app.Activity;
-import android.content.Context;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+
 import com.mopub.mobileads.MoPubErrorCode;
 import com.mopub.mobileads.MoPubView;
 import com.mopub.mobileads.MoPubView.BannerAdListener;
 
+import static com.mopub.simpleadsdemo.Utils.hideSoftKeyboard;
+import static com.mopub.simpleadsdemo.Utils.logToast;
+import static com.mopub.simpleadsdemo.Utils.validateAdUnitId;
+
 public class BannersTab extends Activity implements BannerAdListener {
-    private EditText mSearchText;
-    private Button mSearchButton;
-    private MoPubView mMRectBanner;
-    private MoPubView mBanner;
+    private MoPubView mBannerView;
+    private EditText mBannerAdUnitField;
+
+    private MoPubView mMrectView;
+    private EditText mMrectAdUnitField;
+
+    private EditText mKeywordsField;
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.banners);
 
-        // Initialize Ad components
-        mMRectBanner = (MoPubView) findViewById(R.id.mrectview);
-        mMRectBanner.setAdUnitId(SimpleAdsDemoConstants.PUB_ID_300x250);
-        mMRectBanner.loadAd();
+        mBannerView = (MoPubView) findViewById(R.id.banner_view);
+        mBannerAdUnitField = (EditText) findViewById(R.id.banner_adunit_field);
+        hideSoftKeyboard(mBannerAdUnitField);
 
-        mBanner = (MoPubView) findViewById(R.id.bannerview);
-        mBanner.setAdUnitId(SimpleAdsDemoConstants.PUB_ID_320x50);
-        mBanner.setBannerAdListener(this);
-        mBanner.loadAd();
+        mMrectView = (MoPubView) findViewById(R.id.mrect_view);
+        mMrectAdUnitField = (EditText) findViewById(R.id.mrect_adunit_field);
+        hideSoftKeyboard(mMrectAdUnitField);
 
-        mSearchText = (EditText) findViewById(R.id.searchtext);
-        mSearchButton = (Button) findViewById(R.id.searchbutton);
-        mSearchButton.setOnClickListener(new OnClickListener() {
+        mKeywordsField = (EditText) findViewById(R.id.keywords_field);
+        hideSoftKeyboard(mKeywordsField);
+
+        Button bannerLoadButton = (Button) findViewById(R.id.banner_load_button);
+        bannerLoadButton.setOnClickListener(new OnClickListener() {
+            @Override
             public void onClick(View v) {
-                InputMethodManager imm
-                        = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(mSearchText.getWindowToken(), 0);
-                mMRectBanner.setKeywords(mSearchText.getText().toString());
-                mBanner.setKeywords(mSearchText.getText().toString());
+                String adUnitId = mBannerAdUnitField.getText().toString();
+                String keywords = mKeywordsField.getText().toString();
 
-                mMRectBanner.loadAd();
-                mBanner.loadAd();
+                loadMoPubView(mBannerView, adUnitId, keywords);
+            }
+        });
+
+        Button mrectLoadButton = (Button) findViewById(R.id.mrect_load_button);
+        mrectLoadButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String adUnitId = mMrectAdUnitField.getText().toString();
+                String keywords = mKeywordsField.getText().toString();
+
+                loadMoPubView(mMrectView, adUnitId, keywords);
             }
         });
     }
-    
+
     @Override
     protected void onDestroy() {
-        mBanner.destroy();
-        mMRectBanner.destroy();
+        if (mBannerView != null) {
+            mBannerView.destroy();
+        }
+        if (mMrectView != null) {
+            mMrectView.destroy();
+        }
         super.onDestroy();
     }
 
+    private void loadMoPubView(MoPubView moPubView, String adUnitId, String keywords) {
+        if (moPubView == null) {
+            logToast(this, "Unable to inflate MoPubView from xml.");
+            return;
+        }
+
+        try {
+            validateAdUnitId(adUnitId);
+        } catch (IllegalArgumentException exception) {
+            logToast(BannersTab.this, exception.getMessage());
+            return;
+        }
+
+        moPubView.setBannerAdListener(this);
+        moPubView.setAdUnitId(adUnitId);
+        moPubView.setKeywords(keywords);
+        moPubView.loadAd();
+    }
+
+    /*
+     * MoPubBanner.BannerAdListener implementation
+     */
     @Override
-    public void onBannerLoaded(MoPubView banner) {
-        Log.d("MoPub Demo", "Banner loaded callback.");
+    public void onBannerLoaded(MoPubView moPubView) {
+        logToast(this, "Banner loaded callback.");
     }
 
     @Override
-    public void onBannerFailed(MoPubView banner, MoPubErrorCode errorCode) {
-        Log.d("MoPub Demo", "Banner failed callback with: " + errorCode.toString());
+    public void onBannerFailed(MoPubView moPubView, MoPubErrorCode errorCode) {
+        logToast(this, "Banner failed callback with: " + errorCode.toString());
     }
 
     @Override
-    public void onBannerClicked(MoPubView banner) {
-        Log.d("MoPub Demo", "Banner clicked callback.");
+    public void onBannerClicked(MoPubView moPubView) {
+        logToast(this, "Banner clicked callback.");
     }
 
     @Override
-    public void onBannerExpanded(MoPubView banner) {
-        Log.d("MoPub Demo", "Banner expanded callback.");
+    public void onBannerExpanded(MoPubView moPubView) {
+        logToast(this, "Banner expanded callback.");
     }
 
     @Override
-    public void onBannerCollapsed(MoPubView banner) {
-        Log.d("MoPub Demo", "Banner collapsed callback.");
+    public void onBannerCollapsed(MoPubView moPubView) {
+        logToast(this, "Banner collapsed callback.");
     }
 }

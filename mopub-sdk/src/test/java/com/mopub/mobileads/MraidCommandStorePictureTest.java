@@ -42,7 +42,7 @@ import org.junit.runner.RunWith;
 import java.util.*;
 
 import static com.mopub.mobileads.MraidCommand.URI_KEY;
-import static com.mopub.mobileads.MraidCommandRegistry.MRAID_JAVASCRIPT_COMMAND_STORE_PICTURE;
+import static com.mopub.mobileads.MraidCommandFactory.MraidJavascriptCommand.STORE_PICTURE;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -87,7 +87,7 @@ public class MraidCommandStorePictureTest {
         subject.execute();
 
         verify(mraidView).fireErrorEvent(
-                eq(MRAID_JAVASCRIPT_COMMAND_STORE_PICTURE),
+                eq(STORE_PICTURE),
                 anyString());
         verify(mraidDisplayController, never()).showUserDownloadImageAlert(anyString());
     }
@@ -99,7 +99,7 @@ public class MraidCommandStorePictureTest {
         subject.execute();
 
         verify(mraidView).fireErrorEvent(
-                eq(MRAID_JAVASCRIPT_COMMAND_STORE_PICTURE),
+                eq(STORE_PICTURE),
                 anyString());
         verify(mraidDisplayController, never()).showUserDownloadImageAlert(anyString());
     }

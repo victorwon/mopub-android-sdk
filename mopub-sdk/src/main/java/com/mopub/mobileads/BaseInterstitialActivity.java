@@ -53,7 +53,7 @@ import static com.mopub.mobileads.AdFetcher.AD_CONFIGURATION_KEY;
 import static com.mopub.mobileads.resource.Drawables.INTERSTITIAL_CLOSE_BUTTON_NORMAL;
 import static com.mopub.mobileads.resource.Drawables.INTERSTITIAL_CLOSE_BUTTON_PRESSED;
 
-public abstract class BaseInterstitialActivity extends Activity {
+abstract class BaseInterstitialActivity extends Activity {
     public static final String ACTION_INTERSTITIAL_FAIL = "com.mopub.action.interstitial.fail";
     public static final String ACTION_INTERSTITIAL_SHOW = "com.mopub.action.interstitial.show";
     public static final String ACTION_INTERSTITIAL_DISMISS = "com.mopub.action.interstitial.dismiss";
@@ -82,10 +82,11 @@ public abstract class BaseInterstitialActivity extends Activity {
     private int mButtonSize;
     private int mButtonPadding;
 
+    public abstract View getAdView();
+
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        broadcastInterstitialAction(ACTION_INTERSTITIAL_SHOW);
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -105,12 +106,9 @@ public abstract class BaseInterstitialActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        broadcastInterstitialAction(ACTION_INTERSTITIAL_DISMISS);
         mLayout.removeAllViews();
         super.onDestroy();
     }
-
-    public abstract View getAdView();
 
     protected void showInterstitialCloseButton() {
         mCloseButton.setVisibility(VISIBLE);

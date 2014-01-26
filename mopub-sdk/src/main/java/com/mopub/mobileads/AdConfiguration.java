@@ -144,7 +144,7 @@ public class AdConfiguration implements Serializable {
         mImpressionUrl = extractHeader(httpResponse, IMPRESSION_URL);
 
         // Set the timestamp used for Ad Alert Reporting.
-        setTimeStamp(DateAndTime.now());
+        mTimeStamp = DateAndTime.now().getTime();
 
         // Set the width and height.
         mWidth = extractIntHeader(httpResponse, WIDTH, 0);
@@ -224,10 +224,6 @@ public class AdConfiguration implements Serializable {
         return mImpressionUrl;
     }
 
-    private void setTimeStamp(Date time) {
-        mTimeStamp = time.getTime();
-    }
-
     long getTimeStamp() {
         return mTimeStamp;
     }
@@ -296,7 +292,6 @@ public class AdConfiguration implements Serializable {
     private void setDefaults() {
         mAdUnitId = null;
         mResponseString = null;
-
         mAdType = null;
         mNetworkType = null;
         mRedirectUrl = null;

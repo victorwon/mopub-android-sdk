@@ -36,6 +36,7 @@ import android.app.Activity;
 import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import com.mopub.mobileads.test.support.SdkTestRunner;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,7 +48,9 @@ import static android.webkit.WebSettings.PluginState;
 import static com.mopub.mobileads.util.VersionCode.HONEYCOMB_MR2;
 import static com.mopub.mobileads.util.VersionCode.ICE_CREAM_SANDWICH;
 import static org.fest.assertions.api.Assertions.assertThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.robolectric.Robolectric.shadowOf;
 
 @RunWith(SdkTestRunner.class)
@@ -242,6 +245,18 @@ public class BaseHtmlWebViewTest {
         assertThat(shouldConsumeTouch).isFalse();
     }
 
+    @Test
+    public void destroy_shouldRemoveSelfFromParent() throws Exception {
+        ViewGroup parentView = mock(ViewGroup.class);
+        ShadowWebView shadow = shadowOf(subject);
+        shadow.setMyParent(parentView);
+
+        subject.destroy();
+
+        verify(parentView).removeView(eq(subject));
+        assertThat(shadow.wasDestroyCalled());
+    }
+    
     private static MotionEvent createMotionEvent(int action) {
         return MotionEvent.obtain(0, 0, action, 0, 0, 0);
     }

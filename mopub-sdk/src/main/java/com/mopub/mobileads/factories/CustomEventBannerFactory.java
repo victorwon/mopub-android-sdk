@@ -43,6 +43,7 @@ public class CustomEventBannerFactory {
         return instance.internalCreate(className);
     }
 
+    @Deprecated // for testing
     public static void setInstance(CustomEventBannerFactory factory) {
         instance = factory;
     }

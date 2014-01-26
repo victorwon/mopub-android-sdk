@@ -38,6 +38,7 @@ import android.util.Log;
 import android.view.View;
 import com.mopub.mobileads.CustomEventBanner.CustomEventBannerListener;
 import com.mopub.mobileads.factories.CustomEventBannerFactory;
+import com.mopub.mobileads.util.Json;
 
 import java.util.*;
 
@@ -85,7 +86,7 @@ public class CustomEventBannerAdapter implements CustomEventBannerListener {
 
         // Attempt to load the JSON extras into mServerExtras.
         try {
-            mServerExtras = Utils.jsonStringToMap(classData);
+            mServerExtras = Json.jsonStringToMap(classData);
         } catch (Exception exception) {
             Log.d("MoPub", "Failed to create Map from JSON: " + classData + exception.toString());
         }
@@ -103,11 +104,12 @@ public class CustomEventBannerAdapter implements CustomEventBannerListener {
         if (isInvalidated() || mCustomEventBanner == null) {
             return;
         }
-        mCustomEventBanner.loadBanner(mContext, this, mLocalExtras, mServerExtras);
 
         if (getTimeoutDelayMilliseconds() > 0) {
             mHandler.postDelayed(mTimeout, getTimeoutDelayMilliseconds());
         }
+
+        mCustomEventBanner.loadBanner(mContext, this, mLocalExtras, mServerExtras);
     }
 
     void invalidate() {
@@ -142,10 +144,13 @@ public class CustomEventBannerAdapter implements CustomEventBannerListener {
      */
     @Override
     public void onBannerLoaded(View bannerView) {
-        if (isInvalidated()) return;
-        
+        if (isInvalidated()) {
+            return;
+        }
+
+        cancelTimeout();
+
         if (mMoPubView != null) {
-            cancelTimeout();
             mMoPubView.nativeAdLoaded();
             mMoPubView.setAdContentView(bannerView);
             if (!(bannerView instanceof HtmlBannerWebView)) {

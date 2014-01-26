@@ -30,10 +30,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.mopub.simpleadsdemo;
+package com.mopub.mobileads;
 
-public abstract class SimpleAdsDemoConstants {
-    public static final String PUB_ID_320x50 = "agltb3B1Yi1pbmNyDAsSBFNpdGUY8fgRDA";
-    public static final String PUB_ID_300x250 = "agltb3B1Yi1pbmNyDQsSBFNpdGUYqKO5CAw";
-    public static final String PUB_ID_INTERSTITIAL = "agltb3B1Yi1pbmNyDAsSBFNpdGUY6tERDA";
+import com.mopub.mobileads.test.support.SdkTestRunner;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(SdkTestRunner.class)
+public class VastVideoPlayerActivityTest {
+
+    @Before
+    public void setUp() throws Exception {
+
+    }
+
+    @Test
+    public void should() throws Exception {
+
+    }
 }

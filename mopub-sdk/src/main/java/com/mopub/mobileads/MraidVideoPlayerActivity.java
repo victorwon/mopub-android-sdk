@@ -32,74 +32,188 @@
 
 package com.mopub.mobileads;
 
-import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Window;
-import android.widget.RelativeLayout;
-import android.widget.VideoView;
+import android.view.View;
+
+import java.util.*;
 
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
-import static com.mopub.mobileads.MraidCommandRegistry.MRAID_JAVASCRIPT_COMMAND_PLAY_VIDEO;
 
-public class MraidVideoPlayerActivity extends Activity {
-    protected static final String MRAID_VIDEO_URL = "mraid_video_url";
-    private static final String TAG = "VideoPlayerActivity";
-    private static MraidView mraidView;
+public class MraidVideoPlayerActivity extends BaseInterstitialActivity implements BaseVideoView.BaseVideoViewListener {
+    static final String VIDEO_URL = "video_url";
+    private static final String VIDEO_CLASS_EXTRAS_KEY = "video_view_class_name";
 
-    static void start(Context context, MraidView view, String videoUrl) {
-        MraidVideoPlayerActivity.mraidView = view;
-        Intent intentVideoPlayerActivity = createIntent(context, videoUrl);
+    private BaseVideoView mVideoView;
+
+    static void startMraid(Context context, String videoUrl) {
+        Intent intentVideoPlayerActivity = createIntentMraid(context, videoUrl);
         try {
             context.startActivity(intentVideoPlayerActivity);
-        } catch (ActivityNotFoundException anfe) {
+        } catch (ActivityNotFoundException e) {
             Log.d("MraidVideoPlayerActivity", "Activity MraidVideoPlayerActivity not found. Did you declare it in your AndroidManifest.xml?");
         }
     }
 
-    static Intent createIntent(Context context, String videoUrl) {
+    static Intent createIntentMraid(Context context, String videoUrl) {
         Intent intentVideoPlayerActivity = new Intent(context, MraidVideoPlayerActivity.class);
         intentVideoPlayerActivity.setFlags(FLAG_ACTIVITY_NEW_TASK);
-        intentVideoPlayerActivity.putExtra(MRAID_VIDEO_URL, videoUrl);
+        intentVideoPlayerActivity.putExtra(VIDEO_CLASS_EXTRAS_KEY, "mraid");
+        intentVideoPlayerActivity.putExtra(VIDEO_URL, videoUrl);
         return intentVideoPlayerActivity;
+    }
+
+    static void startVast(
+            Context context,
+            String videoUrl,
+            ArrayList<String> videoStartTrackers,
+            ArrayList<String> videoFirstQuartileTrackers,
+            ArrayList<String> videoMidpointTrackers,
+            ArrayList<String> videoThirdQuartileTrackers,
+            ArrayList<String> videoCompleteTrackers,
+            ArrayList<String> impressionTrackers,
+            String clickThroughUrl,
+            ArrayList<String> clickThroughTrackers) {
+
+        if (videoUrl == null) {
+            return;
+        }
+
+        Intent intentVideoPlayerActivity = createIntentVast(
+                context,
+                videoUrl,
+                videoStartTrackers,
+                videoFirstQuartileTrackers,
+                videoMidpointTrackers,
+                videoThirdQuartileTrackers,
+                videoCompleteTrackers,
+                impressionTrackers,
+                clickThroughUrl,
+                clickThroughTrackers);
+        try {
+            context.startActivity(intentVideoPlayerActivity);
+        } catch (ActivityNotFoundException e) {
+            Log.d("MoPub", "Activity MraidVideoPlayerActivity not found. Did you declare it in your AndroidManifest.xml?");
+        }
+    }
+
+    static Intent createIntentVast(
+            Context context,
+            String videoUrl,
+            ArrayList<String> videoStartTrackers,
+            ArrayList<String> videoFirstQuartileTrackers,
+            ArrayList<String> videoMidpointTrackers,
+            ArrayList<String> videoThirdQuartileTrackers,
+            ArrayList<String> videoCompleteTrackers,
+            ArrayList<String> impressionTrackers,
+            String clickThroughUrl,
+            ArrayList<String> clickThroughTrackers) {
+        Intent intentVideoPlayerActivity = new Intent(context, MraidVideoPlayerActivity.class);
+        intentVideoPlayerActivity.setFlags(FLAG_ACTIVITY_NEW_TASK);
+        intentVideoPlayerActivity.putExtra(VIDEO_CLASS_EXTRAS_KEY, "vast");
+        intentVideoPlayerActivity.putExtra(VIDEO_URL, videoUrl);
+        intentVideoPlayerActivity.putStringArrayListExtra(VastVideoView.VIDEO_START_TRACKERS, videoStartTrackers);
+        intentVideoPlayerActivity.putStringArrayListExtra(VastVideoView.VIDEO_FIRST_QUARTER_TRACKERS, videoFirstQuartileTrackers);
+        intentVideoPlayerActivity.putStringArrayListExtra(VastVideoView.VIDEO_MID_POINT_TRACKERS, videoMidpointTrackers);
+        intentVideoPlayerActivity.putStringArrayListExtra(VastVideoView.VIDEO_THIRD_QUARTER_TRACKERS, videoThirdQuartileTrackers);
+        intentVideoPlayerActivity.putStringArrayListExtra(VastVideoView.VIDEO_COMPLETE_TRACKERS, videoCompleteTrackers);
+        intentVideoPlayerActivity.putStringArrayListExtra(VastVideoView.VIDEO_IMPRESSION_TRACKERS, impressionTrackers);
+        intentVideoPlayerActivity.putExtra(VastVideoView.VIDEO_CLICK_THROUGH_URL, clickThroughUrl);
+        intentVideoPlayerActivity.putStringArrayListExtra(VastVideoView.VIDEO_CLICK_THROUGH_TRACKERS, clickThroughTrackers);
+        return intentVideoPlayerActivity;
+    }
+
+    @Override
+    public View getAdView() {
+        mVideoView = createVideoView();
+        return mVideoView;
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        RelativeLayout contentView = new RelativeLayout(this);
-        VideoView videoView = new VideoView(this);
-        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.FILL_PARENT,
-                RelativeLayout.LayoutParams.FILL_PARENT);
-        layoutParams.addRule(RelativeLayout.CENTER_IN_PARENT);
-        contentView.addView(videoView, layoutParams);
+        hideInterstitialCloseButton();
+        mVideoView.start();
 
-        setContentView(contentView);
+        broadcastVastInterstitialAction(ACTION_INTERSTITIAL_SHOW);
+    }
 
-        videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                finish();
-            }
-        });
-        videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-            @Override
-            public boolean onError(MediaPlayer mediaPlayer, int what, int extra) {
-                Log.d(TAG, "Error: video can not be played.");
-                mraidView.fireErrorEvent(MRAID_JAVASCRIPT_COMMAND_PLAY_VIDEO, "Video could not be played");
-                return false;
-            }
-        });
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mVideoView.onResume();
+    }
 
-        videoView.setVideoPath(getIntent().getStringExtra(MRAID_VIDEO_URL));
+    @Override
+    protected void onPause() {
+        mVideoView.onPause();
+        super.onPause();
+    }
 
-        videoView.start();
+    @Override
+    protected void onDestroy() {
+        broadcastVastInterstitialAction(ACTION_INTERSTITIAL_DISMISS);
+        super.onDestroy();
+    }
+
+    private BaseVideoView createVideoView() {
+        String clazz = getIntent().getStringExtra(VIDEO_CLASS_EXTRAS_KEY);
+
+        if ("vast".equals(clazz)) {
+            return new VastVideoView(this, getIntent(), this);
+        } else if ("mraid".equals(clazz)) {
+            return new MraidVideoView(this, getIntent(), this);
+        } else {
+            broadcastInterstitialAction(ACTION_INTERSTITIAL_FAIL);
+            finish();
+            return new BaseVideoView(this) {};
+        }
+    }
+
+    /*
+     * Implementation of BaseVideoView.CloseButtonStatusListener
+     */
+
+    @Override
+    public void showCloseButton() {
+        showInterstitialCloseButton();
+    }
+
+    @Override
+    public void videoError(boolean shouldFinish) {
+        Log.d("MoPub", "Error: video can not be played.");
+        showInterstitialCloseButton();
+        broadcastInterstitialAction(ACTION_INTERSTITIAL_FAIL);
+        if (shouldFinish) {
+            finish();
+        }
+    }
+
+    @Override
+    public void videoCompleted(boolean shouldFinish) {
+        showInterstitialCloseButton();
+        if (shouldFinish) {
+            finish();
+        }
+    }
+
+    @Override
+    public void videoClicked() {
+        broadcastInterstitialAction(ACTION_INTERSTITIAL_CLICK);
+    }
+
+    /*
+     * XXX Nathan: MraidVideoViews have already signalled that they have displayed/dismissed by this point.
+     * VastVideoViews, however, do not have a "splash screen", so this is their only opportunity to
+     * relay the shown/dismissed callback.
+     */
+    private void broadcastVastInterstitialAction(String action) {
+        if (mVideoView instanceof VastVideoView) {
+            broadcastInterstitialAction(action);
+        }
     }
 }

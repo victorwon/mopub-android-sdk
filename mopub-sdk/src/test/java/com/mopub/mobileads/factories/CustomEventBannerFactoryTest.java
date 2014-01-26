@@ -32,14 +32,15 @@
 
 package com.mopub.mobileads.factories;
 
+import com.mopub.mobileads.AdTypeTranslator;
 import com.mopub.mobileads.CustomEventBanner;
 import com.mopub.mobileads.test.support.SdkTestRunner;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static com.mopub.mobileads.AdTypeTranslator.HTML_BANNER;
-import static com.mopub.mobileads.AdTypeTranslator.MRAID_BANNER;
+import static com.mopub.mobileads.AdTypeTranslator.CustomEventType.HTML_BANNER;
+import static com.mopub.mobileads.AdTypeTranslator.CustomEventType.MRAID_BANNER;
 import static org.fest.assertions.api.Assertions.assertThat;
 
 @RunWith(SdkTestRunner.class)
@@ -58,8 +59,8 @@ public class CustomEventBannerFactoryTest {
         assertCustomEventClassCreated(HTML_BANNER);
     }
 
-    private void assertCustomEventClassCreated(String customEventName) throws Exception {
-        CustomEventBanner customEventBanner = subject.internalCreate(customEventName);
-        assertThat(customEventBanner.getClass().getName()).isEqualTo(customEventName);
+    private void assertCustomEventClassCreated(AdTypeTranslator.CustomEventType customEventType) throws Exception {
+        CustomEventBanner customEventBanner = subject.internalCreate(customEventType.toString());
+        assertThat(customEventBanner.getClass().getName()).isEqualTo(customEventType.toString());
     }
 }

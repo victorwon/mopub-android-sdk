@@ -50,7 +50,7 @@ import com.mopub.mobileads.test.support.SdkTestRunner;
 import com.mopub.mobileads.test.support.TestHttpResponseWithHeaders;
 import com.mopub.mobileads.test.support.TestMraidViewFactory;
 import com.mopub.mobileads.test.support.ThreadUtils;
-import com.mopub.mobileads.util.MraidUtilsTest;
+import com.mopub.mobileads.util.MraidsTest;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.junit.Before;
@@ -71,15 +71,15 @@ import java.util.*;
 
 import static android.content.DialogInterface.BUTTON_NEGATIVE;
 import static android.content.DialogInterface.BUTTON_POSITIVE;
-import static com.mopub.mobileads.MraidCommandRegistry.MRAID_JAVASCRIPT_COMMAND_CREATE_CALENDAR_EVENT;
-import static com.mopub.mobileads.MraidCommandRegistry.MRAID_JAVASCRIPT_COMMAND_GET_CURRENT_POSITION;
-import static com.mopub.mobileads.MraidCommandRegistry.MRAID_JAVASCRIPT_COMMAND_GET_DEFAULT_POSITION;
-import static com.mopub.mobileads.MraidCommandRegistry.MRAID_JAVASCRIPT_COMMAND_GET_MAX_SIZE;
-import static com.mopub.mobileads.MraidCommandRegistry.MRAID_JAVASCRIPT_COMMAND_GET_SCREEN_SIZE;
-import static com.mopub.mobileads.MraidCommandRegistry.MRAID_JAVASCRIPT_COMMAND_STORE_PICTURE;
+import static com.mopub.mobileads.MraidCommandFactory.MraidJavascriptCommand.CREATE_CALENDAR_EVENT;
+import static com.mopub.mobileads.MraidCommandFactory.MraidJavascriptCommand.GET_CURRENT_POSITION;
+import static com.mopub.mobileads.MraidCommandFactory.MraidJavascriptCommand.GET_DEFAULT_POSITION;
+import static com.mopub.mobileads.MraidCommandFactory.MraidJavascriptCommand.GET_MAX_SIZE;
+import static com.mopub.mobileads.MraidCommandFactory.MraidJavascriptCommand.GET_SCREEN_SIZE;
+import static com.mopub.mobileads.MraidCommandFactory.MraidJavascriptCommand.STORE_PICTURE;
 import static com.mopub.mobileads.MraidCommandStorePicture.MIME_TYPE_HEADER;
-import static com.mopub.mobileads.MraidVideoPlayerActivityTest.assertVideoPlayerActivityStarted;
-import static com.mopub.mobileads.util.MraidUtils.ANDROID_CALENDAR_CONTENT_TYPE;
+import static com.mopub.mobileads.MraidVideoPlayerActivityTest.assertMraidVideoPlayerActivityStarted;
+import static com.mopub.mobileads.util.Mraids.ANDROID_CALENDAR_CONTENT_TYPE;
 import static com.mopub.mobileads.util.VersionCode.ECLAIR;
 import static com.mopub.mobileads.util.VersionCode.FROYO;
 import static com.mopub.mobileads.util.VersionCode.ICE_CREAM_SANDWICH;
@@ -120,7 +120,6 @@ public class MraidDisplayControllerTest {
     private File fileWithoutExtension;
     private TestHttpResponseWithHeaders response;
     private Map<String, String> params;
-
 
     @Before
     public void setup() {
@@ -423,7 +422,7 @@ public class MraidDisplayControllerTest {
 
         assertThat(ShadowToast.shownToastCount()).isEqualTo(0);
         assertThat(ShadowAlertDialog.getLatestAlertDialog()).isNull();
-        verify(mraidView).fireErrorEvent(eq(MRAID_JAVASCRIPT_COMMAND_STORE_PICTURE), any(String.class));
+        verify(mraidView).fireErrorEvent(eq(STORE_PICTURE), any(String.class));
     }
 
     @Test
@@ -488,7 +487,7 @@ public class MraidDisplayControllerTest {
     public void showVideo_shouldStartVideoPlayerActivity() throws Exception {
         subject.showVideo(VIDEO_URL);
 
-        assertVideoPlayerActivityStarted(VIDEO_URL);
+        assertMraidVideoPlayerActivityStarted("com.mopub.mobileads.MraidVideoPlayerActivity", VIDEO_URL);
     }
 
     @Test
@@ -497,7 +496,7 @@ public class MraidDisplayControllerTest {
 
         subject.getCurrentPosition();
 
-        verify(mraidView).fireErrorEvent(eq(MRAID_JAVASCRIPT_COMMAND_GET_CURRENT_POSITION), any(String.class));
+        verify(mraidView).fireErrorEvent(eq(GET_CURRENT_POSITION), any(String.class));
     }
 
     @Test
@@ -506,7 +505,7 @@ public class MraidDisplayControllerTest {
 
         subject.getDefaultPosition();
 
-        verify(mraidView).fireErrorEvent(eq(MRAID_JAVASCRIPT_COMMAND_GET_DEFAULT_POSITION), any(String.class));
+        verify(mraidView).fireErrorEvent(eq(GET_DEFAULT_POSITION), any(String.class));
     }
 
     @Test
@@ -515,7 +514,7 @@ public class MraidDisplayControllerTest {
 
         subject.getMaxSize();
 
-        verify(mraidView).fireErrorEvent(eq(MRAID_JAVASCRIPT_COMMAND_GET_MAX_SIZE), any(String.class));
+        verify(mraidView).fireErrorEvent(eq(GET_MAX_SIZE), any(String.class));
     }
     @Test
     public void getScreenSize_shouldFireErrorEvent() throws Exception {
@@ -523,7 +522,7 @@ public class MraidDisplayControllerTest {
 
         subject.getScreenSize();
 
-        verify(mraidView).fireErrorEvent(eq(MRAID_JAVASCRIPT_COMMAND_GET_SCREEN_SIZE), any(String.class));
+        verify(mraidView).fireErrorEvent(eq(GET_SCREEN_SIZE), any(String.class));
     }
 
     @Test
@@ -532,7 +531,7 @@ public class MraidDisplayControllerTest {
 
         subject.createCalendarEvent(params);
 
-        verify(mraidView, never()).fireErrorEvent(eq(MRAID_JAVASCRIPT_COMMAND_CREATE_CALENDAR_EVENT), any(String.class));
+        verify(mraidView, never()).fireErrorEvent(eq(CREATE_CALENDAR_EVENT), any(String.class));
 
         Intent intent = Robolectric.getShadowApplication().getNextStartedActivity();
 
@@ -549,7 +548,7 @@ public class MraidDisplayControllerTest {
 
         subject.createCalendarEvent(params);
 
-        verify(mraidView, never()).fireErrorEvent(eq(MRAID_JAVASCRIPT_COMMAND_CREATE_CALENDAR_EVENT), any(String.class));
+        verify(mraidView, never()).fireErrorEvent(eq(CREATE_CALENDAR_EVENT), any(String.class));
 
         Intent intent = Robolectric.getShadowApplication().getNextStartedActivity();
 
@@ -730,7 +729,7 @@ public class MraidDisplayControllerTest {
 
         subject.createCalendarEvent(params);
 
-        verify(mraidView).fireErrorEvent(eq(MRAID_JAVASCRIPT_COMMAND_CREATE_CALENDAR_EVENT), any(String.class));
+        verify(mraidView).fireErrorEvent(eq(CREATE_CALENDAR_EVENT), any(String.class));
     }
 
     @Test
@@ -742,7 +741,7 @@ public class MraidDisplayControllerTest {
 
         subject.createCalendarEvent(params);
 
-        verify(mraidView).fireErrorEvent(eq(MRAID_JAVASCRIPT_COMMAND_CREATE_CALENDAR_EVENT), any(String.class));
+        verify(mraidView).fireErrorEvent(eq(CREATE_CALENDAR_EVENT), any(String.class));
     }
 
     @Test
@@ -754,7 +753,7 @@ public class MraidDisplayControllerTest {
 
         subject.createCalendarEvent(params);
 
-        verify(mraidView).fireErrorEvent(eq(MRAID_JAVASCRIPT_COMMAND_CREATE_CALENDAR_EVENT), any(String.class));
+        verify(mraidView).fireErrorEvent(eq(CREATE_CALENDAR_EVENT), any(String.class));
     }
 
     @Test
@@ -766,7 +765,7 @@ public class MraidDisplayControllerTest {
 
         subject.createCalendarEvent(params);
 
-        verify(mraidView).fireErrorEvent(eq(MRAID_JAVASCRIPT_COMMAND_CREATE_CALENDAR_EVENT), any(String.class));
+        verify(mraidView).fireErrorEvent(eq(CREATE_CALENDAR_EVENT), any(String.class));
     }
 
     @Test
@@ -849,7 +848,7 @@ public class MraidDisplayControllerTest {
     }
 
     private Context createMockContextWithSpecificIntentData(final String scheme, final String componentName, final String type, final String action) {
-        return MraidUtilsTest.createMockContextWithSpecificIntentData(scheme, componentName, type, action);
+        return MraidsTest.createMockContextWithSpecificIntentData(scheme, componentName, type, action);
     }
 
     private class TestMraidDisplayController extends MraidDisplayController {

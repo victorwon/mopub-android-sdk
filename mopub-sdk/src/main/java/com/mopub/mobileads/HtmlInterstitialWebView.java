@@ -34,6 +34,7 @@ package com.mopub.mobileads;
 
 import android.content.Context;
 import android.os.Handler;
+import android.webkit.JavascriptInterface;
 
 import static com.mopub.mobileads.CustomEventInterstitial.CustomEventInterstitialListener;
 
@@ -83,6 +84,7 @@ public class HtmlInterstitialWebView extends BaseHtmlWebView {
         final class MoPubUriJavascriptInterface {
             // This method appears to be unused, since it will only be called from JavaScript.
             @SuppressWarnings("unused")
+            @JavascriptInterface
             public boolean fireFinishLoad() {
                 HtmlInterstitialWebView.this.postHandlerRunnable(new Runnable() {
                     @Override

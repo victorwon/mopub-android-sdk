@@ -38,6 +38,7 @@ import android.content.res.Configuration;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import com.mopub.mobileads.test.support.SdkTestRunner;
@@ -287,6 +288,9 @@ public class AdUrlGeneratorTest {
                     "?v=6" +
                     paramIfNotEmpty("id", adUnitId) +
                     "&nv=" + MoPub.SDK_VERSION +
+                    "&dn=" + Build.MANUFACTURER +
+                    "%2C" + Build.MODEL +
+                    "%2C" + Build.PRODUCT +
                     "&udid=sha%3A" + expectedUdidSha +
                     paramIfNotEmpty("q", query) +
                     (isEmpty(latLon) ? "" : "&ll=" + latLon + "&lla=" + locationAccuracy) +

@@ -35,6 +35,7 @@ package com.mopub.mobileads;
 import android.app.Activity;
 import android.content.Context;
 import android.net.ConnectivityManager;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.webkit.WebView;
@@ -61,6 +62,7 @@ import static android.Manifest.permission.ACCESS_NETWORK_STATE;
 import static com.mopub.mobileads.AdViewController.DEFAULT_REFRESH_TIME_MILLISECONDS;
 import static com.mopub.mobileads.MoPubErrorCode.INTERNAL_ERROR;
 import static com.mopub.mobileads.MoPubErrorCode.NO_FILL;
+import static com.mopub.mobileads.test.support.ThreadUtils.NETWORK_DELAY;
 import static com.mopub.mobileads.util.Reflection.MethodBuilder;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.fest.assertions.api.Fail.fail;
@@ -166,7 +168,7 @@ public class AdViewControllerTest {
         assertThat(expectedUserAgent).isNotNull();
 
         subject.trackImpression();
-        Thread.sleep(300); // does this make the test flaky?
+        ThreadUtils.pause(NETWORK_DELAY); // does this make the test flaky?
 
         HttpRequest request = fakeHttpLayer.getLastSentHttpRequestInfo().getHttpRequest();
         assertThat(request.getFirstHeader("User-Agent").getValue()).isEqualTo(expectedUserAgent);
@@ -236,6 +238,9 @@ public class AdViewControllerTest {
         String expectedAdUrl = "http://ads.mopub.com/m/ad" +
                 "?v=6" +
                 "&nv=" + MoPub.SDK_VERSION +
+                "&dn=" + Build.MANUFACTURER +
+                "%2C" + Build.MODEL +
+                "%2C" + Build.PRODUCT +
                 "&udid=sha%3A" +
                 "&z=-0700" +
                 "&o=u" +

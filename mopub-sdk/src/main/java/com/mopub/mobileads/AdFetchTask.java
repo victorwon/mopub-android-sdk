@@ -34,15 +34,12 @@ package com.mopub.mobileads;
 
 import android.os.AsyncTask;
 import android.util.Log;
+import com.mopub.mobileads.factories.HttpClientFactory;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ClientConnectionManager;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
 
 import static com.mopub.mobileads.util.HttpResponses.extractHeader;
 import static com.mopub.mobileads.util.ResponseHeader.AD_TYPE;
@@ -65,7 +62,7 @@ public class AdFetchTask extends AsyncTask<String, Void, AdLoadTask> {
         mTaskTracker = taskTracker;
 
         mAdViewController = adViewController;
-        mHttpClient = getDefaultHttpClient(timeoutMilliseconds);
+        mHttpClient = HttpClientFactory.create(timeoutMilliseconds);
         mTaskId = mTaskTracker.getCurrentTaskId();
         mUserAgent = userAgent;
     }
@@ -268,22 +265,6 @@ public class AdFetchTask extends AsyncTask<String, Void, AdLoadTask> {
         mFetchStatus = AdFetcher.FetchStatus.NOT_SET;
     }
 
-    private DefaultHttpClient getDefaultHttpClient(int timeoutMilliseconds) {
-        HttpParams httpParameters = new BasicHttpParams();
-
-        if (timeoutMilliseconds > 0) {
-            // Set timeouts to wait for connection establishment / receiving data.
-            HttpConnectionParams.setConnectionTimeout(httpParameters, timeoutMilliseconds);
-            HttpConnectionParams.setSoTimeout(httpParameters, timeoutMilliseconds);
-        }
-
-        // Set the buffer size to avoid OutOfMemoryError exceptions on certain HTC devices.
-        // http://stackoverflow.com/questions/5358014/android-httpclient-oom-on-4g-lte-htc-thunderbolt
-        HttpConnectionParams.setSocketBufferSize(httpParameters, 8192);
-
-        return new DefaultHttpClient(httpParameters);
-    }
-
     private void shutdownHttpClient() {
         if (mHttpClient != null) {
             ClientConnectionManager manager = mHttpClient.getConnectionManager();
@@ -295,6 +276,7 @@ public class AdFetchTask extends AsyncTask<String, Void, AdLoadTask> {
     }
 
     private boolean isMostCurrentTask() {
-        return mTaskTracker.isMostCurrentTask(mTaskId);
+        // if we've been cleaned up already, then we're definitely not the current task
+        return (mTaskTracker == null) ? false : mTaskTracker.isMostCurrentTask(mTaskId);
     }
 }

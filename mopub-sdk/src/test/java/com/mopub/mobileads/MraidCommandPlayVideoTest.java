@@ -42,7 +42,7 @@ import org.junit.runner.RunWith;
 import java.util.*;
 
 import static com.mopub.mobileads.MraidCommandPlayVideo.URI_KEY;
-import static com.mopub.mobileads.MraidVideoPlayerActivityTest.assertVideoPlayerActivityStarted;
+import static com.mopub.mobileads.MraidVideoPlayerActivityTest.assertMraidVideoPlayerActivityStarted;
 import static org.mockito.Mockito.stub;
 
 @RunWith(SdkTestRunner.class)
@@ -69,6 +69,6 @@ public class MraidCommandPlayVideoTest {
     public void execute_shouldPlayVideo() throws Exception {
         subject.execute();
 
-        assertVideoPlayerActivityStarted(EXPECTED_URI);
+        assertMraidVideoPlayerActivityStarted("com.mopub.mobileads.MraidVideoPlayerActivity", EXPECTED_URI);
     }
 }

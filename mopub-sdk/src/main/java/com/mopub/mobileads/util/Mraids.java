@@ -43,7 +43,7 @@ import com.mopub.mobileads.Utils;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static android.os.Environment.MEDIA_MOUNTED;
 
-public class MraidUtils {
+public class Mraids {
     public static final String ANDROID_CALENDAR_CONTENT_TYPE = "vnd.android.cursor.item/event";
 
     public static boolean isTelAvailable(Context context) {

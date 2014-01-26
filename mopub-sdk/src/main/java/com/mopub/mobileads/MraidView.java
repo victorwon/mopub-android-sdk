@@ -42,6 +42,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import com.mopub.mobileads.factories.HttpClientFactory;
 import com.mopub.mobileads.resource.MraidJavascript;
 import com.mopub.mobileads.util.Strings;
 import org.apache.http.HttpEntity;
@@ -51,12 +52,12 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.impl.client.DefaultHttpClient;
 
 import java.io.*;
 import java.net.URI;
 import java.util.*;
 
+import static com.mopub.mobileads.MraidCommandFactory.MraidJavascriptCommand;
 import static com.mopub.mobileads.ViewGestureDetector.UserClickListener;
 
 public class MraidView extends BaseWebView implements UserClickListener {
@@ -79,7 +80,7 @@ public class MraidView extends BaseWebView implements UserClickListener {
         private OnOpenListener mOnOpenListener;
     }
     private MraidListenerInfo mListenerInfo;
-    
+
     public enum ViewState {
         LOADING,
         DEFAULT,
@@ -97,11 +98,12 @@ public class MraidView extends BaseWebView implements UserClickListener {
         ALWAYS_HIDDEN,
         AD_CONTROLLED
     }
-    
+
     public enum PlacementType {
         INLINE,
         INTERSTITIAL
     }
+
     public MraidView(Context context, AdConfiguration adConfiguration) {
         this(context, adConfiguration, ExpansionStyle.ENABLED, NativeCloseButtonStyle.AD_CONTROLLED,
                 PlacementType.INLINE);
@@ -179,7 +181,9 @@ public class MraidView extends BaseWebView implements UserClickListener {
     }
 
     public void loadHtmlData(String data) {
-        if (data == null) return;
+        if (data == null) {
+            return;
+        }
 
         // If the string data lacks the HTML boilerplate, add it.
         if (!data.contains("<html>")) {
@@ -204,7 +208,7 @@ public class MraidView extends BaseWebView implements UserClickListener {
             return;
         }
 
-        HttpClient httpClient = new DefaultHttpClient();
+        HttpClient httpClient = HttpClientFactory.create();
         String outString = "";
         
         try {
@@ -293,7 +297,9 @@ public class MraidView extends BaseWebView implements UserClickListener {
         Log.d(LOGTAG, "Fire changes: " + json);
     }
     
-    protected void fireErrorEvent(String action, String message) {
+    protected void fireErrorEvent(MraidJavascriptCommand mraidJavascriptCommand, String message) {
+        String action = mraidJavascriptCommand.getCommand();
+
         injectJavaScript("window.mraidbridge.fireErrorEvent('" + action + "', '" + message + "');");
     }
     
@@ -313,13 +319,12 @@ public class MraidView extends BaseWebView implements UserClickListener {
             params.put(pair.getName(), pair.getValue());
         }
 
-        MraidCommand command = MraidCommandRegistry.createCommand(commandType, params, this);
-        if (command.isCommandDependentOnUserClick() && !wasClicked()) {
-            return false;
-        }
+        MraidCommand command = MraidCommandFactory.create(commandType, params, this);
 
         if (command == null) {
             fireNativeCommandCompleteEvent(commandType);
+            return false;
+        } else if (command.isCommandDependentOnUserClick(mPlacementType) && !wasClicked()) {
             return false;
         } else {
             command.execute();
@@ -407,5 +412,10 @@ public class MraidView extends BaseWebView implements UserClickListener {
     @Deprecated // for testing
     WebViewClient getMraidWebViewClient() {
         return mWebViewClient;
+    }
+
+    @Deprecated // for testing
+    void setMraidDisplayController(MraidDisplayController mraidDisplayController) {
+        mDisplayController = mraidDisplayController;
     }
 }

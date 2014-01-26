@@ -60,8 +60,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @RunWith(SdkTestRunner.class)
-public class HtmlInterstitialTest {
-    private HtmlInterstitial subject;
+public class HtmlInterstitialTest extends ResponseBodyInterstitialTest {
     private CustomEventInterstitialListener customEventInterstitialListener;
     private Activity context;
     private Map<String,Object> localExtras;

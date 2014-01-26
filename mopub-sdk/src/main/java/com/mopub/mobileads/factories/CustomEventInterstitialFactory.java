@@ -43,6 +43,7 @@ public class CustomEventInterstitialFactory {
         return instance.internalCreate(className);
     }
 
+    @Deprecated // for testing
     public static void setInstance(CustomEventInterstitialFactory factory) {
         instance = factory;
     }

@@ -1,10 +1,7 @@
 package com.mopub.simpleadsdemo;
 
-import java.util.Map;
-
 import android.content.Context;
 import android.util.Log;
-
 import com.greystripe.sdk.GSAd;
 import com.greystripe.sdk.GSAdErrorCode;
 import com.greystripe.sdk.GSAdListener;
@@ -12,10 +9,14 @@ import com.greystripe.sdk.GSFullscreenAd;
 import com.mopub.mobileads.CustomEventInterstitial;
 import com.mopub.mobileads.MoPubErrorCode;
 
+import java.util.*;
+
 /*
  * Tested with Greystripe SDK 2.3.0.
  */
 class GreystripeInterstitial extends CustomEventInterstitial implements GSAdListener {
+    public static final String DEFAULT_GREYSTRIPE_APP_ID = "YOUR_GREYSTRIPE_APP_ID";
+
     private CustomEventInterstitialListener mInterstitialListener;
     private GSFullscreenAd mGreystripeAd;
     
@@ -31,7 +32,7 @@ class GreystripeInterstitial extends CustomEventInterstitial implements GSAdList
          * You may also pass this String down in the serverExtras Map by specifying Custom Event Data
          * in MoPub's web interface.
          */
-        String greystripeAppId = "YOUR_GREYSTRIPE_APP_ID";
+        String greystripeAppId = DEFAULT_GREYSTRIPE_APP_ID;
         
         mGreystripeAd = new GSFullscreenAd(context, greystripeAppId);
         mGreystripeAd.addListener(this);
