@@ -18,7 +18,10 @@
   - Added custom events for Google Play Services. `GooglePlayServicesBanner` and `GooglePlayServicesInterstitial` can be found in the extras directory of the SDK (`/extras/src/com/mopub/mobileads`)
   - Resolved issues with missing annotations on `addJavascriptInterface` when `targetSdkVersion` is set to API level 17 or above
   - Updated MoPub sample application to allow in-app text entry of ad unit IDs
-
+    
+###### Version 1.17.1.1 (Feb 5, 2014)
+  - Fixed bug that caused clicks to not be recorded in the MoPub UI (introduced in 1.17.1)
+  
 ## Version 1.16 (Oct 16, 2013)
 
   - Improved creative controls
