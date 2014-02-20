@@ -59,12 +59,11 @@ public class DiskLruCache extends LruCache<String, File> {
             return false;
         }
 
-        String hashedFileName = Utils.sha1(fileName);
-
-        if (getUri(hashedFileName) != null) {
+        if (getUri(fileName) != null) {
             return false;
         }
 
+        String hashedFileName = Utils.sha1(fileName);
         File file = createFile(hashedFileName, content);
 
         if (file == null || !file.exists()) {

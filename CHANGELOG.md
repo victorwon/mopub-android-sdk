@@ -13,12 +13,22 @@
   - All `WebView`s are removed from their parents before `destroy()`; fixes [GitHub issue #38](https://github.com/mopub/mopub-android-sdk/issues/38)
   - Removed previously-deprecated `HTML5AdView`
   
+### Version 1.17.2 (Feb 20, 2014)
+
+  - Updated InMobi custom events to support InMobi SDK 4.0.3+ only
+  - MRAID viewable property now correctly updates on viewability change
+  - `MraidView` properly handles null schemes; fixes [GitHub issue #63](https://github.com/mopub/mopub-android-sdk/pull/63)
+  - Internal disk LRU cache correctly hashes keys when checking for existing files
+  
 ### Version 1.17.1 (Jan 23, 2014)
 
   - Added custom events for Google Play Services. `GooglePlayServicesBanner` and `GooglePlayServicesInterstitial` can be found in the extras directory of the SDK (`/extras/src/com/mopub/mobileads`)
   - Resolved issues with missing annotations on `addJavascriptInterface` when `targetSdkVersion` is set to API level 17 or above
   - Updated MoPub sample application to allow in-app text entry of ad unit IDs
-
+    
+###### Version 1.17.1.1 (Feb 5, 2014)
+  - Fixed bug that caused clicks to not be recorded in the MoPub UI (introduced in 1.17.1)
+  
 ## Version 1.16 (Oct 16, 2013)
 
   - Improved creative controls

@@ -32,6 +32,7 @@
 
 package com.mopub.mobileads;
 
+import com.mopub.mobileads.test.support.JsonUtils;
 import com.mopub.mobileads.test.support.SdkTestRunner;
 import com.mopub.mobileads.test.support.TestHttpResponseWithHeaders;
 import org.apache.http.Header;
@@ -64,12 +65,11 @@ public class AdLoadTaskTest {
     private AdViewController adViewController;
     private HttpResponse response;
     private String standardExpectedJson;
-    private AdConfiguration adConfiguration;
 
     @Before
     public void setup() {
         adViewController = mock(AdViewController.class);
-        adConfiguration = mock(AdConfiguration.class);
+        AdConfiguration adConfiguration = mock(AdConfiguration.class);
         stub(adViewController.getAdConfiguration()).toReturn(adConfiguration);
         response = new TestHttpResponseWithHeaders(200, "");
         standardExpectedJson = "{\"Scrollable\":\"false\",\"Redirect-Url\":\"redirect\",\"Clickthrough-Url\":\"clickthrough\",\"Html-Response-Body\":\"%3Chtml%3E%3C%2Fhtml%3E\"}";
@@ -111,7 +111,9 @@ public class AdLoadTaskTest {
 
         AdLoadTask.CustomEventAdLoadTask customEventTask = (AdLoadTask.CustomEventAdLoadTask) AdLoadTask.fromHttpResponse(response, adViewController);
         assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_NAME.getKey())).isEqualTo(MRAID_BANNER.toString());
-        assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey())).isEqualTo(standardExpectedJson);
+
+        String actualJsonData = customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey());
+        JsonUtils.assertJsonStringMapsEqual(actualJsonData, standardExpectedJson);
     }
 
     @Test
@@ -123,7 +125,9 @@ public class AdLoadTaskTest {
 
         AdLoadTask.CustomEventAdLoadTask customEventTask = (AdLoadTask.CustomEventAdLoadTask) AdLoadTask.fromHttpResponse(response, adViewController);
         assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_NAME.getKey())).isEqualTo(MRAID_INTERSTITIAL.toString());
-        assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey())).isEqualTo(standardExpectedJson);
+
+        String actualJsonData = customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey());
+        JsonUtils.assertJsonStringMapsEqual(actualJsonData, standardExpectedJson);
     }
 
     @Test
@@ -134,7 +138,9 @@ public class AdLoadTaskTest {
 
         AdLoadTask.CustomEventAdLoadTask customEventTask = (AdLoadTask.CustomEventAdLoadTask) AdLoadTask.fromHttpResponse(response, adViewController);
         assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_NAME.getKey())).isEqualTo(ADMOB_BANNER.toString());
-        assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey())).isEqualTo(expectedNativeParams);
+
+        String actualNativeParams = customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey());
+        JsonUtils.assertJsonStringMapsEqual(actualNativeParams, expectedNativeParams);
     }
 
     @Test
@@ -145,7 +151,9 @@ public class AdLoadTaskTest {
 
         AdLoadTask.CustomEventAdLoadTask customEventTask = (AdLoadTask.CustomEventAdLoadTask) AdLoadTask.fromHttpResponse(response, adViewController);
         assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_NAME.getKey())).isEqualTo(HTML_BANNER.toString());
-        assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey())).isEqualTo(standardExpectedJson);
+
+        String actualJsonData = customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey());
+        JsonUtils.assertJsonStringMapsEqual(actualJsonData, standardExpectedJson);
     }
 
     @Test
@@ -157,7 +165,9 @@ public class AdLoadTaskTest {
 
         AdLoadTask.CustomEventAdLoadTask customEventTask = (AdLoadTask.CustomEventAdLoadTask) AdLoadTask.fromHttpResponse(response, adViewController);
         assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_NAME.getKey())).isEqualTo(HTML_INTERSTITIAL.toString());
-        assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey())).isEqualTo(standardExpectedJson);
+
+        String actualJsonData = customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey());
+        JsonUtils.assertJsonStringMapsEqual(actualJsonData, standardExpectedJson);
     }
 
     @Test
@@ -174,7 +184,9 @@ public class AdLoadTaskTest {
 
         AdLoadTask.CustomEventAdLoadTask customEventTask = (AdLoadTask.CustomEventAdLoadTask) AdLoadTask.fromHttpResponse(response, adViewController);
         assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_NAME.getKey())).isEqualTo(HTML_BANNER.toString());
-        assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey())).isEqualTo(expectedJson);
+
+        String actualJsonData = customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey());
+        JsonUtils.assertJsonStringMapsEqual(actualJsonData, expectedJson);
     }
 
     @Test
@@ -186,7 +198,9 @@ public class AdLoadTaskTest {
 
         AdLoadTask.CustomEventAdLoadTask customEventTask = (AdLoadTask.CustomEventAdLoadTask) AdLoadTask.fromHttpResponse(response, adViewController);
         assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_NAME.getKey())).isEqualTo(HTML_BANNER.toString());
-        assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey())).isEqualTo(expectedJson);
+
+        String actualJsonData = customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey());
+        JsonUtils.assertJsonStringMapsEqual(actualJsonData, expectedJson);
     }
 
     @Test
@@ -196,7 +210,9 @@ public class AdLoadTaskTest {
 
         AdLoadTask.CustomEventAdLoadTask customEventTask = (AdLoadTask.CustomEventAdLoadTask) AdLoadTask.fromHttpResponse(response, adViewController);
         assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_NAME.getKey())).isEqualTo(HTML_BANNER.toString());
-        assertThat(customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey())).isEqualTo(expectedJson);
+
+        String actualJsonData = customEventTask.getParamsMap().get(CUSTOM_EVENT_DATA.getKey());
+        JsonUtils.assertJsonStringMapsEqual(actualJsonData, expectedJson);
     }
 
     private void addExpectedResponseHeaders(String adType) {

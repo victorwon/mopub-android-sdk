@@ -135,6 +135,7 @@ public class AdViewController {
             mLocation = getLastKnownLocation();
         }
 
+        // tested (remove me when the rest of this is tested)
         String adUrl = generateAdUrl();
         loadNonJavascript(adUrl);
     }

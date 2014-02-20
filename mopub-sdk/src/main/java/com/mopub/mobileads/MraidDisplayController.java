@@ -128,22 +128,6 @@ class MraidDisplayController extends MraidAbstractController {
     // A reference to the root view.
     private FrameLayout mRootView;
 
-    // Tracks whether this controller's view is currently on-screen.
-    private boolean mIsViewable;
-
-    // Task that periodically checks whether this controller's view is on-screen.
-    private Runnable mCheckViewabilityTask = new Runnable() {
-        public void run() {
-            boolean currentViewable = checkViewable();
-            if (mIsViewable != currentViewable) {
-                mIsViewable = currentViewable;
-                getMraidView().fireChangeEventForProperty(
-                        MraidViewableProperty.createWithViewable(mIsViewable));
-            }
-            mHandler.postDelayed(this, VIEWABILITY_TIMER_MILLIS);
-        }
-    };
-
     // Handler for scheduling viewability checks.
     private Handler mHandler = new Handler();
 
@@ -199,7 +183,6 @@ class MraidDisplayController extends MraidAbstractController {
     private void initialize() {
         mViewState = ViewState.LOADING;
         initializeScreenMetrics();
-        initializeViewabilityTimer();
         mOrientationBroadcastReceiver.register(getContext());
     }
 
@@ -227,11 +210,6 @@ class MraidDisplayController extends MraidAbstractController {
         mScreenHeight = (int) (heightPixels * (160.0 / metrics.densityDpi));
     }
 
-    private void initializeViewabilityTimer() {
-        mHandler.removeCallbacks(mCheckViewabilityTask);
-        mHandler.post(mCheckViewabilityTask);
-    }
-
     private int getDisplayRotation() {
         WindowManager wm = (WindowManager) getContext()
                 .getSystemService(Context.WINDOW_SERVICE);
@@ -245,7 +223,6 @@ class MraidDisplayController extends MraidAbstractController {
     }
 
     public void destroy() {
-        mHandler.removeCallbacks(mCheckViewabilityTask);
         try {
             mOrientationBroadcastReceiver.unregister();
         } catch (IllegalArgumentException e) {
@@ -258,7 +235,7 @@ class MraidDisplayController extends MraidAbstractController {
     protected void initializeJavaScriptState() {
         ArrayList<MraidProperty> properties = new ArrayList<MraidProperty>();
         properties.add(MraidScreenSizeProperty.createWithSize(mScreenWidth, mScreenHeight));
-        properties.add(MraidViewableProperty.createWithViewable(mIsViewable));
+        properties.add(MraidViewableProperty.createWithViewable(getMraidView().getIsVisible()));
         getMraidView().fireChangeEventForProperties(properties);
 
         mViewState = ViewState.DEFAULT;
@@ -768,10 +745,6 @@ class MraidDisplayController extends MraidAbstractController {
         if (view.getOnCloseButtonStateChangeListener() != null) {
             view.getOnCloseButtonStateChangeListener().onCloseButtonStateChange(view, enabled);
         }
-    }
-
-    protected boolean checkViewable() {
-        return true;
     }
 
     FrameLayout createAdContainerLayout() {
