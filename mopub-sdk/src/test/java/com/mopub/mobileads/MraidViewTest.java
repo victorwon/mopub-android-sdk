@@ -35,13 +35,17 @@ package com.mopub.mobileads;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebViewClient;
+
 import com.mopub.mobileads.resource.MraidJavascript;
 import com.mopub.mobileads.test.support.SdkTestRunner;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.robolectric.Robolectric;
 import org.robolectric.shadows.ShadowWebView;
 
@@ -51,11 +55,13 @@ import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 import static org.robolectric.Robolectric.shadowOf;
 
 @RunWith(SdkTestRunner.class)
@@ -82,6 +88,103 @@ public class MraidViewTest {
         interstitialSubject = new MraidView(context, adConfiguration, MraidView.ExpansionStyle.ENABLED, MraidView.NativeCloseButtonStyle.ALWAYS_VISIBLE, MraidView.PlacementType.INTERSTITIAL);
         interstitialSubject.setMraidDisplayController(mraidDisplayController);
         interstitialWebViewClient = interstitialSubject.getMraidWebViewClient();
+    }
+
+    @Test
+    public void viewSetToVisibleBeforeReady_shouldNotTriggerMRAIDEvent() throws Exception {
+        MraidView mraidViewSpy = spy(bannerSubject);
+        mraidViewSpy.setHasFiredReadyEvent(false);
+        mraidViewSpy.setVisibility(View.INVISIBLE);
+
+        mraidViewSpy.setVisibility(View.VISIBLE);
+
+        assertThat(mraidViewSpy.getIsVisible()).isTrue();
+
+        verify(mraidViewSpy, never()).fireChangeEventForProperty(any(MraidViewableProperty.class));
+    }
+
+    @Test
+    public void viewSetToVisibleAfterReady_shouldTriggerMRAIDEvent() throws Exception {
+        MraidView mraidViewSpy = spy(bannerSubject);
+        mraidViewSpy.setHasFiredReadyEvent(true);
+        mraidViewSpy.setVisibility(View.INVISIBLE);
+        reset(mraidViewSpy);
+
+        mraidViewSpy.setVisibility(View.VISIBLE);
+
+        assertThat(mraidViewSpy.getIsVisible()).isTrue();
+
+        MraidViewableProperty mraidViewableProperty = captureAndVerifyViewablePropertyChangeEventFired(mraidViewSpy);
+        assertThat(mraidViewableProperty.toJsonPair()).isEqualTo("viewable: true");
+    }
+
+    @Test
+    public void viewSetToVisibleAndThenInvisibleAfterReady_shouldTriggerTwoMRAIDEvents() throws Exception {
+        MraidView mraidViewSpy = spy(bannerSubject);
+        mraidViewSpy.setHasFiredReadyEvent(true);
+        mraidViewSpy.setVisibility(View.INVISIBLE);
+        reset(mraidViewSpy);
+
+        mraidViewSpy.setVisibility(View.VISIBLE);
+
+        MraidViewableProperty mraidViewableProperty = captureAndVerifyViewablePropertyChangeEventFired(mraidViewSpy);
+        assertThat(mraidViewableProperty.toJsonPair()).isEqualTo("viewable: true");
+        reset(mraidViewSpy);
+
+        mraidViewSpy.setVisibility(View.INVISIBLE);
+
+        assertThat(mraidViewSpy.getIsVisible()).isFalse();
+
+        mraidViewableProperty = captureAndVerifyViewablePropertyChangeEventFired(mraidViewSpy);
+        assertThat(mraidViewableProperty.toJsonPair()).isEqualTo("viewable: false");
+    }
+
+    @Test
+    public void viewSetToVisibleAndThenGoneAfterReady_shouldTriggerTwoMRAIDEvents() throws Exception {
+        MraidView mraidViewSpy = spy(bannerSubject);
+        mraidViewSpy.setHasFiredReadyEvent(true);
+        mraidViewSpy.setVisibility(View.INVISIBLE);
+        reset(mraidViewSpy);
+
+        mraidViewSpy.setVisibility(View.VISIBLE);
+
+        MraidViewableProperty mraidViewableProperty = captureAndVerifyViewablePropertyChangeEventFired(mraidViewSpy);
+        assertThat(mraidViewableProperty.toJsonPair()).isEqualTo("viewable: true");
+        reset(mraidViewSpy);
+
+        mraidViewSpy.setVisibility(View.GONE);
+
+        assertThat(mraidViewSpy.getIsVisible()).isFalse();
+
+        mraidViewableProperty = captureAndVerifyViewablePropertyChangeEventFired(mraidViewSpy);
+        assertThat(mraidViewableProperty.toJsonPair()).isEqualTo("viewable: false");
+    }
+
+    @Test
+    public void viewSetToVisibleAndThenInvisibleAndThenVisibleAfterReady_shouldTriggerThreeMRAIDEvents() throws Exception {
+        MraidView mraidViewSpy = spy(bannerSubject);
+        mraidViewSpy.setHasFiredReadyEvent(true);
+        mraidViewSpy.setVisibility(View.INVISIBLE);
+        reset(mraidViewSpy);
+
+        mraidViewSpy.setVisibility(View.VISIBLE);
+
+        MraidViewableProperty mraidViewableProperty = captureAndVerifyViewablePropertyChangeEventFired(mraidViewSpy);
+        assertThat(mraidViewableProperty.toJsonPair()).isEqualTo("viewable: true");
+        reset(mraidViewSpy);
+
+        mraidViewSpy.setVisibility(View.INVISIBLE);
+
+        mraidViewableProperty = captureAndVerifyViewablePropertyChangeEventFired(mraidViewSpy);
+        assertThat(mraidViewableProperty.toJsonPair()).isEqualTo("viewable: false");
+        reset(mraidViewSpy);
+
+        mraidViewSpy.setVisibility(View.VISIBLE);
+
+        assertThat(mraidViewSpy.getIsVisible()).isTrue();
+
+        mraidViewableProperty = captureAndVerifyViewablePropertyChangeEventFired(mraidViewSpy);
+        assertThat(mraidViewableProperty.toJsonPair()).isEqualTo("viewable: true");
     }
 
     @Test
@@ -235,6 +338,27 @@ public class MraidViewTest {
     }
 
     @Test
+    public void shouldOverrideUrlLoading_withRelativeUrl_andUserClick_shouldReturnTrue() throws Exception {
+        String relativeUrl = "www.blah.com";
+        bannerSubject.onUserClick();
+
+        boolean consumeUrlLoading = bannerWebViewClient.shouldOverrideUrlLoading(null, relativeUrl);
+
+        Intent startedIntent = Robolectric.getShadowApplication().getNextStartedActivity();
+        assertThat(startedIntent).isNotNull();
+        assertThat(consumeUrlLoading).isTrue();
+    }
+
+    @Test
+    public void shouldOverrideUrlLoading_withRelativeUrl_andNoUserClick_shouldReturnFalse() throws Exception {
+        String relativeUrl = "www.blah.com";
+
+        boolean consumeUrlLoading = bannerWebViewClient.shouldOverrideUrlLoading(null, relativeUrl);
+
+        assertThat(consumeUrlLoading).isFalse();
+    }
+
+    @Test
     public void destroy_shouldRemoveSelfFromParent_beforeCallingDestroy() throws Exception {
         ViewGroup parent = mock(ViewGroup.class);
         ShadowWebView shadow = shadowOf(bannerSubject);
@@ -244,5 +368,11 @@ public class MraidViewTest {
 
         verify(parent).removeView(eq(bannerSubject));
         assertThat(shadow.wasDestroyCalled()).isTrue();
+    }
+
+    private MraidViewableProperty captureAndVerifyViewablePropertyChangeEventFired(MraidView mraidView) {
+        ArgumentCaptor<MraidViewableProperty> mraidViewablePropertyCaptor = ArgumentCaptor.forClass(MraidViewableProperty.class);
+        verify(mraidView).fireChangeEventForProperty(mraidViewablePropertyCaptor.capture());
+        return mraidViewablePropertyCaptor.getValue();
     }
 }

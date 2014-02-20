@@ -3,7 +3,6 @@ package com.mopub.simpleadsdemo;
 import android.app.Activity;
 import android.content.Context;
 import com.inmobi.commons.InMobi;
-import com.inmobi.mediation.adapter.inmobi.InMobiExtras;
 import com.inmobi.monetization.IMErrorCode;
 import com.inmobi.monetization.IMInterstitial;
 import com.inmobi.monetization.IMInterstitialListener;
@@ -14,7 +13,7 @@ import com.mopub.mobileads.MoPubErrorCode;
 import java.util.*;
 
 /*
- * Tested with InMobi SDK  4.0.0
+ * Tested with InMobi SDK  4.1.1
  */
 public class InMobiInterstitial extends CustomEventInterstitial implements IMInterstitialListener {
 
@@ -42,25 +41,23 @@ public class InMobiInterstitial extends CustomEventInterstitial implements IMInt
 		 * You may also pass this String down in the serverExtras Map by
 		 * specifying Custom Event Data in MoPub's web interface.
 		 */
-		if (!isAppIntialize) {
+		if (!isAppInitialized) {
 			InMobi.initialize(activity, inMobiAppId);
-			isAppIntialize = true;
+            isAppInitialized = true;
 		}
 		this.iMInterstitial = new IMInterstitial(activity, inMobiAppId);
 
-		Map<String, String> map = new HashMap<String, String>();
-		InMobiExtras extras = new InMobiExtras();
-		map.put("tp", "c_mopub");
-		map.put("tp-ver", MoPub.SDK_VERSION);
-		extras.setRequestParams(map);
-		iMInterstitial.addNetworkExtras(extras);
+        Map<String, String> map = new HashMap<String, String>();
+        map.put("tp", "c_mopub");
+        map.put("tp-ver", MoPub.SDK_VERSION);
+        iMInterstitial.setRequestParams(map);
 		iMInterstitial.setIMInterstitialListener(this);
 		iMInterstitial.loadInterstitial();
 	}
 
 	private CustomEventInterstitialListener mInterstitialListener;
 	private IMInterstitial iMInterstitial;
-	private static boolean isAppIntialize = false;
+	private static boolean isAppInitialized = false;
 
 	/*
 	 * Abstract methods from CustomEventInterstitial
@@ -76,8 +73,8 @@ public class InMobiInterstitial extends CustomEventInterstitial implements IMInt
 
 	@Override
 	public void onInvalidate() {
-		iMInterstitial.setIMInterstitialListener(null);
 		if (iMInterstitial != null) {
+            iMInterstitial.setIMInterstitialListener(null);
 			iMInterstitial.destroy();
 		}
 	}

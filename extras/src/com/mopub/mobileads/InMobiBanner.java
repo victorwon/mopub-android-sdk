@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import com.inmobi.commons.InMobi;
 import com.inmobi.commons.InMobi.LOG_LEVEL;
-import com.inmobi.mediation.adapter.inmobi.InMobiExtras;
 import com.inmobi.monetization.IMBanner;
 import com.inmobi.monetization.IMBannerListener;
 import com.inmobi.monetization.IMErrorCode;
@@ -16,7 +15,7 @@ import com.mopub.mobileads.util.Views;
 import java.util.*;
 
 /*
- * Tested with InMobi SDK 4.0.0
+ * Tested with InMobi SDK 4.1.1
  */
 public class InMobiBanner extends CustomEventBanner implements IMBannerListener {
 
@@ -38,9 +37,9 @@ public class InMobiBanner extends CustomEventBanner implements IMBannerListener 
 			mBannerListener.onBannerFailed(null);
 			return;
 		}
-		if (!isAppIntialize) {
+		if (!isAppInitialized) {
 			InMobi.initialize(activity, inMobiAppId);
-			isAppIntialize = true;
+            isAppInitialized = true;
 		}
 
 		/*
@@ -50,12 +49,10 @@ public class InMobiBanner extends CustomEventBanner implements IMBannerListener 
 		iMBanner = new IMBanner(activity, inMobiAppId,
 				IMBanner.INMOBI_AD_UNIT_320X50);
 
-		Map<String, String> map = new HashMap<String, String>();
-		InMobiExtras extras = new InMobiExtras();
-		map.put("tp", "c_mopub");
-		map.put("tp-ver", MoPub.SDK_VERSION);
-		extras.setRequestParams(map);
-		iMBanner.addNetworkExtras(extras);
+        Map<String, String> map = new HashMap<String, String>();
+        map.put("tp", "c_mopub");
+        map.put("tp-ver", MoPub.SDK_VERSION);
+        iMBanner.setRequestParams(map);
 		InMobi.setLogLevel(LOG_LEVEL.VERBOSE);
 		iMBanner.setIMBannerListener(this);
 		iMBanner.setRefreshInterval(-1);
@@ -65,7 +62,7 @@ public class InMobiBanner extends CustomEventBanner implements IMBannerListener 
 
 	private CustomEventBannerListener mBannerListener;
 	private IMBanner iMBanner;
-	private static boolean isAppIntialize = false;
+	private static boolean isAppInitialized = false;
 
 	/*
 	 * Abstract methods from CustomEventBanner
@@ -73,8 +70,8 @@ public class InMobiBanner extends CustomEventBanner implements IMBannerListener 
 
 	@Override
 	public void onInvalidate() {
-		iMBanner.setIMBannerListener(null);
 		if (iMBanner != null) {
+            iMBanner.setIMBannerListener(null);
             Views.removeFromParent(iMBanner);
             iMBanner.destroy();
 		}

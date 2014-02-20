@@ -217,6 +217,17 @@ public class DiskLruCacheTest {
         assertThat(success).isFalse();
         assertThat(subject.snapshot().isEmpty()).isTrue();
     }
+    
+    @Test
+    public void putStream_whenHashedFilenameAlreadyInCache_shouldNotReturnFalsePositive() throws Exception {
+        final String fileName = "just a generic filename";
+        final String hashedFileName = Utils.sha1(fileName);
+
+        subject.putStream(hashedFileName, createByteArrayInputStream(10));
+        boolean result = subject.putStream(fileName, createByteArrayInputStream(10));
+
+        assertThat(result).isTrue();
+    }
 
     @Test
     public void putStream_canHandleFileNamesWithSymbols() throws Exception {

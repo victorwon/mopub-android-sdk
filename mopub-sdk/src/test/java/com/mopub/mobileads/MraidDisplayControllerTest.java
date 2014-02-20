@@ -154,8 +154,6 @@ public class MraidDisplayControllerTest {
 
     @Test
     public void initializeJavaScriptState_shouldSetMraidSupportsProperties() throws Exception {
-        verify(mraidView).fireChangeEventForProperty(any(MraidProperty.class));
-
         subject.initializeJavaScriptState();
         verify(mraidView).fireChangeEventForProperty(isA(MraidSupportsProperty.class));
     }

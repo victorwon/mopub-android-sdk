@@ -73,6 +73,7 @@ public class MraidView extends BaseWebView implements UserClickListener {
     private final PlacementType mPlacementType;
     private ViewGestureDetector mViewGestureDetector;
     private AdConfiguration mAdConfiguration;
+    private boolean mIsVisible;
 
     static class MraidListenerInfo {
         private MraidListener mMraidListener;
@@ -117,6 +118,8 @@ public class MraidView extends BaseWebView implements UserClickListener {
         mAdConfiguration = adConfiguration;
         mViewGestureDetector = new ViewGestureDetector(context, this, adConfiguration);
         mViewGestureDetector.setUserClickListener(this);
+
+        mIsVisible = (getVisibility() == View.VISIBLE);
 
         initialize(expStyle, buttonStyle);
     }
@@ -343,10 +346,15 @@ public class MraidView extends BaseWebView implements UserClickListener {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             Uri uri = Uri.parse(url);
+
+            // Note that scheme will be null when we are passed a relative Uri
             String scheme = uri.getScheme();
-            
-            if (scheme.equals("mopub")) return true;
-            if (scheme.equals("mraid")) {
+
+            if ("mopub".equals(scheme)) {
+                return true;
+            }
+
+            if ("mraid".equals(scheme)) {
                 tryCommand(URI.create(url)); // java.net.URI, not android.net.Uri
                 return true;
             }
@@ -377,6 +385,8 @@ public class MraidView extends BaseWebView implements UserClickListener {
                 if (getMraidListener() != null) {
                     getMraidListener().onReady(MraidView.this);
                 }
+                mIsVisible = (getVisibility() == View.VISIBLE);
+                fireChangeEventForProperty(MraidViewableProperty.createWithViewable(mIsVisible));
                 mHasFiredReadyEvent = true;
             }
         }
@@ -407,6 +417,28 @@ public class MraidView extends BaseWebView implements UserClickListener {
     
     public interface OnOpenListener {
         public void onOpen(MraidView view);
+    }
+
+    public boolean getIsVisible() {
+        return mIsVisible;
+    }
+
+    @Override
+    protected void onVisibilityChanged (View changedView, int visibility) {
+        super.onVisibilityChanged(changedView, visibility);
+
+        boolean newIsVisible = (visibility == View.VISIBLE);
+        if (newIsVisible != mIsVisible) {
+            mIsVisible = newIsVisible;
+            if (mHasFiredReadyEvent) {
+                fireChangeEventForProperty(MraidViewableProperty.createWithViewable(mIsVisible));
+            }
+        }
+    }
+
+    @Deprecated // for testing
+    void setHasFiredReadyEvent(boolean hasFired) {
+        mHasFiredReadyEvent = hasFired;
     }
 
     @Deprecated // for testing
